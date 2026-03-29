@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import BillingEntries from './pages/BillingEntries';
 import Dashboard from './pages/Dashboard';
+import CreateInvoice from './pages/CreateInvoice';
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Route path="/" element={<Navigate to="/billing-entries" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/billing-entries" element={<BillingEntries />} />
+        <Route path="/create-invoice" element={<CreateInvoice />} />
         {/* Add more routes as needed */}
       </Routes>
     </BrowserRouter>
