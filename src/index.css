@@ -27,54 +27,28 @@
   /* Borders & Dividers */
   --border-color: #E2E8F0;
   --divider-soft: #CBD5E1;
-  
-  /* Spacing Scale */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 12px;
-  --space-lg: 16px;
-  --space-xl: 24px;
-  
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  
-  /* Layout */
-  --sidebar-width: 220px;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
-  color: var(--text-primary);
-  background-color: var(--bg-main);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  @apply bg-bg-main text-text-primary antialiased;
   letter-spacing: -0.01em;
 }
 
-input, button, textarea, select {
-  font-family: inherit;
-  font-size: inherit;
+/* Custom Scrollbar for modern look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  color: var(--text-primary);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
+::-webkit-scrollbar-thumb {
+  @apply bg-divider-soft rounded-full opacity-50;
 }
 
-ul {
-  list-style: none;
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-text-light;
 }
