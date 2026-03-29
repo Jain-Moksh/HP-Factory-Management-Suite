@@ -1,0 +1,66 @@
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* Variants */
+.ui-button.primary {
+  background-color: var(--primary-blue);
+  color: white;
+}
+
+.ui-button.primary:hover {
+  background-color: var(--primary-blue-hover);
+}
+
+.ui-button.secondary {
+  background-color: white;
+  border-color: var(--divider-soft);
+  color: var(--bg-table-header);
+}
+
+.ui-button.secondary:hover {
+  background-color: var(--bg-main);
+  border-color: var(--text-light);
+}
+
+.ui-button.danger {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.ui-button.danger:hover {
+  background-color: #dc2626;
+}
+
+/* Sizes */
+.ui-button.sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.ui-button.md {
+  height: 36px;
+  padding: 0 14px;
+}
+
+.ui-button.lg {
+  height: 42px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.ui-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
