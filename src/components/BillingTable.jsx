@@ -10,12 +10,12 @@ const BillingTable = () => {
   ];
 
   return (
-    <div className="bg-white border border-border-soft rounded shadow-sm">
+    <div className="bg-white border border-border-soft rounded-lg shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-table-header text-white">
-              <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Actions</th>
+              <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider text-center">Actions</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Challan No.</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Date</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Client Name</th>
@@ -28,7 +28,7 @@ const BillingTable = () => {
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-[#F1F5F9] transition-colors duration-75">
                 <td className="px-3 py-1 border-x border-border-soft">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <button className="text-brand-blue hover:scale-110 p-1 rounded transition" title="Edit">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

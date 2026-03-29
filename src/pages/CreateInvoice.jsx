@@ -156,7 +156,7 @@ const CreateInvoice = () => {
           </Card>
 
           {/* Entry Table Section */}
-          <div className="bg-white border border-border-soft rounded-lg shadow-sm overflow-hidden pb-4">
+          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden pb-4">
             <div className="bg-table-header px-4 py-2.5">
               <h3 className="text-[11px] font-bold text-white uppercase tracking-widest">New Data Entry</h3>
             </div>
@@ -287,7 +287,7 @@ const CreateInvoice = () => {
                 <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Saved Summary</h2>
               </div>
               
-              <div className="bg-white border border-border-soft rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-white border border-border-soft rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-table-header text-white text-[10.5px] uppercase font-bold tracking-tight">
