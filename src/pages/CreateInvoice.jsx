@@ -22,6 +22,7 @@ const CreateInvoice = () => {
   // --- Current Entry State (Single Row - Restored) ---
   const [currentItem, setCurrentItem] = useState({
     item: '',
+    stock: '0',
     qty: '',
     unit: 'PCS',
     rate: '',
@@ -78,7 +79,7 @@ const CreateInvoice = () => {
   };
 
   const handleRedoCurrent = () => {
-    setCurrentItem({ item: '', qty: '', unit: 'PCS', rate: '', dPercent: '', discount: '0.00', total: '0.00' });
+    setCurrentItem({ item: '', stock: '0', qty: '', unit: 'PCS', rate: '', dPercent: '', discount: '0.00', total: '0.00' });
   };
 
   const handleDeleteItem = (id) => {
@@ -218,7 +219,7 @@ const CreateInvoice = () => {
             </div>
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
                 <div className="flex flex-col gap-1 col-span-2 text-left relative">
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
                   <input 
@@ -229,6 +230,12 @@ const CreateInvoice = () => {
                     className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-20 shadow-sm" 
                     placeholder="Start typing item..."
                   />
+                </div>
+                <div className="flex flex-col gap-1 text-center">
+                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Stock</label>
+                  <div className="w-full h-9 flex items-center justify-center bg-bg-main border border-border-soft rounded-lg text-[13px] font-bold text-text-light opacity-60 shadow-inner">
+                    {currentItem.stock}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Qty / Unit</label>
