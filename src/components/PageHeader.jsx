@@ -4,7 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const PageHeader = ({ title, subtitle, actions }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const hideDefaultButton = location.pathname === '/create-invoice' || location.pathname.startsWith('/master');
+  const hideDefaultButton = 
+    location.pathname === '/create-invoice' || 
+    location.pathname === '/create-purchase' || 
+    location.pathname.startsWith('/master');
 
   return (
     <div className="bg-white border-b border-border-soft h-14 flex items-center justify-between px-6 sticky top-0 z-40 w-full mb-6 py-2 shadow-sm">
