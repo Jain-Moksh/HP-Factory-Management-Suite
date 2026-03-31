@@ -4,7 +4,8 @@ import BillingEntries from './pages/BillingEntries';
 import Dashboard from './pages/Dashboard';
 import CreateInvoice from './pages/CreateInvoice';
 import ItemList from './pages/master/ItemList';
-import MasterPlaceholder from './pages/master/MasterPlaceholder';
+import ClientList from './pages/master/ClientList';
+import JobberList from './pages/master/JobberList';
 
 function App() {
   return (
@@ -17,8 +18,8 @@ function App() {
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />
-        <Route path="/master/clients" element={<MasterPlaceholder type="Client" />} />
-        <Route path="/master/jobber" element={<MasterPlaceholder type="Jobber" />} />
+        <Route path="/master/clients" element={<ClientList />} />
+        <Route path="/master/jobber" element={<JobberList />} />
         
         {/* Add more routes as needed */}
       </Routes>
