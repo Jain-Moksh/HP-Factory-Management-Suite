@@ -6,6 +6,7 @@ import CreateInvoice from './pages/CreateInvoice';
 import ItemList from './pages/master/ItemList';
 import ClientList from './pages/master/ClientList';
 import JobberList from './pages/master/JobberList';
+import Purchase from './pages/Purchase';
 
 function App() {
   return (
@@ -15,6 +16,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/billing-entries" element={<BillingEntries />} />
         <Route path="/create-invoice" element={<CreateInvoice />} />
+        <Route path="/purchase" element={<Purchase />} />
+        <Route path="/create-purchase" element={<div>Create Purchase Placeholder</div>} />
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />
