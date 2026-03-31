@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const PageHeader = ({ title, subtitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isCreatePage = location.pathname === '/create-invoice';
+  const hideButton = location.pathname === '/create-invoice' || location.pathname.startsWith('/master');
 
   return (
     <div className="bg-white border-b border-border-soft h-14 flex items-center justify-between px-6 sticky top-0 z-40 w-full mb-6 py-2 shadow-sm">
@@ -20,7 +20,7 @@ const PageHeader = ({ title, subtitle }) => {
       </div>
 
       <div className="flex items-center gap-2">
-        {!isCreatePage && (
+        {!hideButton && (
           <button 
             onClick={() => navigate('/create-invoice')}
             className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20"

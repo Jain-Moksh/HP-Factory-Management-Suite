@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import BillingEntries from './pages/BillingEntries';
 import Dashboard from './pages/Dashboard';
 import CreateInvoice from './pages/CreateInvoice';
+import ItemList from './pages/master/ItemList';
+import MasterPlaceholder from './pages/master/MasterPlaceholder';
 
 function App() {
   return (
@@ -12,6 +14,12 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/billing-entries" element={<BillingEntries />} />
         <Route path="/create-invoice" element={<CreateInvoice />} />
+        
+        {/* Master Routes */}
+        <Route path="/master/items" element={<ItemList />} />
+        <Route path="/master/clients" element={<MasterPlaceholder type="Client" />} />
+        <Route path="/master/jobber" element={<MasterPlaceholder type="Jobber" />} />
+        
         {/* Add more routes as needed */}
       </Routes>
     </BrowserRouter>
