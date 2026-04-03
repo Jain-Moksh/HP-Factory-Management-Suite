@@ -9,6 +9,7 @@ import JobberList from './pages/master/JobberList';
 import Purchase from './pages/Purchase';
 import CreatePurchase from './pages/CreatePurchase';
 import Payment from './pages/Payment';
+import CreatePayment from './pages/CreatePayment';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/create-purchase" element={<CreatePurchase />} />
         <Route path="/payment" element={<Payment />} />
+        <Route path="/create-payment" element={<CreatePayment />} />
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />

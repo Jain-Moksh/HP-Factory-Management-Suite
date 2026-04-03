@@ -7,6 +7,7 @@ const PageHeader = ({ title, subtitle, actions }) => {
   const hideDefaultButton = 
     location.pathname === '/create-invoice' || 
     location.pathname === '/create-purchase' || 
+    location.pathname === '/create-payment' || 
     location.pathname.startsWith('/master');
 
   return (
