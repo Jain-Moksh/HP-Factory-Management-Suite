@@ -8,6 +8,7 @@ import ClientList from './pages/master/ClientList';
 import JobberList from './pages/master/JobberList';
 import Purchase from './pages/Purchase';
 import CreatePurchase from './pages/CreatePurchase';
+import Payment from './pages/Payment';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/create-invoice" element={<CreateInvoice />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/create-purchase" element={<CreatePurchase />} />
+        <Route path="/payment" element={<Payment />} />
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />
