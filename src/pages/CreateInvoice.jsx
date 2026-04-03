@@ -16,7 +16,12 @@ const CreateInvoice = () => {
     clientName: '',
     address1: '',
     address2: '',
-    remarks: ''
+    remarks: '',
+    transport: '',
+    packing: '',
+    extraDiscountPercent: '',
+    extraDiscountAmount: '',
+    roundOff: ''
   });
 
   // --- Current Entry State (Single Row - Restored) ---
@@ -41,6 +46,31 @@ const CreateInvoice = () => {
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSummaryFieldChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      const itemsSub = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+      const transport = parseFloat(name === 'transport' ? value : prev.transport) || 0;
+      const packing = parseFloat(name === 'packing' ? value : prev.packing) || 0;
+      const totalBeforeDisc = itemsSub + transport + packing;
+
+      if (name === 'extraDiscountPercent') {
+        const percent = parseFloat(value) || 0;
+        updated.extraDiscountAmount = ((totalBeforeDisc * percent) / 100).toFixed(2);
+      } else if (name === 'extraDiscountAmount') {
+        const amount = parseFloat(value) || 0;
+        updated.extraDiscountPercent = totalBeforeDisc > 0 ? ((amount / totalBeforeDisc) * 100).toFixed(2) : '0';
+      } else if (name === 'transport' || name === 'packing') {
+        const percent = parseFloat(prev.extraDiscountPercent) || 0;
+        updated.extraDiscountAmount = ((totalBeforeDisc * percent) / 100).toFixed(2);
+      }
+      
+      return updated;
+    });
   };
 
   const calculateRowValues = (qty, rate, dPercent) => {
@@ -111,9 +141,40 @@ const CreateInvoice = () => {
 
   const handleFinalSave = () => {
     if (addedItems.length === 0) return;
-    console.log("Final Save Invoice:", { ...formData, items: addedItems });
+    
+    const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+    const transport = parseFloat(formData.transport) || 0;
+    const packing = parseFloat(formData.packing) || 0;
+    const totalBeforeDisc = itemsSubtotal + transport + packing;
+    const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
+    const totalAmount = totalBeforeDisc - discountAmount;
+    const roundOff = parseFloat(formData.roundOff) || 0;
+    const grandTotal = (totalAmount + roundOff).toFixed(2);
+
+    console.log("Final Save Invoice:", { 
+      ...formData, 
+      items: addedItems, 
+      itemsSubtotal: itemsSubtotal.toFixed(2),
+      totalBeforeDisc: totalBeforeDisc.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+      grandTotal: grandTotal,
+      transport: transport.toFixed(2),
+      packing: packing.toFixed(2),
+      discountAmount: discountAmount.toFixed(2),
+      roundOff: roundOff.toFixed(2)
+    });
     navigate('/billing-entries');
   };
+
+  // --- Derived Summary Values for UI ---
+  const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+  const transport = parseFloat(formData.transport) || 0;
+  const packing = parseFloat(formData.packing) || 0;
+  const totalBeforeDisc = itemsSubtotal + transport + packing;
+  const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
+  const totalAmount = totalBeforeDisc - discountAmount;
+  const roundOff = parseFloat(formData.roundOff) || 0;
+  const grandTotal = (totalAmount + roundOff).toFixed(2);
 
   return (
     <Layout>
@@ -460,6 +521,86 @@ const CreateInvoice = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Extra Charges, Discounts & Totals Section */}
+              <div className="bg-bg-main/20 border border-border-soft/40 rounded-xl p-3 flex flex-col gap-3 shadow-sm mt-1">
+                {/* Row 1: Transport, Packing, Discount, Total Amount */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Transport (₹)</label>
+                    <input 
+                      type="number"
+                      name="transport"
+                      value={formData.transport}
+                      onChange={handleSummaryFieldChange}
+                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-center outline-none focus:border-brand-blue shadow-sm transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Packing (₹)</label>
+                    <input 
+                      type="number"
+                      name="packing"
+                      value={formData.packing}
+                      onChange={handleSummaryFieldChange}
+                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-center outline-none focus:border-brand-blue shadow-sm transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Disc (%)</label>
+                    <input 
+                      type="number"
+                      name="extraDiscountPercent"
+                      value={formData.extraDiscountPercent}
+                      onChange={handleSummaryFieldChange}
+                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-light text-center outline-none focus:border-brand-blue shadow-sm transition-all"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Disc (₹)</label>
+                    <input 
+                      type="number"
+                      name="extraDiscountAmount"
+                      value={formData.extraDiscountAmount}
+                      onChange={handleSummaryFieldChange}
+                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-light text-center outline-none focus:border-brand-blue shadow-sm transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-brand-blue/70 uppercase tracking-widest ml-0.5">Total Amount (₹)</label>
+                    <div className="w-full h-8 flex items-center justify-center bg-brand-blue/5 border border-brand-blue/10 rounded-lg text-[13.5px] font-bold text-brand-blue shadow-sm">
+                      ₹{totalAmount.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-section: Round Off & Grand Total */}
+                <div className="flex justify-end pt-1.5 border-t border-border-soft/30">
+                  <div className="flex flex-col gap-2.5 w-full md:w-60">
+                    <div className="flex items-center justify-between gap-6 px-1">
+                      <label className="text-[10px] font-medium text-text-light uppercase tracking-widest">Round Off</label>
+                      <input 
+                        type="number"
+                        name="roundOff"
+                        value={formData.roundOff}
+                        onChange={handleFormChange}
+                        className="w-24 h-7 px-2 bg-white border border-border-soft rounded text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue shadow-sm transition-all"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-6 px-3 py-1.5 bg-brand-blue text-white rounded-lg shadow-sm">
+                      <label className="text-[10px] font-bold uppercase tracking-[0.1em]">Grand Total</label>
+                      <div className="text-[16px] font-bold">
+                        ₹{grandTotal}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Remarks/Final Save Section */}
               <div className="flex flex-col gap-2 mt-4 pb-12 animate-in fade-in duration-500">
@@ -469,13 +610,13 @@ const CreateInvoice = () => {
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => navigate('/billing-entries')}
-                      className="flex items-center justify-center px-5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-extrabold text-text-secondary hover:text-red-500 hover:bg-bg-main transition uppercase tracking-widest shadow-sm"
+                      className="flex items-center justify-center px-5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-bold text-text-secondary hover:text-red-500 hover:bg-bg-main transition uppercase tracking-widest shadow-sm"
                     >
                       Cancel
                     </button>
                     <button 
                       onClick={handleFinalSave}
-                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-extrabold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest shadow-sm"
+                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-bold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest shadow-sm"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
