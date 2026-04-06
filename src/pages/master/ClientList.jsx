@@ -7,15 +7,17 @@ const ClientList = () => {
   // --- Form State ---
   const [formData, setFormData] = useState({
     clientName: '',
+    petName: '',
     address1: '',
     address2: '',
+    openingBalance: '',
     remarks: ''
   });
 
   // --- List State (Local Mock) ---
   const [clients, setClients] = useState([
-    { id: 1, name: 'Ajay Traders', addr1: 'GIDC Phase 1', addr2: 'Surat' },
-    { id: 2, name: 'Mehta Plastics', addr1: 'Industrial Estate', addr2: 'Mumbai' },
+    { id: 1, name: 'Ajay Traders', petName: 'Ajay', addr1: 'GIDC Phase 1', addr2: 'Surat', openingBalance: 5000 },
+    { id: 2, name: 'Mehta Plastics', petName: 'MP', addr1: 'Industrial Estate', addr2: 'Mumbai', openingBalance: 0 },
   ]);
 
   // --- Handlers ---
@@ -29,8 +31,10 @@ const ClientList = () => {
     const newClient = {
       id: Date.now(),
       name: formData.clientName,
+      petName: formData.petName,
       addr1: formData.address1,
-      addr2: formData.address2
+      addr2: formData.address2,
+      openingBalance: formData.openingBalance
     };
     setClients([...clients, newClient]);
     handleRedo();
@@ -39,8 +43,10 @@ const ClientList = () => {
   const handleRedo = () => {
     setFormData({
       clientName: '',
+      petName: '',
       address1: '',
       address2: '',
+      openingBalance: '',
       remarks: ''
     });
   };
@@ -69,9 +75,11 @@ const ClientList = () => {
                 <thead>
                   <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-secondary">
                     <th className="px-4 py-2 text-left border-r border-border-soft">Client Name</th>
+                    <th className="px-4 py-2 text-left border-r border-border-soft">Pet Name</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft">Address 1</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-1/4">Address 2</th>
-                    <th className="px-4 py-2 text-left w-1/4">Remarks</th>
+                    <th className="px-4 py-2 text-left border-r border-border-soft w-1/5">Address 2</th>
+                    <th className="px-4 py-2 text-left border-r border-border-soft w-1/5">Opening Balance</th>
+                    <th className="px-4 py-2 text-left w-1/5">Remarks</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -84,6 +92,16 @@ const ClientList = () => {
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="Enter client name..."
+                      />
+                    </td>
+                    <td className="p-0 border-r border-border-soft">
+                      <input 
+                        type="text"
+                        name="petName"
+                        value={formData.petName}
+                        onChange={handleInputChange}
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        placeholder="Pet name"
                       />
                     </td>
                     <td className="p-0 border-r border-border-soft">
@@ -104,6 +122,16 @@ const ClientList = () => {
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="City/State"
+                      />
+                    </td>
+                    <td className="p-0 border-r border-border-soft">
+                      <input 
+                        type="number"
+                        name="openingBalance"
+                        value={formData.openingBalance}
+                        onChange={handleInputChange}
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-bold text-brand-blue"
+                        placeholder="0.00"
                       />
                     </td>
                     <td className="p-0">
@@ -157,8 +185,10 @@ const ClientList = () => {
                 <thead>
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Client Name</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Pet Name</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 1</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 2</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Opening Balance</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
@@ -168,11 +198,17 @@ const ClientList = () => {
                       <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
                         {client.name}
                       </td>
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft italic">
+                        {client.petName}
+                      </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
                         {client.addr1}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft">
                         {client.addr2}
+                      </td>
+                      <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue border-r border-border-soft">
+                        ₹{parseFloat(client.openingBalance || 0).toLocaleString()}
                       </td>
                       <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
@@ -196,7 +232,7 @@ const ClientList = () => {
                   ))}
                   {clients.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="px-6 py-10 text-center text-text-light italic text-[13px]">
+                      <td colSpan="6" className="px-6 py-10 text-center text-text-light italic text-[13px]">
                         No clients found in master. Add a new client to get started.
                       </td>
                     </tr>

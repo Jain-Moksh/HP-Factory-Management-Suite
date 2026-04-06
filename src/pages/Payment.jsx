@@ -25,12 +25,12 @@ const Payment = () => {
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
           title="Payment" 
-          subtitle="MANAGE AND TRACK ALL JOBBER PAYMENTS AND TRANSACTIONS" 
+          subtitle="MANAGE AND TRACK ALL CLIENT PAYMENTS AND TRANSACTIONS" 
           actions={paymentActions}
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          <FilterBar searchPlaceholder2="Search by Jobber Name" />
+          <FilterBar searchPlaceholder2="Search by Client Name" />
           <PaymentTable />
         </div>
 

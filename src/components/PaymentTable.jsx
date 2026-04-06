@@ -2,9 +2,9 @@ import React from 'react';
 
 const PaymentTable = () => {
   const data = [
-    { id: 1, challan: 'PAY-001', date: '01/04/2026', jobber: 'Hemant Plast' },
-    { id: 2, challan: 'PAY-002', date: '02/04/2026', jobber: 'RK Industries' },
-    { id: 3, challan: 'PAY-003', date: '03/04/2026', jobber: 'Suresh Kumar' },
+    { id: 1, challan: 'PAY-001', date: '01/04/2026', client: 'Ajay Traders', amount: 45000 },
+    { id: 2, challan: 'PAY-002', date: '02/04/2026', client: 'Mehta Plastics', amount: 28500 },
+    { id: 3, challan: 'PAY-003', date: '03/04/2026', client: 'Suresh Kumar', amount: 12000 },
   ];
 
   return (
@@ -14,8 +14,9 @@ const PaymentTable = () => {
           <thead>
             <tr className="bg-table-header text-white">
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Challan No.</th>
-              <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Jobber Name</th>
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-40">Date</th>
+              <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Client Name</th>
+              <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-32">Amount</th>
               <th className="px-3 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest text-center w-24">Action</th>
             </tr>
           </thead>
@@ -23,8 +24,9 @@ const PaymentTable = () => {
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber}</td>
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">{row.date}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.client}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-black text-brand-blue">₹{row.amount.toLocaleString()}</td>
                 <td className="px-3 py-1.5 border-x border-border-soft">
                   <div className="flex items-center justify-center gap-2.5">
                     <button className="text-brand-blue hover:scale-110 p-1.5 rounded transition" title="Edit Payment">

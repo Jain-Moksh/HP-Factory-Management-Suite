@@ -16,8 +16,8 @@ const ItemList = () => {
 
   // --- List State (Local Mock) ---
   const [items, setItems] = useState([
-    { id: 1, name: 'PVC Resin', rate: 85, unit: 'KGS', conversion: 1 },
-    { id: 2, name: 'Master Batch Red', rate: 120, unit: 'PCS', conversion: 100 },
+    { id: 1, name: 'PVC Resin', rate: 85, unit: 'KGS', conversion: 1, opening: 500 },
+    { id: 2, name: 'Master Batch Red', rate: 120, unit: 'PCS', conversion: 100, opening: 50 },
   ]);
 
   // --- Handlers ---
@@ -33,7 +33,8 @@ const ItemList = () => {
       name: formData.itemName,
       rate: formData.rate,
       unit: formData.unit,
-      conversion: formData.conversion
+      conversion: formData.conversion,
+      opening: formData.opening
     };
     setItems([...items, newItem]);
     handleRedo();
@@ -76,7 +77,7 @@ const ItemList = () => {
                     <th className="px-4 py-2 text-left border-r border-border-soft w-32">Rate</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft w-32">Unit</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft w-32">Conversion</th>
-                    <th className="px-4 py-2 text-left w-32">Opening</th>
+                    <th className="px-4 py-2 text-left w-32 leading-tight">Opening <br /> Stock</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -176,6 +177,7 @@ const ItemList = () => {
                     <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Rate</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Unit</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Conversion</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Opening <br /> Stock</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
@@ -193,6 +195,9 @@ const ItemList = () => {
                       </td>
                       <td className="px-5 py-1.5 text-center text-[12.5px] font-medium text-text-light border-r border-border-soft">
                         {item.conversion}
+                      </td>
+                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue border-r border-border-soft">
+                        {item.opening || 0}
                       </td>
                       <td className="px-4 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-2.5">
@@ -216,7 +221,7 @@ const ItemList = () => {
                   ))}
                   {items.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="px-6 py-10 text-center text-text-light italic text-[13px]">
+                      <td colSpan="6" className="px-6 py-10 text-center text-text-light italic text-[13px]">
                         No items found in master. Add a new item to get started.
                       </td>
                     </tr>

@@ -163,11 +163,10 @@ const CreateInvoice = () => {
     const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
     const transport = parseFloat(formData.transport) || 0;
     const packing = parseFloat(formData.packing) || 0;
-    const totalBeforeDisc = itemsSubtotal + transport + packing;
     const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
-    const totalAmount = totalBeforeDisc - discountAmount;
-    const roundOff = parseFloat(formData.roundOff) || 0;
-    const grandTotal = (totalAmount + roundOff).toFixed(2);
+    const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
+    const grandTotal = Math.round(subtotalBeforeRound).toFixed(2);
+    const roundOff = (Math.round(subtotalBeforeRound) - subtotalBeforeRound).toFixed(2);
 
     console.log("Final Save Invoice:", { 
       ...formData, 
@@ -189,9 +188,11 @@ const CreateInvoice = () => {
   const transport = parseFloat(formData.transport) || 0;
   const packing = parseFloat(formData.packing) || 0;
   const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
-  const totalAmount = itemsSubtotal; // Just the items list amount
-  const roundOff = parseFloat(formData.roundOff) || 0;
-  const grandTotal = (totalAmount + transport + packing - discountAmount + roundOff).toFixed(2);
+  const totalAmount = itemsSubtotal;
+  const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
+  const grandTotal = Math.round(subtotalBeforeRound).toFixed(2);
+  const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
+  const roundOffDisplay = calculatedRoundOff === 0 ? "0" : (calculatedRoundOff > 0 ? "+" : "") + Math.round(calculatedRoundOff * 10);
 
   return (
     <Layout>
@@ -448,47 +449,19 @@ const CreateInvoice = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-table-header h-9 text-white text-[10px] uppercase font-bold tracking-[0.15em]">
-                      <th className="px-4 text-center border-r border-white/10 w-24">Actions</th>
                       <th className="px-5 text-left border-r border-white/10">Item Detail</th>
                       <th className="px-5 text-center border-r border-white/10 w-28">Quantity</th>
                       <th className="px-5 text-center border-r border-white/10 w-24">Unit</th>
                       <th className="px-5 text-center border-r border-white/10 w-28">Rate</th>
                       <th className="px-5 text-center border-r border-white/10 w-20">Disc %</th>
                       <th className="px-5 text-center border-r border-white/10 w-28">Disc (₹)</th>
-                      <th className="px-5 text-right w-36">Total Amount</th>
+                      <th className="px-5 text-right border-r border-white/10 w-36">Total Amount</th>
+                      <th className="px-4 text-center w-24">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-soft/50">
                     {addedItems.map((item, idx) => (
                       <tr key={item.id} className={`hover:bg-bg-main/30 group transition-colors duration-75 ${editingId === item.id ? 'bg-brand-blue/[0.03]' : ''}`}>
-                        <td className="px-4 py-2 border-r border-border-soft/50 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button 
-                              onClick={() => handleToggleEdit(item.id)}
-                              className={`p-1.5 rounded-md transition-all ${editingId === item.id ? 'bg-green-100 text-green-600' : 'text-brand-blue hover:bg-brand-blue/10'}`}
-                              title={editingId === item.id ? "Save Row" : "Edit Row"}
-                            >
-                              {editingId === item.id ? (
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                                </svg>
-                              ) : (
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                              )}
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
-                              title="Delete Row"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
                         <td className="px-5 py-2 border-r border-border-soft/50">
                           {editingId === item.id ? (
                             <input 
@@ -565,8 +538,36 @@ const CreateInvoice = () => {
                             <span>₹{item.dAmount}</span>
                           )}
                         </td>
-                        <td className="px-5 py-2 text-right bg-bg-main/10 font-black text-text-primary text-[13px]">
+                        <td className="px-5 py-2 text-right border-r border-border-soft/50 bg-bg-main/10 font-black text-text-primary text-[13px]">
                           ₹{item.total}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                             <button 
+                              onClick={() => handleToggleEdit(item.id)}
+                              className={`p-1.5 rounded-md transition-all ${editingId === item.id ? 'bg-green-100 text-green-600' : 'text-brand-blue hover:bg-brand-blue/10'}`}
+                              title={editingId === item.id ? "Save Row" : "Edit Row"}
+                            >
+                              {editingId === item.id ? (
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              )}
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
+                              title="Delete Row"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -648,11 +649,10 @@ const CreateInvoice = () => {
                   <div className="flex items-center justify-between px-1">
                     <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Round Off</label>
                     <input 
-                      type="number"
-                      name="roundOff"
-                      value={formData.roundOff}
-                      onChange={handleFormChange}
-                      className="w-28 h-8 px-3 bg-bg-main/30 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
+                      type="text"
+                      readOnly
+                      value={roundOffDisplay}
+                      className="w-28 h-8 px-3 bg-bg-main/50 border border-border-soft rounded-lg text-[12.5px] font-bold text-brand-blue text-right outline-none cursor-default shadow-inner"
                     />
                   </div>
 
