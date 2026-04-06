@@ -32,6 +32,7 @@ const CreateInvoice = () => {
     unit: 'PCS',
     rate: '',
     dPercent: '',
+    dAmount: '',
     discount: '0.00',
     total: '0.00'
   });
@@ -54,45 +55,56 @@ const CreateInvoice = () => {
       const updated = { ...prev, [name]: value };
       
       const itemsSub = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
-      const transport = parseFloat(name === 'transport' ? value : prev.transport) || 0;
-      const packing = parseFloat(name === 'packing' ? value : prev.packing) || 0;
-      const totalBeforeDisc = itemsSub + transport + packing;
-
+      
       if (name === 'extraDiscountPercent') {
         const percent = parseFloat(value) || 0;
-        updated.extraDiscountAmount = ((totalBeforeDisc * percent) / 100).toFixed(2);
+        updated.extraDiscountAmount = ((itemsSub * percent) / 100).toFixed(2);
       } else if (name === 'extraDiscountAmount') {
         const amount = parseFloat(value) || 0;
-        updated.extraDiscountPercent = totalBeforeDisc > 0 ? ((amount / totalBeforeDisc) * 100).toFixed(2) : '0';
-      } else if (name === 'transport' || name === 'packing') {
-        const percent = parseFloat(prev.extraDiscountPercent) || 0;
-        updated.extraDiscountAmount = ((totalBeforeDisc * percent) / 100).toFixed(2);
+        updated.extraDiscountPercent = itemsSub > 0 ? ((amount / itemsSub) * 100).toFixed(2) : '0';
       }
       
       return updated;
     });
   };
 
-  const calculateRowValues = (qty, rate, dPercent) => {
+  const calculateRowValues = (qty, rate, dPercent, dAmount, priority = 'percent') => {
     const q = parseFloat(qty) || 0;
     const r = parseFloat(rate) || 0;
-    const dp = parseFloat(dPercent) || 0;
     const subtotal = q * r;
-    const dAmt = (subtotal * dp) / 100;
+    
+    let dp = parseFloat(dPercent) || 0;
+    let da = parseFloat(dAmount) || 0;
+
+    if (priority === 'percent') {
+      da = (subtotal * dp) / 100;
+    } else if (priority === 'amount') {
+      dp = subtotal > 0 ? (da / subtotal) * 100 : 0;
+    }
+
     return {
-      discount: dAmt.toFixed(2),
-      total: (subtotal - dAmt).toFixed(2)
+      dPercent: dp > 0 ? dp.toFixed(2) : '',
+      dAmount: da > 0 ? da.toFixed(2) : '',
+      discount: da.toFixed(2),
+      total: (subtotal - da).toFixed(2)
     };
   };
 
   const handleEntryChange = (e) => {
     const { name, value } = e.target;
     setCurrentItem(prev => {
-      const updated = { ...prev, [name]: value };
-      if (['qty', 'rate', 'dPercent'].includes(name)) {
-        const { discount, total } = calculateRowValues(updated.qty, updated.rate, updated.dPercent);
-        updated.discount = discount;
-        updated.total = total;
+      let updated = { ...prev, [name]: value };
+      
+      if (['qty', 'rate', 'dPercent', 'dAmount'].includes(name)) {
+        const priority = name === 'dAmount' ? 'amount' : 'percent';
+        const results = calculateRowValues(
+          updated.qty, 
+          updated.rate, 
+          updated.dPercent, 
+          updated.dAmount, 
+          priority
+        );
+        updated = { ...updated, ...results };
       }
       return updated;
     });
@@ -109,7 +121,7 @@ const CreateInvoice = () => {
   };
 
   const handleRedoCurrent = () => {
-    setCurrentItem({ item: '', stock: '0', qty: '', unit: 'PCS', rate: '', dPercent: '', discount: '0.00', total: '0.00' });
+    setCurrentItem({ item: '', stock: '0', qty: '', unit: 'PCS', rate: '', dPercent: '', dAmount: '', discount: '0.00', total: '0.00' });
   };
 
   const handleDeleteItem = (id) => {
@@ -127,11 +139,17 @@ const CreateInvoice = () => {
   const handleSummaryRowChange = (id, field, value) => {
     setAddedItems(prev => prev.map(item => {
       if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        if (['qty', 'rate', 'dPercent'].includes(field)) {
-          const { discount, total } = calculateRowValues(updated.qty, updated.rate, updated.dPercent);
-          updated.discount = discount;
-          updated.total = total;
+        let updated = { ...item, [field]: value };
+        if (['qty', 'rate', 'dPercent', 'dAmount'].includes(field)) {
+          const priority = field === 'dAmount' ? 'amount' : 'percent';
+          const results = calculateRowValues(
+            updated.qty, 
+            updated.rate, 
+            updated.dPercent, 
+            updated.dAmount, 
+            priority
+          );
+          updated = { ...updated, ...results };
         }
         return updated;
       }
@@ -170,11 +188,10 @@ const CreateInvoice = () => {
   const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
   const transport = parseFloat(formData.transport) || 0;
   const packing = parseFloat(formData.packing) || 0;
-  const totalBeforeDisc = itemsSubtotal + transport + packing;
   const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
-  const totalAmount = totalBeforeDisc - discountAmount;
+  const totalAmount = itemsSubtotal; // Just the items list amount
   const roundOff = parseFloat(formData.roundOff) || 0;
-  const grandTotal = (totalAmount + roundOff).toFixed(2);
+  const grandTotal = (totalAmount + transport + packing - discountAmount + roundOff).toFixed(2);
 
   return (
     <Layout>
@@ -189,7 +206,7 @@ const CreateInvoice = () => {
           <Card className="p-4 bg-white/80 backdrop-blur-sm border-border-soft/60">
             <div className="flex flex-col gap-4">
               {/* Row 1: Core Identification */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Challan No / Invoice No</label>
                   <input 
@@ -209,17 +226,6 @@ const CreateInvoice = () => {
                     value={formData.date}
                     onChange={handleFormChange}
                     className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Transporter Name</label>
-                  <input 
-                    type="text"
-                    name="transporter"
-                    value={formData.transporter}
-                    onChange={handleFormChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                    placeholder="Courier or Transport Co."
                   />
                 </div>
               </div>
@@ -270,6 +276,32 @@ const CreateInvoice = () => {
                   />
                 </div>
               </div>
+
+              {/* Row 3: Transporter & Remarks */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Transporter Name</label>
+                  <input 
+                    type="text"
+                    name="transporter"
+                    value={formData.transporter}
+                    onChange={handleFormChange}
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
+                    placeholder="Courier or Transport Co."
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-left relative">
+                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Remark</label>
+                  <input 
+                    type="text"
+                    name="remarks"
+                    value={formData.remarks}
+                    onChange={handleFormChange}
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
+                    placeholder="Internal reference or notes..."
+                  />
+                </div>
+              </div>
             </div>
           </Card>
 
@@ -280,7 +312,7 @@ const CreateInvoice = () => {
             </div>
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-8 gap-3">
                 <div className="flex flex-col gap-1 col-span-2 text-left relative">
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
                   <input 
@@ -342,6 +374,17 @@ const CreateInvoice = () => {
                     onChange={handleEntryChange}
                     className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-light text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
                     placeholder="0"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-center">
+                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Disc (₹)</label>
+                  <input 
+                    type="number" 
+                    name="dAmount"
+                    value={currentItem.dAmount}
+                    onChange={handleEntryChange}
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-light text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                    placeholder="0.00"
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-right">
@@ -510,8 +553,17 @@ const CreateInvoice = () => {
                             <span className="text-text-light text-[11px] font-bold">{item.dPercent}%</span>
                           )}
                         </td>
-                        <td className="px-5 py-2 text-center border-r border-border-soft/50 bg-bg-main/5 font-bold text-text-light text-[11px]">
-                          ₹{item.discount}
+                        <td className="px-5 py-2 text-center border-r border-border-soft/50 font-bold text-text-light text-[11px]">
+                           {editingId === item.id ? (
+                            <input 
+                              type="number"
+                              value={item.dAmount}
+                              onChange={(e) => handleSummaryRowChange(item.id, 'dAmount', e.target.value)}
+                              className="w-20 bg-white border border-brand-blue/20 rounded px-2 py-0.5 text-[11px] font-bold text-center outline-none"
+                            />
+                          ) : (
+                            <span>₹{item.dAmount}</span>
+                          )}
                         </td>
                         <td className="px-5 py-2 text-right bg-bg-main/10 font-black text-text-primary text-[13px]">
                           ₹{item.total}
@@ -523,116 +575,122 @@ const CreateInvoice = () => {
               </div>
               
               {/* Extra Charges, Discounts & Totals Section */}
-              <div className="bg-bg-main/20 border border-border-soft/40 rounded-xl p-3 flex flex-col gap-3 shadow-sm mt-1">
-                {/* Row 1: Transport, Packing, Discount, Total Amount */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Transport (₹)</label>
+              <div className="flex gap-6 mt-4">
+                {/* Left Side: Remarks */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block opacity-70 ml-1">Invoice Remarks</label>
+                  <textarea 
+                    name="remarks"
+                    value={formData.remarks}
+                    onChange={handleFormChange}
+                    className="w-full h-full min-h-[180px] px-4 py-3 bg-white border border-border-soft rounded-xl text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all shadow-sm placeholder:italic placeholder:opacity-20 resize-none"
+                    placeholder="Enter customer notes, terms, or internal billing details..."
+                  />
+                </div>
+
+                {/* Right Side: Totals Stack */}
+                <div className="w-full md:w-80 bg-white border border-border-soft rounded-xl p-4 shadow-sm flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Total Amount</label>
+                    <span className="text-[14px] font-bold text-text-primary">₹{totalAmount.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Transport (₹)</label>
                     <input 
                       type="number"
                       name="transport"
                       value={formData.transport}
-                      onChange={handleSummaryFieldChange}
-                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-center outline-none focus:border-brand-blue shadow-sm transition-all"
-                      placeholder="0.00"
+                      onChange={handleFormChange}
+                      className="w-28 h-8 px-3 bg-bg-main/30 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Packing (₹)</label>
+
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Packing (₹)</label>
                     <input 
                       type="number"
                       name="packing"
                       value={formData.packing}
-                      onChange={handleSummaryFieldChange}
-                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-center outline-none focus:border-brand-blue shadow-sm transition-all"
-                      placeholder="0.00"
+                      onChange={handleFormChange}
+                      className="w-28 h-8 px-3 bg-bg-main/30 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Disc (%)</label>
+
+                  <div className="flex flex-col gap-2 bg-bg-main/20 p-2 rounded-lg border border-border-soft/50">
+                    <label className="text-[9px] font-black text-text-light uppercase tracking-[0.2em] opacity-50 ml-1">Discount</label>
+                    <div className="flex items-center gap-2">
+                       <div className="flex-1 relative">
+                          <input 
+                            type="number"
+                            name="extraDiscountPercent"
+                            value={formData.extraDiscountPercent}
+                            onChange={handleSummaryFieldChange}
+                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light outline-none focus:border-brand-blue"
+                            placeholder="0"
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-light opacity-40">%</span>
+                       </div>
+                       <div className="flex-1 relative">
+                          <input 
+                            type="number"
+                            name="extraDiscountAmount"
+                            value={formData.extraDiscountAmount}
+                            onChange={handleSummaryFieldChange}
+                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light text-right outline-none focus:border-brand-blue"
+                            placeholder="0.00"
+                          />
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-light opacity-40">₹</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Round Off</label>
                     <input 
                       type="number"
-                      name="extraDiscountPercent"
-                      value={formData.extraDiscountPercent}
-                      onChange={handleSummaryFieldChange}
-                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-light text-center outline-none focus:border-brand-blue shadow-sm transition-all"
-                      placeholder="0"
+                      name="roundOff"
+                      value={formData.roundOff}
+                      onChange={handleFormChange}
+                      className="w-28 h-8 px-3 bg-bg-main/30 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-medium text-text-light uppercase tracking-widest ml-0.5 opacity-80">Disc (₹)</label>
-                    <input 
-                      type="number"
-                      name="extraDiscountAmount"
-                      value={formData.extraDiscountAmount}
-                      onChange={handleSummaryFieldChange}
-                      className="w-full h-8 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-text-light text-center outline-none focus:border-brand-blue shadow-sm transition-all"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-brand-blue/70 uppercase tracking-widest ml-0.5">Total Amount (₹)</label>
-                    <div className="w-full h-8 flex items-center justify-center bg-brand-blue/5 border border-brand-blue/10 rounded-lg text-[13.5px] font-bold text-brand-blue shadow-sm">
-                      ₹{totalAmount.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
 
-                {/* Sub-section: Round Off & Grand Total */}
-                <div className="flex justify-end pt-1.5 border-t border-border-soft/30">
-                  <div className="flex flex-col gap-2.5 w-full md:w-60">
-                    <div className="flex items-center justify-between gap-6 px-1">
-                      <label className="text-[10px] font-medium text-text-light uppercase tracking-widest">Round Off</label>
-                      <input 
-                        type="number"
-                        name="roundOff"
-                        value={formData.roundOff}
-                        onChange={handleFormChange}
-                        className="w-24 h-7 px-2 bg-white border border-border-soft rounded text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue shadow-sm transition-all"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-6 px-3 py-1.5 bg-brand-blue text-white rounded-lg shadow-sm">
-                      <label className="text-[10px] font-bold uppercase tracking-[0.1em]">Grand Total</label>
-                      <div className="text-[16px] font-bold">
-                        ₹{grandTotal}
-                      </div>
+                  <div className="mt-2 pt-4 border-t border-dashed border-border-soft flex items-center justify-between px-1">
+                    <label className="text-[12px] font-black text-brand-blue uppercase tracking-widest">Grand Total</label>
+                    <div className="text-[20px] font-black text-brand-blue">
+                      ₹{grandTotal}
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Remarks/Final Save Section */}
-              <div className="flex flex-col gap-2 mt-4 pb-12 animate-in fade-in duration-500">
-                <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block opacity-70">Invoice Remarks</label>
-                  
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => navigate('/billing-entries')}
-                      className="flex items-center justify-center px-5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-bold text-text-secondary hover:text-red-500 hover:bg-bg-main transition uppercase tracking-widest shadow-sm"
-                    >
-                      Cancel
-                    </button>
-                    <button 
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="secondary" 
+                        className="flex-1 h-10 text-[11px] font-bold uppercase tracking-widest"
+                        onClick={() => navigate('/billing-entries')}
+                      >
+                        Cancel
+                      </Button>
+                      <button 
+                        onClick={handleFinalSave}
+                        className="flex-1 h-10 bg-white border-2 border-brand-blue text-brand-blue rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Save & Print
+                      </button>
+                    </div>
+                    <Button 
+                      variant="primary" 
+                      className="w-full h-12 text-[13px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-blue/20"
                       onClick={handleFinalSave}
-                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-bold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest shadow-sm"
                     >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                      </svg>
                       Save Invoice
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                
-                <textarea 
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleFormChange}
-                  className="w-full h-16 px-4 py-2.5 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all shadow-sm placeholder:italic placeholder:opacity-20 resize-none"
-                  placeholder="Enter any customer notes or internal billing details..."
-                />
               </div>
             </div>
           )}

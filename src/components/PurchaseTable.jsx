@@ -13,15 +13,18 @@ const PurchaseTable = () => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-table-header text-white">
-              <th className="px-3 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest text-center w-24">Action</th>
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Challan No.</th>
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-40">Date</th>
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Jobber Name</th>
+              <th className="px-3 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest text-center w-24">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-soft">
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">{row.date}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber}</td>
                 <td className="px-3 py-1.5 border-x border-border-soft">
                   <div className="flex items-center justify-center gap-2.5">
                     <button className="text-brand-blue hover:scale-110 p-1.5 rounded transition" title="Edit Purchase">
@@ -36,9 +39,6 @@ const PurchaseTable = () => {
                     </button>
                   </div>
                 </td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">{row.date}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber}</td>
               </tr>
             ))}
             {data.length === 0 && (

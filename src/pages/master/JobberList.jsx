@@ -195,15 +195,27 @@ const JobberList = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
-                    <th className="px-4 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Action</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-1/3">Jobber Name</th>
-                    <th className="px-5 py-2 text-left text-[10.5px] uppercase font-bold tracking-wider">Assigned Items</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Assigned Items</th>
+                    <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
                   {jobbers.map((jobber) => (
                     <tr key={jobber.id} className="hover:bg-bg-main/30 transition-colors">
-                      <td className="px-4 py-1.5 border-r border-border-soft">
+                      <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
+                        {jobber.name}
+                      </td>
+                      <td className="px-5 py-2 border-r border-border-soft">
+                        <div className="flex flex-wrap gap-1.5">
+                          {jobber.items.map(item => (
+                            <span key={item} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
                           <button className="text-brand-blue hover:scale-110 transition p-1" title="Edit Jobber">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,18 +231,6 @@ const JobberList = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
-                        </div>
-                      </td>
-                      <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                        {jobber.name}
-                      </td>
-                      <td className="px-5 py-2">
-                        <div className="flex flex-wrap gap-1.5">
-                          {jobber.items.map(item => (
-                            <span key={item} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
-                              {item}
-                            </span>
-                          ))}
                         </div>
                       </td>
                     </tr>

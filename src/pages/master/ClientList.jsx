@@ -156,16 +156,25 @@ const ClientList = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
-                    <th className="px-4 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Action</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Client Name</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 1</th>
-                    <th className="px-5 py-2 text-left text-[10.5px] uppercase font-bold tracking-wider">Address 2</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 2</th>
+                    <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
                   {clients.map((client) => (
                     <tr key={client.id} className="hover:bg-bg-main/30 transition-colors">
-                      <td className="px-4 py-1.5 border-r border-border-soft">
+                      <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
+                        {client.name}
+                      </td>
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
+                        {client.addr1}
+                      </td>
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft">
+                        {client.addr2}
+                      </td>
+                      <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
                           <button className="text-brand-blue hover:scale-110 transition p-1" title="Edit Client">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,15 +191,6 @@ const ClientList = () => {
                             </svg>
                           </button>
                         </div>
-                      </td>
-                      <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                        {client.name}
-                      </td>
-                      <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
-                        {client.addr1}
-                      </td>
-                      <td className="px-5 py-1.5 text-[12.5px] text-text-light">
-                        {client.addr2}
                       </td>
                     </tr>
                   ))}
