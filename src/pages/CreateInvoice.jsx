@@ -9,6 +9,16 @@ const CreateInvoice = () => {
   const navigate = useNavigate();
 
   // --- Header Form State ---
+  const [showClientForm, setShowClientForm] = useState(false);
+  const [newClientFormData, setNewClientFormData] = useState({
+    clientName: '',
+    petName: '',
+    address1: '',
+    address2: '',
+    openingBalance: '',
+    remarks: ''
+  });
+
   const [formData, setFormData] = useState({
     challanNo: '',
     date: new Date().toISOString().split('T')[0],
@@ -51,11 +61,13 @@ const CreateInvoice = () => {
 
   const handleSummaryFieldChange = (e) => {
     const { name, value } = e.target;
+    updateSummaryValue(name, value);
+  };
+
+  const updateSummaryValue = (name, value) => {
     setFormData(prev => {
       const updated = { ...prev, [name]: value };
-      
       const itemsSub = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
-      
       if (name === 'extraDiscountPercent') {
         const percent = parseFloat(value) || 0;
         updated.extraDiscountAmount = ((itemsSub * percent) / 100).toFixed(2);
@@ -63,9 +75,14 @@ const CreateInvoice = () => {
         const amount = parseFloat(value) || 0;
         updated.extraDiscountPercent = itemsSub > 0 ? ((amount / itemsSub) * 100).toFixed(2) : '0';
       }
-      
       return updated;
     });
+  };
+
+  const handleSummaryStep = (field, delta) => {
+    const current = parseFloat(formData[field]) || 0;
+    const nextValue = Math.max(0, current + delta).toString();
+    updateSummaryValue(field, nextValue);
   };
 
   const calculateRowValues = (qty, rate, dPercent, dAmount, priority = 'percent') => {
@@ -78,36 +95,42 @@ const CreateInvoice = () => {
 
     if (priority === 'percent') {
       da = (subtotal * dp) / 100;
-    } else if (priority === 'amount') {
+      return {
+        dAmount: da === 0 ? '' : da.toFixed(2),
+        discount: da.toFixed(2),
+        total: (subtotal - da).toFixed(2)
+      };
+    } else {
       dp = subtotal > 0 ? (da / subtotal) * 100 : 0;
+      return {
+        dPercent: dp === 0 ? '' : dp.toFixed(2),
+        discount: da.toFixed(2),
+        total: (subtotal - da).toFixed(2)
+      };
     }
-
-    return {
-      dPercent: dp > 0 ? dp.toFixed(2) : '',
-      dAmount: da > 0 ? da.toFixed(2) : '',
-      discount: da.toFixed(2),
-      total: (subtotal - da).toFixed(2)
-    };
   };
 
   const handleEntryChange = (e) => {
     const { name, value } = e.target;
+    updateEntryValue(name, value);
+  };
+
+  const updateEntryValue = (name, value) => {
     setCurrentItem(prev => {
       let updated = { ...prev, [name]: value };
-      
       if (['qty', 'rate', 'dPercent', 'dAmount'].includes(name)) {
         const priority = name === 'dAmount' ? 'amount' : 'percent';
-        const results = calculateRowValues(
-          updated.qty, 
-          updated.rate, 
-          updated.dPercent, 
-          updated.dAmount, 
-          priority
-        );
+        const results = calculateRowValues(updated.qty, updated.rate, updated.dPercent, updated.dAmount, priority);
         updated = { ...updated, ...results };
       }
       return updated;
     });
+  };
+
+  const handleEntryStep = (field, delta) => {
+    const current = parseFloat(currentItem[field]) || 0;
+    const nextValue = Math.max(0, current + delta).toString();
+    updateEntryValue(field, nextValue);
   };
 
   const handleAppendItem = () => {
@@ -124,8 +147,15 @@ const CreateInvoice = () => {
     setCurrentItem({ item: '', stock: '0', qty: '', unit: 'PCS', rate: '', dPercent: '', dAmount: '', discount: '0.00', total: '0.00' });
   };
 
-  const handleDeleteItem = (id) => {
-    setAddedItems(addedItems.filter(item => item.id !== id));
+  const handleNewClientChange = (e) => {
+    const { name, value } = e.target;
+    setNewClientFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveNewClient = () => {
+    // In a real app, this would send an API request. For the mock, we just clear and hide.
+    setShowClientForm(false);
+    setNewClientFormData({ clientName: '', petName: '', address1: '', address2: '', openingBalance: '', remarks: '' });
   };
 
   const handleToggleEdit = (id) => {
@@ -137,24 +167,30 @@ const CreateInvoice = () => {
   };
 
   const handleSummaryRowChange = (id, field, value) => {
+    updateTableRowValue(id, field, value);
+  };
+
+  const updateTableRowValue = (id, field, value) => {
     setAddedItems(prev => prev.map(item => {
       if (item.id === id) {
         let updated = { ...item, [field]: value };
         if (['qty', 'rate', 'dPercent', 'dAmount'].includes(field)) {
           const priority = field === 'dAmount' ? 'amount' : 'percent';
-          const results = calculateRowValues(
-            updated.qty, 
-            updated.rate, 
-            updated.dPercent, 
-            updated.dAmount, 
-            priority
-          );
+          const results = calculateRowValues(updated.qty, updated.rate, updated.dPercent, updated.dAmount, priority);
           updated = { ...updated, ...results };
         }
         return updated;
       }
       return item;
     }));
+  };
+
+  const handleTableRowStep = (id, field, delta) => {
+    const item = addedItems.find(i => i.id === id);
+    if (!item) return;
+    const current = parseFloat(item[field]) || 0;
+    const nextValue = Math.max(0, current + delta).toString();
+    updateTableRowValue(id, field, nextValue);
   };
 
   const handleFinalSave = () => {
@@ -192,7 +228,7 @@ const CreateInvoice = () => {
   const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
   const grandTotal = Math.round(subtotalBeforeRound).toFixed(2);
   const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
-  const roundOffDisplay = calculatedRoundOff === 0 ? "0" : (calculatedRoundOff > 0 ? "+" : "") + Math.round(calculatedRoundOff * 10);
+  const roundOffDisplay = calculatedRoundOff === 0 ? "0.00" : (calculatedRoundOff > 0 ? "+" : "") + calculatedRoundOff.toFixed(2);
 
   return (
     <Layout>
@@ -248,7 +284,7 @@ const CreateInvoice = () => {
                       variant="primary" 
                       size="sm" 
                       className="whitespace-nowrap h-9 px-5 text-[11px] font-bold uppercase tracking-wide rounded-lg shadow-sm"
-                      onClick={() => navigate('/master/clients')}
+                      onClick={() => setShowClientForm(true)}
                     >
                       New Client
                     </Button>
@@ -278,8 +314,19 @@ const CreateInvoice = () => {
                 </div>
               </div>
 
-              {/* Row 3: Transporter & Remarks */}
+              {/* Row 3: Remarks & Transporter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1 text-left relative">
+                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Remark</label>
+                  <input 
+                    type="text"
+                    name="remarks"
+                    value={formData.remarks}
+                    onChange={handleFormChange}
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
+                    placeholder="Reference or Notes"
+                  />
+                </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Transporter Name</label>
                   <input 
@@ -291,22 +338,127 @@ const CreateInvoice = () => {
                     placeholder="Courier or Transport Co."
                   />
                 </div>
-                <div className="flex flex-col gap-1 text-left relative">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Remark</label>
-                  <input 
-                    type="text"
-                    name="remarks"
-                    value={formData.remarks}
-                    onChange={handleFormChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                    placeholder="Internal reference or notes..."
-                  />
-                </div>
               </div>
             </div>
           </Card>
 
-          {/* New Data Entry Section - Single Row Batch Entry */}
+          {/* New Client Entry Modal - Integrated Overlay */}
+          {showClientForm && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowClientForm(false)}></div>
+              
+              <Card className="relative w-full max-w-xl bg-white border border-border-soft rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300">
+                <div className="bg-table-header px-6 py-3 flex justify-between items-center">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-1.5 h-4 bg-white/30 rounded-full"></div>
+                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">New Client Entry</h3>
+                  </div>
+                  <button onClick={() => setShowClientForm(false)} className="p-1 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                
+                <div className="p-6 flex flex-col gap-5">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Client Name</label>
+                      <input 
+                        type="text"
+                        name="clientName"
+                        value={newClientFormData.clientName}
+                        onChange={handleNewClientChange}
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        placeholder="Enter primary business name..."
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Pet Name / Shorthand</label>
+                      <input 
+                        type="text"
+                        name="petName"
+                        value={newClientFormData.petName}
+                        onChange={handleNewClientChange}
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30 italic"
+                        placeholder="Reference name..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Address Line 1</label>
+                      <input 
+                        type="text"
+                        name="address1"
+                        value={newClientFormData.address1}
+                        onChange={handleNewClientChange}
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        placeholder="GIDC, Area or Street"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Address Line 2</label>
+                      <input 
+                        type="text"
+                        name="address2"
+                        value={newClientFormData.address2}
+                        onChange={handleNewClientChange}
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        placeholder="City, State"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Opening Balance (₹)</label>
+                      <div className="relative">
+                        <input 
+                          type="number"
+                          name="openingBalance"
+                          value={newClientFormData.openingBalance}
+                          onChange={handleNewClientChange}
+                          className="w-full h-10 pl-6 pr-3 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-black text-brand-blue outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-brand-blue/40">₹</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Internal Remarks</label>
+                      <input 
+                        type="text"
+                        name="remarks"
+                        value={newClientFormData.remarks}
+                        onChange={handleNewClientChange}
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        placeholder="Payment cycle, instructions, etc."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60">
+                  <button 
+                    onClick={() => setShowClientForm(false)}
+                    className="px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-red-500 transition-all uppercase tracking-[0.1em]"
+                  >
+                    Cancel
+                  </button>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    onClick={handleSaveNewClient}
+                    className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
+                  >
+                    Save Client
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Item Entry Section */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden flex flex-col">
             <div className="bg-table-header h-9 px-4 flex items-center">
               <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">New Item Entry</h3>
@@ -373,7 +525,7 @@ const CreateInvoice = () => {
                     name="dPercent"
                     value={currentItem.dPercent}
                     onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-light text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
                     placeholder="0"
                   />
                 </div>
@@ -384,7 +536,7 @@ const CreateInvoice = () => {
                     name="dAmount"
                     value={currentItem.dAmount}
                     onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-light text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
                     placeholder="0.00"
                   />
                 </div>
@@ -627,7 +779,7 @@ const CreateInvoice = () => {
                             name="extraDiscountPercent"
                             value={formData.extraDiscountPercent}
                             onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light outline-none focus:border-brand-blue"
+                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light outline-none focus:border-brand-blue transition-all"
                             placeholder="0"
                           />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-light opacity-40">%</span>
@@ -638,7 +790,7 @@ const CreateInvoice = () => {
                             name="extraDiscountAmount"
                             value={formData.extraDiscountAmount}
                             onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light text-right outline-none focus:border-brand-blue"
+                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light text-right outline-none focus:border-brand-blue transition-all"
                             placeholder="0.00"
                           />
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-light opacity-40">₹</span>
