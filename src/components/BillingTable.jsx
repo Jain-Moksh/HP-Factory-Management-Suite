@@ -15,23 +15,34 @@ const BillingTable = () => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-table-header text-white">
-              <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider text-center">Actions</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Challan No.</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Date</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Client Name</th>
-              <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">City</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider text-right">Amount</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Remarks</th>
+              <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-soft">
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-[#F1F5F9] transition-colors duration-75">
+                <td className="px-3 py-1 border-x border-border-soft text-[12px] font-bold text-text-primary tracking-tight">{row.challan}</td>
+                <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">{row.date}</td>
+                <td className="px-3 py-1 border-x border-border-soft text-[12px] font-medium text-brand-blue">{row.client}</td>
+                <td className="px-3 py-1 border-x border-border-soft text-[12px] font-bold text-text-primary text-right">
+                  ₹{row.amount.toLocaleString('en-IN')}
+                </td>
+                <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">{row.remarks}</td>
                 <td className="px-3 py-1 border-x border-border-soft">
                   <div className="flex items-center justify-center gap-2">
                     <button className="text-brand-blue hover:scale-110 p-1 rounded transition" title="Edit">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button className="text-brand-blue hover:scale-110 p-1 rounded transition" title="Print">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                       </svg>
                     </button>
                     <button className="text-red-500 hover:scale-110 p-1 rounded transition" title="Delete">
@@ -41,14 +52,6 @@ const BillingTable = () => {
                     </button>
                   </div>
                 </td>
-                <td className="px-3 py-1 border-x border-border-soft text-[12px] font-bold text-text-primary tracking-tight">{row.challan}</td>
-                <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">{row.date}</td>
-                <td className="px-3 py-1 border-x border-border-soft text-[12px] font-medium text-brand-blue">{row.client}</td>
-                <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">{row.city}</td>
-                <td className="px-3 py-1 border-x border-border-soft text-[12px] font-bold text-text-primary text-right">
-                  ₹{row.amount.toLocaleString('en-IN')}
-                </td>
-                <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">{row.remarks}</td>
               </tr>
             ))}
           </tbody>

@@ -46,6 +46,8 @@ const FilterBar = ({
             className="w-full h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] outline-none focus:border-brand-blue transition-all"
           />
         </div>
+
+        <div className="flex items-center text-text-secondary opacity-40 font-bold">-</div>
               
         <div className="relative w-40">
           <input
