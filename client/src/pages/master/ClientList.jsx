@@ -260,7 +260,6 @@ const ClientList = () => {
                 <thead>
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Client Name</th>
-                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Pet Name</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 1</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 2</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Opening Balance</th>
@@ -271,10 +270,7 @@ const ClientList = () => {
                   {clients.map((client) => (
                     <tr key={client.id} className="hover:bg-bg-main/30 transition-colors">
                       <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                        {client.name}
-                      </td>
-                      <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft italic">
-                        {client.shortform}
+                        {client.name} {client.shortform && <span className="text-text-secondary font-medium ml-1">({client.shortform})</span>}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
                         {client.street}
