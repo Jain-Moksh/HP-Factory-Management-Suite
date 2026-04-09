@@ -3,6 +3,7 @@ import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
 import Modal from '../../components/UI/Modal';
+import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
 
 const ClientList = () => {
@@ -323,45 +324,14 @@ const ClientList = () => {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Modal
+      <DeleteModal 
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="Security Verification"
-        footer={
-          <>
-            <Button variant="secondary" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleDelete} className="bg-red-500 hover:bg-red-600 border-red-500">
-              Confirm Delete
-            </Button>
-          </>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-slate-600 font-medium">
-            This action is permanent. Please enter the master deletion password to proceed.
-          </p>
-          <div className="space-y-2">
-            <input
-              type="password"
-              placeholder="Enter Password"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:border-brand-blue transition-colors text-[14px]"
-              autoFocus
-            />
-            {deleteError && (
-              <p className="text-red-500 text-[12px] font-bold flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {deleteError}
-              </p>
-            )}
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDelete}
+        password={deletePassword}
+        setPassword={setDeletePassword}
+        error={deleteError}
+      />
     </Layout>
   );
 };

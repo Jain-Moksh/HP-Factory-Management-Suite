@@ -3,8 +3,8 @@ const billingQueries = {
         INSERT INTO billing (
             client_id, transporter_id, date, transport_charge, packing_charge, 
             discount_percent, discount_amount, total_amount, short_remark, 
-            long_remark, grand_total
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+            long_remark, grand_total, challan_no
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
         RETURNING *
     `,
     createBillItem: `
@@ -34,7 +34,17 @@ const billingQueries = {
         FROM billing_items bi
         JOIN items i ON bi.item_id = i.id
         WHERE bi.billing_id = $1
-    `
+    `,
+    getAllBills: `
+        SELECT 
+            b.*,
+            c.name as client_name
+        FROM billing b
+        JOIN clients c ON b.client_id = c.id
+        ORDER BY b.date DESC, b.id DESC
+    `,
+    deleteBill: 'DELETE FROM billing WHERE id = $1 RETURNING *',
+    getNextBillId: 'SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM billing'
 };
 
 module.exports = billingQueries;

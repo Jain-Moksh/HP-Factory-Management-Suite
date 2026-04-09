@@ -1,38 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
+import Modal from '../components/UI/Modal';
+import DeleteModal from '../components/UI/DeleteModal';
+import { API_BASE_URL } from '../config';
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
 
+  // --- Master Data State ---
+  const [clients, setClients] = useState([]);
+  const [items, setItems] = useState([]);
+  const [transporters, setTransporters] = useState([]);
+  const [isLoadingMasters, setIsLoadingMasters] = useState(false);
+
+  // --- Search/Dropdown State ---
+  const [itemSearch, setItemSearch] = useState('');
+  const [transporterSearch, setTransporterSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
+  const [showTransporterDropdown, setShowTransporterDropdown] = useState(false);
+
+  // --- Delete Modal State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  useEffect(() => {
+    const fetchMasters = async () => {
+      setIsLoadingMasters(true);
+      try {
+        const [clientsRes, itemsRes, transportersRes, nextIdRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/clients`),
+          fetch(`${API_BASE_URL}/items`),
+          fetch(`${API_BASE_URL}/transporters`),
+          fetch(`${API_BASE_URL}/billing/next-id`)
+        ]);
+        
+        const clientsData = await clientsRes.json();
+        const itemsData = await itemsRes.json();
+        const transportersData = await transportersRes.json();
+        const nextIdData = await nextIdRes.json();
+
+        if (clientsData.success) setClients(clientsData.data);
+        if (itemsData.success) setItems(itemsData.data);
+        if (transportersData.success) setTransporters(transportersData.data);
+        if (nextIdData.success) {
+          setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
+        }
+      } catch (err) {
+        console.error("Error fetching masters:", err);
+      } finally {
+        setIsLoadingMasters(false);
+      }
+    };
+    fetchMasters();
+  }, []);
+
   // --- Header Form State ---
   const [showClientForm, setShowClientForm] = useState(false);
+  const [isSavingNewClient, setIsSavingNewClient] = useState(false);
   const [newClientFormData, setNewClientFormData] = useState({
-    clientName: '',
-    petName: '',
-    address1: '',
-    address2: '',
-    openingBalance: '',
-    remarks: ''
+    name: '',
+    shortform: '',
+    street: '',
+    city: '',
+    balance: '',
+    remark: ''
   });
 
   // --- New Item Modal State ---
   const [showItemModal, setShowItemModal] = useState(false);
+  const [isSavingNewItem, setIsSavingNewItem] = useState(false);
   const [newItemFormData, setNewItemFormData] = useState({
-    itemName: '',
+    name: '',
     rate: '',
     unit: 'PCS',
     conversion: '1',
-    openingStock: '0'
+    stock: '0'
   });
 
   const [formData, setFormData] = useState({
-    challanNo: '',
+    challanNo: 'AUTO',
     date: new Date().toISOString().split('T')[0],
-    transporter: '',
+    transporter_id: '',
+    client_id: '',
     clientName: '',
     address1: '',
     address2: '',
@@ -44,8 +100,9 @@ const CreateInvoice = () => {
     roundOff: ''
   });
 
-  // --- Current Entry State (Single Row - Restored) ---
+  // --- Current Entry State (Single Row) ---
   const [currentItem, setCurrentItem] = useState({
+    item_id: '',
     item: '',
     stock: '0',
     qty: '',
@@ -57,7 +114,7 @@ const CreateInvoice = () => {
     total: '0.00'
   });
 
-  // --- Invoice Summary State (The items appended to this invoice) ---
+  // --- Invoice Summary State ---
   const [addedItems, setAddedItems] = useState([]);
   
   // --- In-place Editing State ---
@@ -162,10 +219,26 @@ const CreateInvoice = () => {
     setNewClientFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveNewClient = () => {
-    // In a real app, this would send an API request. For the mock, we just clear and hide.
-    setShowClientForm(false);
-    setNewClientFormData({ clientName: '', petName: '', address1: '', address2: '', openingBalance: '', remarks: '' });
+  const handleSaveNewClient = async () => {
+    setIsSavingNewClient(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newClientFormData)
+      });
+      const result = await response.json();
+      if (result.success) {
+        setClients(prev => [...prev, result.data]);
+        handleSelectClient(result.data);
+        setShowClientForm(false);
+        setNewClientFormData({ name: '', shortform: '', street: '', city: '', balance: '', remark: '' });
+      }
+    } catch (err) {
+      console.error("Error saving client:", err);
+    } finally {
+      setIsSavingNewClient(false);
+    }
   };
 
   const handleNewItemFormChange = (e) => {
@@ -173,13 +246,62 @@ const CreateInvoice = () => {
     setNewItemFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveNewItem = () => {
-    setShowItemModal(false);
-    handleRedoNewItem();
+  const handleSaveNewItem = async () => {
+    setIsSavingNewItem(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItemFormData)
+      });
+      const result = await response.json();
+      if (result.success) {
+        setItems(prev => [...prev, result.data]);
+        handleSelectItem(result.data);
+        setShowItemModal(false);
+        handleRedoNewItem();
+      }
+    } catch (err) {
+      console.error("Error saving item:", err);
+    } finally {
+      setIsSavingNewItem(false);
+    }
   };
 
   const handleRedoNewItem = () => {
-    setNewItemFormData({ itemName: '', rate: '', unit: 'PCS', conversion: '1', openingStock: '0' });
+    setNewItemFormData({ name: '', rate: '', unit: 'PCS', conversion: '1', stock: '0' });
+  };
+
+  const handleSelectClient = (client) => {
+    setFormData(prev => ({
+      ...prev,
+      client_id: client.id,
+      clientName: client.name,
+      address1: client.street || '',
+      address2: client.city || ''
+    }));
+    setShowClientDropdown(false);
+  };
+
+  const handleSelectItem = (item) => {
+    setCurrentItem(prev => ({
+      ...prev,
+      item_id: item.id,
+      item: item.name,
+      rate: item.rate || '',
+      unit: item.unit || 'PCS',
+      stock: item.stock || '0'
+    }));
+    setShowItemDropdown(false);
+  };
+
+  const handleSelectTransporter = (transporter) => {
+    setFormData(prev => ({
+      ...prev,
+      transporter_id: transporter.id,
+      transporterName: transporter.name
+    }));
+    setShowTransporterDropdown(false);
   };
 
   const handleToggleEdit = (id) => {
@@ -187,6 +309,23 @@ const CreateInvoice = () => {
       setEditingId(null);
     } else {
       setEditingId(id);
+    }
+  };
+
+  const openDeleteModal = (id) => {
+    setItemToDelete(id);
+    setIsDeleteModalOpen(true);
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const handleDeleteItem = () => {
+    if (deletePassword === 'Pass@123') {
+      setAddedItems(prev => prev.filter(item => item.id !== itemToDelete));
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+    } else {
+      setDeleteError('Incorrect password');
     }
   };
 
@@ -217,30 +356,59 @@ const CreateInvoice = () => {
     updateTableRowValue(id, field, nextValue);
   };
 
-  const handleFinalSave = () => {
-    if (addedItems.length === 0) return;
+  const handleFinalSave = async () => {
+    if (addedItems.length === 0 || !formData.client_id) {
+        alert("Please select a client and add at least one item.");
+        return;
+    }
     
     const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
     const transport = parseFloat(formData.transport) || 0;
     const packing = parseFloat(formData.packing) || 0;
     const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
     const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
-    const grandTotal = Math.round(subtotalBeforeRound).toFixed(2);
-    const roundOff = (Math.round(subtotalBeforeRound) - subtotalBeforeRound).toFixed(2);
+    const grandTotal = Math.round(subtotalBeforeRound);
+    
+    const payload = {
+      client_id: formData.client_id,
+      transporter_id: formData.transporter_id || null,
+      date: formData.date,
+      transport_charge: transport,
+      packing_charge: packing,
+      discount_percent: parseFloat(formData.extraDiscountPercent) || 0,
+      discount_amount: discountAmount,
+      total_amount: itemsSubtotal,
+      short_remark: formData.remarks,
+      long_remark: '',
+      grand_total: grandTotal,
+      items: addedItems.map(item => ({
+        item_id: item.item_id,
+        rate: parseFloat(item.rate),
+        discount_percent: parseFloat(item.dPercent) || 0,
+        discount_amount: parseFloat(item.dAmount) || 0,
+        unit: item.unit,
+        quantity: parseFloat(item.qty),
+        bundle: 1, // Defaulting to 1 for now
+        total_amount: parseFloat(item.total)
+      }))
+    };
 
-    console.log("Final Save Invoice:", { 
-      ...formData, 
-      items: addedItems, 
-      itemsSubtotal: itemsSubtotal.toFixed(2),
-      totalBeforeDisc: totalBeforeDisc.toFixed(2),
-      totalAmount: totalAmount.toFixed(2),
-      grandTotal: grandTotal,
-      transport: transport.toFixed(2),
-      packing: packing.toFixed(2),
-      discountAmount: discountAmount.toFixed(2),
-      roundOff: roundOff.toFixed(2)
-    });
-    navigate('/billing-entries');
+    try {
+      const response = await fetch(`${API_BASE_URL}/billing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (result.success) {
+        navigate('/billing-entries');
+      } else {
+        alert(result.message || 'Failed to save invoice');
+      }
+    } catch (err) {
+      console.error("Error saving invoice:", err);
+      alert('Network error while saving invoice');
+    }
   };
 
   // --- Derived Summary Values for UI ---
@@ -252,7 +420,8 @@ const CreateInvoice = () => {
   const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
   const grandTotal = Math.round(subtotalBeforeRound).toFixed(2);
   const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
-  const roundOffDisplay = calculatedRoundOff === 0 ? "0.00" : (calculatedRoundOff > 0 ? "+" : "") + calculatedRoundOff.toFixed(2);
+  // Flipped logic: show + when rounding up, - when rounding down
+  const roundOffDisplay = calculatedRoundOff === 0 ? "0.00" : (calculatedRoundOff > 0 ? "+" : "-") + Math.abs(calculatedRoundOff).toFixed(2);
 
   return (
     <Layout>
@@ -264,7 +433,7 @@ const CreateInvoice = () => {
 
         <div className="px-6 flex flex-col gap-5 w-full">
           {/* Top Identification Card */}
-          <Card className="p-4 bg-white/80 backdrop-blur-sm border-border-soft/60">
+          <Card className="p-4 bg-white/80 backdrop-blur-sm border-border-soft/60 relative z-[60] overflow-visible">
             <div className="flex flex-col gap-4">
               {/* Row 1: Core Identification */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -274,9 +443,9 @@ const CreateInvoice = () => {
                     type="text"
                     name="challanNo"
                     value={formData.challanNo}
-                    onChange={handleFormChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                    placeholder="Enter Invoice No."
+                    readOnly
+                    className="w-full h-9 px-3 bg-bg-main border border-border-soft rounded-lg text-[12.5px] font-bold text-brand-blue outline-none cursor-not-allowed shadow-inner"
+                    placeholder="ID will be assigned"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -296,14 +465,39 @@ const CreateInvoice = () => {
                 <div className="flex flex-col gap-1 text-left relative col-span-2">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Client Name</label>
                   <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      name="clientName"
-                      value={formData.clientName}
-                      onChange={handleFormChange}
-                      className="flex-1 h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                      placeholder="Search Client Database..."
-                    />
+                    <div className="flex-1 relative">
+                      <input 
+                        type="text"
+                        name="clientName"
+                        value={formData.clientName}
+                        onChange={(e) => {
+                          handleFormChange(e);
+                          setShowClientDropdown(true);
+                        }}
+                        onFocus={() => setShowClientDropdown(true)}
+                        className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue shadow-sm"
+                        placeholder="Search Client Database..."
+                        autoComplete="off"
+                      />
+                      {showClientDropdown && (
+                        <div className="absolute top-full left-0 right-0 z-[999] mt-1 bg-white border border-border-soft rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                           {clients
+                             .filter(c => c.name.toLowerCase().includes(formData.clientName.toLowerCase()) || c.shortform?.toLowerCase().includes(formData.clientName.toLowerCase()))
+                             .map(c => (
+                               <div 
+                                 key={c.id} 
+                                 onClick={() => handleSelectClient(c)}
+                                 className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
+                               >
+                                 <div className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{c.name}</div>
+                                 <div className="text-[10px] font-bold text-text-light opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
+                               </div>
+                             ))
+                           }
+                           <div onClick={() => setShowClientDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-light hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
+                        </div>
+                      )}
+                    </div>
                     <Button 
                       variant="primary" 
                       size="sm" 
@@ -351,16 +545,41 @@ const CreateInvoice = () => {
                     placeholder="Reference or Notes"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 text-left relative">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Transporter Name</label>
-                  <input 
-                    type="text"
-                    name="transporter"
-                    value={formData.transporter}
-                    onChange={handleFormChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                    placeholder="Courier or Transport Co."
-                  />
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      name="transporterName"
+                      value={formData.transporterName || ''}
+                      onChange={(e) => {
+                        const { value } = e.target;
+                        setFormData(prev => ({ ...prev, transporterName: value }));
+                        setShowTransporterDropdown(true);
+                      }}
+                      onFocus={() => setShowTransporterDropdown(true)}
+                      className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue shadow-sm"
+                      placeholder="Search Transporter..."
+                      autoComplete="off"
+                    />
+                    {showTransporterDropdown && (
+                      <div className="absolute top-full left-0 right-0 z-[999] mt-1 bg-white border border-border-soft rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                         {transporters
+                           .filter(t => t.name.toLowerCase().includes((formData.transporterName || '').toLowerCase()))
+                           .map(t => (
+                             <div 
+                               key={t.id} 
+                               onClick={() => handleSelectTransporter(t)}
+                               className="px-4 py-2 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
+                             >
+                               <div className="text-[12.5px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{t.name}</div>
+                             </div>
+                           ))
+                         }
+                         <div onClick={() => setShowTransporterDropdown(false)} className="bg-bg-main/50 px-4 py-1 text-center text-[9px] font-black text-text-light hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -473,9 +692,10 @@ const CreateInvoice = () => {
                     variant="primary" 
                     size="sm" 
                     onClick={handleSaveNewClient}
+                    disabled={isSavingNewClient}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
                   >
-                    Save Client
+                    {isSavingNewClient ? "Saving..." : "Save Client"}
                   </Button>
                 </div>
               </Card>
@@ -483,7 +703,7 @@ const CreateInvoice = () => {
           )}
 
           {/* Item Entry Section */}
-          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-visible flex flex-col relative z-[50]">
             <div className="bg-table-header h-9 px-4 flex items-center">
               <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">New Item Entry</h3>
             </div>
@@ -496,10 +716,36 @@ const CreateInvoice = () => {
                     type="text" 
                     name="item"
                     value={currentItem.item}
-                    onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-20 shadow-sm" 
+                    onChange={(e) => {
+                      handleEntryChange(e);
+                      setShowItemDropdown(true);
+                    }}
+                    onFocus={() => setShowItemDropdown(true)}
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue shadow-sm" 
                     placeholder="Start typing item..."
+                    autoComplete="off"
                   />
+                  {showItemDropdown && (
+                    <div className="absolute top-full left-0 right-0 z-[999] mt-1 bg-white border border-border-soft rounded-xl shadow-2xl max-h-[400px] overflow-y-auto">
+                       {items
+                         .filter(i => i.name.toLowerCase().includes(currentItem.item.toLowerCase()))
+                         .map(i => (
+                           <div 
+                             key={i.id} 
+                             onClick={() => handleSelectItem(i)}
+                             className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
+                           >
+                             <div className="flex justify-between items-center">
+                                <span className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{i.name}</span>
+                                <span className="text-[10px] font-black text-brand-blue ml-2">₹{i.rate}</span>
+                             </div>
+                             <div className="text-[10px] font-bold text-text-light opacity-50 uppercase tracking-widest">Stock: {i.stock} {i.unit}</div>
+                           </div>
+                         ))
+                       }
+                       <div onClick={() => setShowItemDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-light hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 text-center">
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Stock</label>
@@ -703,9 +949,10 @@ const CreateInvoice = () => {
                     variant="primary" 
                     size="sm" 
                     onClick={handleSaveNewItem}
+                    disabled={isSavingNewItem}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
                   >
-                    Save Item
+                    {isSavingNewItem ? "Saving..." : "Save Item"}
                   </Button>
                 </div>
               </Card>
@@ -714,7 +961,7 @@ const CreateInvoice = () => {
 
           {/* Invoice Summary Section - With Far Left Actions and In-place Edits */}
           {addedItems.length > 0 && (
-            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
               <div className="flex justify-between items-center px-1">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-4 bg-brand-blue rounded-full"></div>
@@ -839,7 +1086,7 @@ const CreateInvoice = () => {
                               )}
                             </button>
                             <button 
-                              onClick={() => handleDeleteItem(item.id)}
+                               onClick={() => openDeleteModal(item.id)}
                               className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
                               title="Delete Row"
                             >
@@ -974,6 +1221,16 @@ const CreateInvoice = () => {
               </div>
             </div>
           )}
+          {/* Secure Delete Confirmation Modal */}
+          <DeleteModal 
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={handleDeleteItem}
+            password={deletePassword}
+            setPassword={setDeletePassword}
+            error={deleteError}
+            message="You are about to remove an item from this invoice. This action cannot be undone."
+          />
         </div>
       </div>
     </Layout>

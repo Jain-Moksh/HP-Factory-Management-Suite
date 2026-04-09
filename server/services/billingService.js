@@ -13,13 +13,17 @@ const billingService = {
         long_remark, grand_total, items
       } = billData;
 
-      // 1. Insert billing record
+      // 1. Insert billing record (initially with null challan_no)
       const billRes = await client.query(queries.createBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, total_amount, short_remark,
-        long_remark, grand_total
+        long_remark, grand_total, null
       ]);
       const bill = billRes.rows[0];
+
+      // Update challan_no to be the ID (as requested)
+      await client.query('UPDATE billing SET challan_no = $1 WHERE id = $2', [bill.id.toString(), bill.id]);
+      bill.challan_no = bill.id.toString();
 
       // 2. Insert billing items and update stock
       const billingItems = [];
@@ -50,6 +54,22 @@ const billingService = {
 
     const itemsRes = await db.query(queries.getBillItems, [id]);
     return { ...billRes.rows[0], items: itemsRes.rows };
+  },
+
+  getAll: async () => {
+    const result = await db.query(queries.getAllBills);
+    return result.rows;
+  },
+
+  delete: async (id) => {
+    const result = await db.query(queries.deleteBill, [id]);
+    return result.rows[0];
+  },
+
+  getNextId: async () => {
+    const minIncrement = 1;
+    const result = await db.query(queries.getNextBillId);
+    return result.rows[0].next_id;
   }
 };
 

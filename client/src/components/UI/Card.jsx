@@ -3,7 +3,7 @@ import React from 'react';
 const Card = ({ children, title, subtitle, footer, noPadding = false, style, className = '' }) => {
   return (
     <div 
-      className={`bg-white border border-border-soft rounded-lg shadow-sm overflow-hidden flex flex-col ${className}`} 
+      className={`bg-white border border-border-soft rounded-lg shadow-sm overflow-visible flex flex-col ${className}`} 
       style={style}
     >
       {(title || subtitle) && (
