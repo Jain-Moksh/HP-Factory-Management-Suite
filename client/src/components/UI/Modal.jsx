@@ -16,7 +16,7 @@ const Modal = ({ isOpen, onClose, title, children, footer }) => {
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 transition-opacity">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] transition-opacity" 

@@ -247,6 +247,7 @@ const CreateInvoice = () => {
   };
 
   const handleSaveNewItem = async () => {
+    if (!newItemFormData.name) return;
     setIsSavingNewItem(true);
     try {
       const response = await fetch(`${API_BASE_URL}/items`, {
@@ -257,7 +258,15 @@ const CreateInvoice = () => {
       const result = await response.json();
       if (result.success) {
         setItems(prev => [...prev, result.data]);
-        handleSelectItem(result.data);
+        // Auto-select the newly created item in the entry row
+        setCurrentItem(prev => ({
+          ...prev,
+          item_id: result.data.id,
+          item: result.data.name,
+          unit: result.data.unit,
+          rate: result.data.rate.toString(),
+          stock: result.data.stock.toString()
+        }));
         setShowItemModal(false);
         handleRedoNewItem();
       }
@@ -607,8 +616,8 @@ const CreateInvoice = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Client Name</label>
                       <input 
                         type="text"
-                        name="clientName"
-                        value={newClientFormData.clientName}
+                        name="name"
+                        value={newClientFormData.name}
                         onChange={handleNewClientChange}
                         className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                         placeholder="Enter primary business name..."
@@ -618,8 +627,8 @@ const CreateInvoice = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Pet Name / Shorthand</label>
                       <input 
                         type="text"
-                        name="petName"
-                        value={newClientFormData.petName}
+                        name="shortform"
+                        value={newClientFormData.shortform}
                         onChange={handleNewClientChange}
                         className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30 italic"
                         placeholder="Reference name..."
@@ -632,8 +641,8 @@ const CreateInvoice = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Address Line 1</label>
                       <input 
                         type="text"
-                        name="address1"
-                        value={newClientFormData.address1}
+                        name="street"
+                        value={newClientFormData.street}
                         onChange={handleNewClientChange}
                         className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                         placeholder="GIDC, Area or Street"
@@ -643,8 +652,8 @@ const CreateInvoice = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Address Line 2</label>
                       <input 
                         type="text"
-                        name="address2"
-                        value={newClientFormData.address2}
+                        name="city"
+                        value={newClientFormData.city}
                         onChange={handleNewClientChange}
                         className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                         placeholder="City, State"
@@ -658,8 +667,8 @@ const CreateInvoice = () => {
                       <div className="relative">
                         <input 
                           type="number"
-                          name="openingBalance"
-                          value={newClientFormData.openingBalance}
+                          name="balance"
+                          value={newClientFormData.balance}
                           onChange={handleNewClientChange}
                           className="w-full h-10 pl-6 pr-3 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-black text-brand-blue outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                           placeholder="0.00"
@@ -671,8 +680,8 @@ const CreateInvoice = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Internal Remarks</label>
                       <input 
                         type="text"
-                        name="remarks"
-                        value={newClientFormData.remarks}
+                        name="remark"
+                        value={newClientFormData.remark}
                         onChange={handleNewClientChange}
                         className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                         placeholder="Payment cycle, instructions, etc."
@@ -871,13 +880,12 @@ const CreateInvoice = () => {
                 </div>
                 
                 <div className="p-6 flex flex-col gap-6">
-                  {/* Item Name Main Row */}
                   <div className="flex flex-col gap-1.5 min-w-0">
                     <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Item Name</label>
                     <input 
                       type="text"
-                      name="itemName"
-                      value={newItemFormData.itemName}
+                      name="name"
+                      value={newItemFormData.name}
                       onChange={handleNewItemFormChange}
                       className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                       placeholder="Enter new item name..."
@@ -927,8 +935,8 @@ const CreateInvoice = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Opening Stock</label>
                       <input 
                         type="number"
-                        name="openingStock"
-                        value={newItemFormData.openingStock}
+                        name="stock"
+                        value={newItemFormData.stock}
                         onChange={handleNewItemFormChange}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-bold text-brand-blue outline-none focus:border-brand-blue transition-all"
                         placeholder="0"
