@@ -26,6 +26,17 @@ const masterQueries = {
     getTransporterById: 'SELECT * FROM transporters WHERE id = $1',
     createTransporter: 'INSERT INTO transporters (name) VALUES ($1) RETURNING *',
     updateTransporter: 'UPDATE transporters SET name = $1 WHERE id = $2 RETURNING *',
+
+    // Jobber Items
+    getJobberItems: `
+        SELECT 
+            i.*,
+            ji.id as mapping_id
+        FROM jobber_items ji
+        JOIN items i ON ji.item_id = i.id
+        WHERE ji.jobber_id = $1
+        ORDER BY i.name ASC
+    `
 };
 
 module.exports = masterQueries;

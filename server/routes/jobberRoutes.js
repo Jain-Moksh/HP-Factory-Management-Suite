@@ -1,10 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { jobbers } = require('../controllers/masterController');
+const { 
+  list, getById, create, update, assignItems, getAssignedItems 
+} = require('../controllers/jobberController');
 
-router.get('/', jobbers.list);
-router.get('/:id', jobbers.getById);
-router.post('/', jobbers.create);
-router.put('/:id', jobbers.update);
+router.get('/', list);
+router.get('/:id', getById);
+router.post('/', create);
+router.put('/:id', update);
+
+// Many-to-Many: Items assigned to Jobber
+router.post('/:id/items', assignItems);
+router.get('/:id/items', getAssignedItems);
 
 module.exports = router;
