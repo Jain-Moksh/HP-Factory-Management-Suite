@@ -1,0 +1,40 @@
+const billingQueries = {
+    createBill: `
+        INSERT INTO billing (
+            client_id, transporter_id, date, transport_charge, packing_charge, 
+            discount_percent, discount_amount, total_amount, short_remark, 
+            long_remark, grand_total
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+        RETURNING *
+    `,
+    createBillItem: `
+        INSERT INTO billing_items (
+            billing_id, item_id, rate, discount_percent, discount_amount, 
+            unit, quantity, bundle, total_amount
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+        RETURNING *
+    `,
+    updateItemStock: `
+        UPDATE items SET stock = stock - $1 WHERE id = $2
+    `,
+    getBillById: `
+        SELECT 
+            b.*,
+            c.name as client_name,
+            t.name as transporter_name
+        FROM billing b
+        JOIN clients c ON b.client_id = c.id
+        LEFT JOIN transporters t ON b.transporter_id = t.id
+        WHERE b.id = $1
+    `,
+    getBillItems: `
+        SELECT 
+            bi.*,
+            i.name as item_name
+        FROM billing_items bi
+        JOIN items i ON bi.item_id = i.id
+        WHERE bi.billing_id = $1
+    `
+};
+
+module.exports = billingQueries;
