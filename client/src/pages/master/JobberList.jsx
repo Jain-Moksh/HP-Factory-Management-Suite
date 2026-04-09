@@ -288,9 +288,9 @@ const JobberList = () => {
                       </td>
                       <td className="px-5 py-2 border-r border-border-soft">
                         <div className="flex flex-wrap gap-1.5">
-                          {jobber.items.map(item => (
-                            <span key={item.id} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
-                              {item.name}
+                          {jobber.items?.map(item => (
+                            <span key={item?.id || Math.random()} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
+                              {item?.name || 'Unknown Item'}
                             </span>
                           ))}
                         </div>
