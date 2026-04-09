@@ -1,24 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
+import Modal from '../../components/UI/Modal';
+import { API_BASE_URL } from '../../config';
 
 const ClientList = () => {
   // --- Form State ---
   const [formData, setFormData] = useState({
-    clientName: '',
-    petName: '',
-    address1: '',
-    address2: '',
-    openingBalance: '',
-    remarks: ''
+    name: '',
+    shortform: '',
+    street: '',
+    city: '',
+    balance: '',
+    remark: ''
   });
 
-  // --- List State (Local Mock) ---
-  const [clients, setClients] = useState([
-    { id: 1, name: 'Ajay Traders', petName: 'Ajay', addr1: 'GIDC Phase 1', addr2: 'Surat', openingBalance: 5000 },
-    { id: 2, name: 'Mehta Plastics', petName: 'MP', addr1: 'Industrial Estate', addr2: 'Mumbai', openingBalance: 0 },
-  ]);
+  // --- List State ---
+  const [clients, setClients] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // --- Delete Modal State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  // --- Fetch Clients ---
+  const fetchClients = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients`);
+      const result = await response.json();
+      if (result.success) {
+        setClients(result.data);
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError('Failed to connect to server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   // --- Handlers ---
   const handleInputChange = (e) => {
@@ -26,33 +55,79 @@ const ClientList = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    if (!formData.clientName) return;
-    const newClient = {
-      id: Date.now(),
-      name: formData.clientName,
-      petName: formData.petName,
-      addr1: formData.address1,
-      addr2: formData.address2,
-      openingBalance: formData.openingBalance
-    };
-    setClients([...clients, newClient]);
-    handleRedo();
+  const handleSave = async () => {
+    if (!formData.name) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          shortform: formData.shortform,
+          street: formData.street,
+          city: formData.city,
+          balance: parseFloat(formData.balance) || 0,
+          remark: formData.remark
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        await fetchClients();
+        handleRedo();
+      } else {
+        alert(result.message || 'Failed to save client');
+      }
+    } catch (err) {
+      alert('Network error while saving');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRedo = () => {
     setFormData({
-      clientName: '',
-      petName: '',
-      address1: '',
-      address2: '',
-      openingBalance: '',
-      remarks: ''
+      name: '',
+      shortform: '',
+      street: '',
+      city: '',
+      balance: '',
+      remark: ''
     });
   };
 
-  const handleDelete = (id) => {
-    setClients(clients.filter(client => client.id !== id));
+  const openDeleteModal = (id) => {
+    setClientToDelete(id);
+    setIsDeleteModalOpen(true);
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const handleDelete = async () => {
+    if (!deletePassword) {
+      setDeleteError('Password is required');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients/${clientToDelete}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setIsDeleteModalOpen(false);
+        fetchClients();
+      } else {
+        setDeleteError('Fail to delete');
+      }
+    } catch (err) {
+      setDeleteError('Network error while deleting');
+    }
   };
 
   return (
@@ -87,8 +162,8 @@ const ClientList = () => {
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="text"
-                        name="clientName"
-                        value={formData.clientName}
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="Enter client name..."
@@ -97,8 +172,8 @@ const ClientList = () => {
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="text"
-                        name="petName"
-                        value={formData.petName}
+                        name="shortform"
+                        value={formData.shortform}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="Pet name"
@@ -107,8 +182,8 @@ const ClientList = () => {
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="text"
-                        name="address1"
-                        value={formData.address1}
+                        name="street"
+                        value={formData.street}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="GIDC/Street"
@@ -117,8 +192,8 @@ const ClientList = () => {
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="text"
-                        name="address2"
-                        value={formData.address2}
+                        name="city"
+                        value={formData.city}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="City/State"
@@ -127,8 +202,8 @@ const ClientList = () => {
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="number"
-                        name="openingBalance"
-                        value={formData.openingBalance}
+                        name="balance"
+                        value={formData.balance}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-bold text-brand-blue"
                         placeholder="0.00"
@@ -137,8 +212,8 @@ const ClientList = () => {
                     <td className="p-0">
                       <input 
                         type="text"
-                        name="remarks"
-                        value={formData.remarks}
+                        name="remark"
+                        value={formData.remark}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="Any remarks"
@@ -199,16 +274,16 @@ const ClientList = () => {
                         {client.name}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft italic">
-                        {client.petName}
+                        {client.shortform}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
-                        {client.addr1}
+                        {client.street}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft">
-                        {client.addr2}
+                        {client.city}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue border-r border-border-soft">
-                        ₹{parseFloat(client.openingBalance || 0).toLocaleString()}
+                        ₹{parseFloat(client.balance || 0).toLocaleString()}
                       </td>
                       <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
@@ -218,7 +293,7 @@ const ClientList = () => {
                             </svg>
                           </button>
                           <button 
-                            onClick={() => handleDelete(client.id)}
+                            onClick={() => openDeleteModal(client.id)}
                             className="text-red-500 hover:scale-110 transition p-1" 
                             title="Delete Client"
                           >
@@ -230,10 +305,17 @@ const ClientList = () => {
                       </td>
                     </tr>
                   ))}
-                  {clients.length === 0 && (
+                  {clients.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="6" className="px-6 py-10 text-center text-text-light italic text-[13px]">
                         No clients found in master. Add a new client to get started.
+                      </td>
+                    </tr>
+                  )}
+                  {isLoading && (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                        Loading master data...
                       </td>
                     </tr>
                   )}
@@ -243,6 +325,47 @@ const ClientList = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Security Verification"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleDelete} className="bg-red-500 hover:bg-red-600 border-red-500">
+              Confirm Delete
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-slate-600 font-medium">
+            This action is permanent. Please enter the master deletion password to proceed.
+          </p>
+          <div className="space-y-2">
+            <input
+              type="password"
+              placeholder="Enter Password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:border-brand-blue transition-colors text-[14px]"
+              autoFocus
+            />
+            {deleteError && (
+              <p className="text-red-500 text-[12px] font-bold flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {deleteError}
+              </p>
+            )}
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

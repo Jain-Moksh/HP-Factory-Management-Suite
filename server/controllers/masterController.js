@@ -42,6 +42,28 @@ const masterController = (table) => ({
     } catch (err) {
       next(err);
     }
+  },
+
+  delete: async (req, res, next) => {
+    try {
+      const { password } = req.body;
+      const { id } = req.params;
+
+      if (!password || password !== process.env.del_pass) {
+        return res.status(401).json({ success: false, message: 'Invalid password' });
+      }
+
+      const queryKey = `delete${table.charAt(0).toUpperCase() + table.slice(1).replace(/s$/, '')}`;
+      const result = await require('../config/db').query(require('../queries/masterQueries')[queryKey], [id]);
+      
+      if (result.rowCount === 0) {
+        return res.status(404).json({ success: false, message: 'Record not found' });
+      }
+
+      res.json({ success: true, message: 'Record deleted successfully' });
+    } catch (err) {
+      next(err);
+    }
   }
 });
 

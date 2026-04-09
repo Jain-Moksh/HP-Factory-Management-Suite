@@ -7,6 +7,16 @@ const baseController = require('./masterController').jobbers;
 const jobberController = {
   ...baseController,
 
+  create: async (req, res, next) => {
+    try {
+      const { name, item_ids } = req.body;
+      const data = await jobberService.createWithItems(name, item_ids);
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   assignItems: async (req, res, next) => {
     try {
       const { id } = req.params;

@@ -2,24 +2,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
+import Modal from '../../components/UI/Modal';
+import { API_BASE_URL } from '../../config';
 
 const JobberList = () => {
-  // --- Available Items (Mock Data from Item Master) ---
-  const availableItems = [
-    'PVC Resin', 'Master Batch Red', 'Master Batch Black', 'Granules HDPE', 'PP Bags', 'Stretch Film'
-  ];
-
+  // --- Master Items ---
+  const [availableItems, setAvailableItems] = useState([]);
+  
   // --- Form State ---
   const [formData, setFormData] = useState({
-    jobberName: '',
-    selectedItems: []
+    name: '',
+    selectedItems: [] // Stores item objects {id, name}
   });
 
-  // --- List State (Local Mock) ---
-  const [jobbers, setJobbers] = useState([
-    { id: 1, name: 'Hemant Plast', items: ['PVC Resin', 'Master Batch Red'] },
-    { id: 2, name: 'RK Industries', items: ['PP Bags'] },
-  ]);
+  // --- List State ---
+  const [jobbers, setJobbers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // --- Delete Modal State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [jobberToDelete, setJobberToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   // --- Multi-Select State ---
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,17 +42,42 @@ const JobberList = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // --- Fetch Data ---
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [itemsRes, jobbersRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/items`),
+        fetch(`${API_BASE_URL}/jobbers`)
+      ]);
+      
+      const itemsData = await itemsRes.json();
+      const jobbersData = await jobbersRes.json();
+      
+      if (itemsData.success) setAvailableItems(itemsData.data);
+      if (jobbersData.success) setJobbers(jobbersData.data);
+    } catch (err) {
+      setError('Failed to fetch data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const filteredItems = availableItems.filter(item => 
-    item.toLowerCase().includes(searchTerm.toLowerCase()) && 
-    !formData.selectedItems.includes(item)
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+    !formData.selectedItems.some(si => si.id === item.id)
   );
 
   // --- Handlers ---
   const handleToggleItem = (item) => {
     setFormData(prev => ({
       ...prev,
-      selectedItems: prev.selectedItems.includes(item)
-        ? prev.selectedItems.filter(i => i !== item)
+      selectedItems: prev.selectedItems.some(si => si.id === item.id)
+        ? prev.selectedItems.filter(i => i.id !== item.id)
         : [...prev.selectedItems, item]
     }));
     setSearchTerm('');
@@ -56,28 +86,73 @@ const JobberList = () => {
   const removeItem = (item) => {
     setFormData(prev => ({
       ...prev,
-      selectedItems: prev.selectedItems.filter(i => i !== item)
+      selectedItems: prev.selectedItems.filter(i => i.id !== item.id)
     }));
   };
 
-  const handleSave = () => {
-    if (!formData.jobberName) return;
-    const newJobber = {
-      id: Date.now(),
-      name: formData.jobberName,
-      items: formData.selectedItems
-    };
-    setJobbers([...jobbers, newJobber]);
-    handleRedo();
+  const handleSave = async () => {
+    if (!formData.name) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobbers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          item_ids: formData.selectedItems.map(item => item.id)
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        await fetchData();
+        handleRedo();
+      } else {
+        alert(result.message || 'Failed to save jobber');
+      }
+    } catch (err) {
+      alert('Network error while saving');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRedo = () => {
-    setFormData({ jobberName: '', selectedItems: [] });
+    setFormData({ name: '', selectedItems: [] });
     setSearchTerm('');
   };
 
-  const handleDelete = (id) => {
-    setJobbers(jobbers.filter(j => j.id !== id));
+  const openDeleteModal = (id) => {
+    setJobberToDelete(id);
+    setIsDeleteModalOpen(true);
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const handleDelete = async () => {
+    if (!deletePassword) {
+      setDeleteError('Password is required');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobbers/${jobberToDelete}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setIsDeleteModalOpen(false);
+        fetchData();
+      } else {
+        setDeleteError('Fail to delete');
+      }
+    } catch (err) {
+      setDeleteError('Network error while deleting');
+    }
   };
 
   return (
@@ -108,8 +183,8 @@ const JobberList = () => {
                     <td className="p-0 border-r border-border-soft h-12">
                       <input 
                         type="text"
-                        value={formData.jobberName}
-                        onChange={(e) => setFormData({...formData, jobberName: e.target.value})}
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
                         className="w-full h-full px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="Enter jobber name..."
                       />
@@ -118,8 +193,8 @@ const JobberList = () => {
                       <div className="relative w-full h-full flex items-center px-4" ref={dropdownRef}>
                         <div className="flex flex-wrap gap-1.5 flex-1 items-center overflow-hidden">
                           {formData.selectedItems.map(item => (
-                            <span key={item} className="bg-brand-blue/10 text-brand-blue text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-brand-blue/20">
-                              {item}
+                            <span key={item.id} className="bg-brand-blue/10 text-brand-blue text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-brand-blue/20">
+                              {item.name}
                               <button onClick={() => removeItem(item)} className="hover:text-red-500">
                                 <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
@@ -140,17 +215,22 @@ const JobberList = () => {
                           />
                         </div>
 
-                        {isDropdownOpen && filteredItems.length > 0 && (
+                        {isDropdownOpen && (filteredItems.length > 0 || searchTerm) && (
                           <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-xl rounded-b-lg z-50 max-h-48 overflow-y-auto mt-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                             {filteredItems.map(item => (
                               <button
-                                key={item}
+                                key={item.id}
                                 onClick={() => handleToggleItem(item)}
                                 className="w-full text-left px-4 py-2 text-[12px] hover:bg-bg-main/50 text-text-secondary hover:text-brand-blue font-medium transition-colors border-b last:border-none border-border-soft/30"
                               >
-                                {item}
+                                {item.name}
                               </button>
                             ))}
+                            {filteredItems.length === 0 && (
+                              <div className="px-4 py-3 text-[12px] text-text-light italic">
+                                No matching items found
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -209,8 +289,8 @@ const JobberList = () => {
                       <td className="px-5 py-2 border-r border-border-soft">
                         <div className="flex flex-wrap gap-1.5">
                           {jobber.items.map(item => (
-                            <span key={item} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
-                              {item}
+                            <span key={item.id} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
+                              {item.name}
                             </span>
                           ))}
                         </div>
@@ -223,7 +303,7 @@ const JobberList = () => {
                             </svg>
                           </button>
                           <button 
-                            onClick={() => handleDelete(jobber.id)}
+                            onClick={() => openDeleteModal(jobber.id)}
                             className="text-red-500 hover:scale-110 transition p-1" 
                             title="Delete Jobber"
                           >
@@ -235,10 +315,17 @@ const JobberList = () => {
                       </td>
                     </tr>
                   ))}
-                  {jobbers.length === 0 && (
+                  {jobbers.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="3" className="px-6 py-10 text-center text-text-light italic text-[13px]">
                         No jobbers found in master. Add a new jobber to get started.
+                      </td>
+                    </tr>
+                  )}
+                  {isLoading && (
+                    <tr>
+                      <td colSpan="3" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                        Loading master data...
                       </td>
                     </tr>
                   )}
@@ -248,6 +335,47 @@ const JobberList = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Security Verification"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleDelete} className="bg-red-500 hover:bg-red-600 border-red-500">
+              Confirm Delete
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-slate-600 font-medium">
+            This action is permanent. Please enter the master deletion password to proceed.
+          </p>
+          <div className="space-y-2">
+            <input
+              type="password"
+              placeholder="Enter Password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:border-brand-blue transition-colors text-[14px]"
+              autoFocus
+            />
+            {deleteError && (
+              <p className="text-red-500 text-[12px] font-bold flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {deleteError}
+              </p>
+            )}
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

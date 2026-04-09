@@ -1,24 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Card from '../../components/UI/Card';
 import Button from '../../components/UI/Button';
+import Modal from '../../components/UI/Modal';
+import { API_BASE_URL } from '../../config';
 
 const ItemList = () => {
   // --- Form State ---
   const [formData, setFormData] = useState({
-    itemName: '',
+    name: '',
     rate: '',
     unit: 'PCS',
-    conversion: '',
-    opening: ''
+    conversion: '1',
+    stock: ''
   });
 
-  // --- List State (Local Mock) ---
-  const [items, setItems] = useState([
-    { id: 1, name: 'PVC Resin', rate: 85, unit: 'KGS', conversion: 1, opening: 500 },
-    { id: 2, name: 'Master Batch Red', rate: 120, unit: 'PCS', conversion: 100, opening: 50 },
-  ]);
+  // --- List State ---
+  const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // --- Delete Modal State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  // --- Fetch Items ---
+  const fetchItems = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/items`);
+      const result = await response.json();
+      if (result.success) {
+        setItems(result.data);
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError('Failed to connect to server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   // --- Handlers ---
   const handleInputChange = (e) => {
@@ -26,32 +55,77 @@ const ItemList = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    if (!formData.itemName) return;
-    const newItem = {
-      id: Date.now(),
-      name: formData.itemName,
-      rate: formData.rate,
-      unit: formData.unit,
-      conversion: formData.conversion,
-      opening: formData.opening
-    };
-    setItems([...items, newItem]);
-    handleRedo();
+  const handleSave = async () => {
+    if (!formData.name) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          rate: parseFloat(formData.rate) || 0,
+          stock: parseFloat(formData.stock) || 0,
+          conversion: parseFloat(formData.conversion) || 1,
+          unit: formData.unit
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        await fetchItems();
+        handleRedo();
+      } else {
+        alert(result.message || 'Failed to save item');
+      }
+    } catch (err) {
+      alert('Network error while saving');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRedo = () => {
     setFormData({
-      itemName: '',
+      name: '',
       rate: '',
       unit: 'PCS',
-      conversion: '',
-      opening: ''
+      conversion: '1',
+      stock: ''
     });
   };
 
-  const handleDelete = (id) => {
-    setItems(items.filter(item => item.id !== id));
+  const openDeleteModal = (id) => {
+    setItemToDelete(id);
+    setIsDeleteModalOpen(true);
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const handleDelete = async () => {
+    if (!deletePassword) {
+      setDeleteError('Password is required');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/items/${itemToDelete}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setIsDeleteModalOpen(false);
+        fetchItems();
+      } else {
+        setDeleteError('Fail to delete');
+      }
+    } catch (err) {
+      setDeleteError('Network error while deleting');
+    }
   };
 
   return (
@@ -85,8 +159,8 @@ const ItemList = () => {
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="text"
-                        name="itemName"
-                        value={formData.itemName}
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
                         placeholder="Enter item name..."
@@ -111,6 +185,8 @@ const ItemList = () => {
                       >
                         <option value="PCS">PCS</option>
                         <option value="DOZEN">DOZEN</option>
+                        <option value="KGS">KGS</option>
+                        <option value="MTRS">MTRS</option>
                       </select>
                     </td>
                     <td className="p-0 border-r border-border-soft">
@@ -126,8 +202,8 @@ const ItemList = () => {
                     <td className="p-0">
                       <input 
                         type="number"
-                        name="opening"
-                        value={formData.opening}
+                        name="stock"
+                        value={formData.stock}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
                         placeholder="0"
@@ -197,7 +273,7 @@ const ItemList = () => {
                         {item.conversion}
                       </td>
                       <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue border-r border-border-soft">
-                        {item.opening || 0}
+                        {item.stock || 0}
                       </td>
                       <td className="px-4 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-2.5">
@@ -207,7 +283,7 @@ const ItemList = () => {
                             </svg>
                           </button>
                           <button 
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => openDeleteModal(item.id)}
                             className="text-red-500 hover:scale-110 transition p-1" 
                             title="Delete Item"
                           >
@@ -219,10 +295,17 @@ const ItemList = () => {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && (
+                  {items.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="6" className="px-6 py-10 text-center text-text-light italic text-[13px]">
                         No items found in master. Add a new item to get started.
+                      </td>
+                    </tr>
+                  )}
+                  {isLoading && (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                        Loading master data...
                       </td>
                     </tr>
                   )}
@@ -232,6 +315,47 @@ const ItemList = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Security Verification"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleDelete} className="bg-red-500 hover:bg-red-600 border-red-500">
+              Confirm Delete
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-slate-600 font-medium">
+            This action is permanent. Please enter the master deletion password to proceed.
+          </p>
+          <div className="space-y-2">
+            <input
+              type="password"
+              placeholder="Enter Password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:border-brand-blue transition-colors text-[14px]"
+              autoFocus
+            />
+            {deleteError && (
+              <p className="text-red-500 text-[12px] font-bold flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {deleteError}
+              </p>
+            )}
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };
