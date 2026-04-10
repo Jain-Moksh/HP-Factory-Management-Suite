@@ -401,7 +401,6 @@ const CreatePurchase = () => {
           }
         }
 
-        alert(`Purchase record ${isEditMode ? 'updated' : 'saved'} successfully!`);
         navigate('/purchase');
       } else {
         alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} purchase record`);

@@ -301,7 +301,7 @@ const JobberList = () => {
                         </div>
 
                         {isDropdownOpen && (filteredItems.length > 0 || searchTerm) && (
-                          <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-xl rounded-b-lg z-50 max-h-48 overflow-y-auto mt-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-2xl rounded-b-lg z-[200] max-h-72 overflow-y-auto mt-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                             {filteredItems.map(item => (
                               <button
                                 key={item.id}
@@ -356,7 +356,7 @@ const JobberList = () => {
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Jobber Master List</h2>
             </div>
             
-            <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
@@ -367,11 +367,11 @@ const JobberList = () => {
                 </thead>
                 <tbody className="divide-y divide-border-soft">
                    {jobbers.map((jobber) => (
-                    <tr 
-                      key={jobber.id} 
-                      ref={editingId === jobber.id ? editRowRef : null}
-                      className={`transition-colors ${editingId === jobber.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
-                    >
+                      <tr 
+                        key={jobber.id} 
+                        ref={editingId === jobber.id ? editRowRef : null}
+                        className={`transition-colors ${editingId === jobber.id ? 'bg-brand-blue/[0.04] relative z-[100]' : 'hover:bg-bg-main/30'}`}
+                      >
                       <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
                         {editingId === jobber.id ? (
                           <input 
@@ -407,7 +407,7 @@ const JobberList = () => {
                               placeholder="Add items..."
                             />
                             {isEditDropdownOpen && (availableItems.filter(i => i.name.toLowerCase().includes(editSearchTerm.toLowerCase()) && !editFormData.selectedItems.some(si => si.id === i.id)).length > 0) && (
-                              <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-xl rounded-lg z-[100] max-h-40 overflow-y-auto mt-1">
+                              <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-2xl rounded-lg z-[200] max-h-72 overflow-y-auto mt-1">
                                 {availableItems
                                   .filter(i => i.name.toLowerCase().includes(editSearchTerm.toLowerCase()) && !editFormData.selectedItems.some(si => si.id === i.id))
                                   .map(item => (

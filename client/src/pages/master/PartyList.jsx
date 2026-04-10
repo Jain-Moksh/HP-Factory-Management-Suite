@@ -338,7 +338,7 @@ const PartyList = () => {
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Existing Parties Master</h2>
             </div>
             
-            <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
@@ -355,7 +355,7 @@ const PartyList = () => {
                     <tr 
                       key={client.id} 
                       ref={editingId === client.id ? editRowRef : null}
-                      className={`transition-colors ${editingId === client.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
+                      className={`transition-colors ${editingId === client.id ? 'bg-brand-blue/[0.04] relative z-10' : 'hover:bg-bg-main/30'}`}
                     >
                       <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
                         {editingId === client.id ? (

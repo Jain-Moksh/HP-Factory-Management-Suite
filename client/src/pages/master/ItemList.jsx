@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Card from '../../components/UI/Card';
@@ -328,7 +328,7 @@ const ItemList = () => {
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Existing Items Master</h2>
             </div>
             
-            <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
@@ -345,7 +345,7 @@ const ItemList = () => {
                     <tr 
                       key={item.id} 
                       ref={editingId === item.id ? editRowRef : null}
-                      className={`transition-colors ${editingId === item.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
+                      className={`transition-colors ${editingId === item.id ? 'bg-brand-blue/[0.04] relative z-10' : 'hover:bg-bg-main/30'}`}
                     >
                       <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
                         {editingId === item.id ? (
