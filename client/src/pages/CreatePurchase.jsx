@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
@@ -23,12 +23,38 @@ const CreatePurchase = () => {
   const [jobberSearch, setJobberSearch] = useState('');
   const [itemEntrySearch, setItemEntrySearch] = useState('');
 
+  // --- Refs for Click Outside ---
+  const jobberRef = useRef(null);
+  const itemRef = useRef(null);
+  const modalDropdownRef = useRef(null);
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (jobberRef.current && !jobberRef.current.contains(event.target)) {
+        setShowJobberDropdown(false);
+      }
+      if (itemRef.current && !itemRef.current.contains(event.target)) {
+        setShowItemDropdown(false);
+      }
+      if (modalDropdownRef.current && !modalDropdownRef.current.contains(event.target)) {
+        setIsModalDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+
   // --- Jobber Entry Modal State ---
   const [showJobberForm, setShowJobberForm] = useState(false);
   const [isSavingNewJobber, setIsSavingNewJobber] = useState(false);
   const [newJobberData, setNewJobberData] = useState({
-    name: ''
+    name: '',
+    selectedItems: [] // Stores item objects {id, name}
   });
+  const [modalItemSearch, setModalItemSearch] = useState('');
+  const [isModalDropdownOpen, setIsModalDropdownOpen] = useState(false);
 
   // --- New Item Modal State ---
   const [showItemModal, setShowItemModal] = useState(false);
@@ -142,6 +168,23 @@ const CreatePurchase = () => {
     setNewJobberData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleToggleModalItem = (item) => {
+    setNewJobberData(prev => ({
+      ...prev,
+      selectedItems: prev.selectedItems.some(si => si.id === item.id)
+        ? prev.selectedItems.filter(i => i.id !== item.id)
+        : [...prev.selectedItems, item]
+    }));
+    setModalItemSearch('');
+  };
+
+  const removeModalItem = (item) => {
+    setNewJobberData(prev => ({
+      ...prev,
+      selectedItems: prev.selectedItems.filter(i => i.id !== item.id)
+    }));
+  };
+
   const handleSelectJobber = (jobber) => {
     setFormData(prev => ({
       ...prev,
@@ -170,14 +213,18 @@ const CreatePurchase = () => {
       const response = await fetch(`${API_BASE_URL}/jobbers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newJobberData)
+        body: JSON.stringify({
+          name: newJobberData.name,
+          item_ids: newJobberData.selectedItems.map(item => item.id)
+        })
       });
       const result = await response.json();
       if (result.success) {
         setJobbers(prev => [...prev, result.data]);
         handleSelectJobber(result.data);
         setShowJobberForm(false);
-        setNewJobberData({ name: '' });
+        setNewJobberData({ name: '', selectedItems: [] });
+        setModalItemSearch('');
       }
     } catch (err) {
       console.error("Error saving jobber:", err);
@@ -297,7 +344,7 @@ const CreatePurchase = () => {
               </div>
               <div className="flex flex-col gap-1 text-left relative col-span-2">
                 <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Jobber Name</label>
-                <div className="flex gap-2 relative">
+                <div className="flex gap-2 relative" ref={jobberRef}>
                   <div className="relative flex-1 group">
                     <input 
                       type="text"
@@ -353,7 +400,7 @@ const CreatePurchase = () => {
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex flex-col gap-1 col-span-2 relative">
+                <div className="flex flex-col gap-1 col-span-2 relative" ref={itemRef}>
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
                   <div className="relative group">
                     <input 
@@ -489,6 +536,56 @@ const CreatePurchase = () => {
                       placeholder="Enter provider or contractor name..."
                       autoFocus
                     />
+                  </div>
+
+                  {/* Assigned Items Multi-Select */}
+                  <div className="flex flex-col gap-1.5 overflow-visible">
+                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Assign Items to Jobber</label>
+                    <div className="relative w-full border border-border-soft rounded-xl bg-bg-main p-3" ref={modalDropdownRef}>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {newJobberData.selectedItems.map(item => (
+                          <span key={item.id} className="bg-brand-blue/10 text-brand-blue text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-2 border border-brand-blue/20 animate-in zoom-in-95 duration-200">
+                            {item.name}
+                            <button onClick={() => removeModalItem(item)} className="hover:text-red-600 transition-colors">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        ))}
+                        <input 
+                          type="text"
+                          value={modalItemSearch}
+                          onChange={(e) => {
+                            setModalItemSearch(e.target.value);
+                            setIsModalDropdownOpen(true);
+                          }}
+                          onFocus={() => setIsModalDropdownOpen(true)}
+                          className="flex-1 min-w-[150px] bg-transparent outline-none text-[13px] placeholder:text-text-light/40 font-medium h-7"
+                          placeholder={newJobberData.selectedItems.length === 0 ? "Search brands or items..." : "Assign more..."}
+                        />
+                      </div>
+
+                      {isModalDropdownOpen && (items.filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id)).length > 0 || modalItemSearch) && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border-soft shadow-2xl rounded-xl z-[9999] max-h-56 overflow-y-auto animate-in slide-in-from-top-2 duration-300">
+                          {items
+                            .filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id))
+                            .map(item => (
+                              <button
+                                key={item.id}
+                                onClick={() => handleToggleModalItem(item)}
+                                className="w-full text-left px-5 py-3 text-[13px] hover:bg-bg-main text-text-primary hover:text-brand-blue font-bold transition-all border-b border-border-soft/30 last:border-none flex items-center justify-between group"
+                              >
+                                <span>{item.name}</span>
+                                <span className="text-[10px] text-text-light opacity-0 group-hover:opacity-100 uppercase tracking-widest font-black bg-brand-blue/5 px-2 py-0.5 rounded transition-opacity">Assign</span>
+                              </button>
+                            ))}
+                          {items.filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id)).length === 0 && (
+                            <div className="px-5 py-4 text-[12px] text-text-light italic text-center">No matching brands found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

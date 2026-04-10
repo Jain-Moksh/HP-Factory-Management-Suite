@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
@@ -29,6 +29,28 @@ const CreateInvoice = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
+
+  // --- Refs for Click Outside ---
+  const clientRef = useRef(null);
+  const itemRef = useRef(null);
+  const transporterRef = useRef(null);
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (clientRef.current && !clientRef.current.contains(event.target)) {
+        setShowClientDropdown(false);
+      }
+      if (itemRef.current && !itemRef.current.contains(event.target)) {
+        setShowItemDropdown(false);
+      }
+      if (transporterRef.current && !transporterRef.current.contains(event.target)) {
+        setShowTransporterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchMasters = async () => {
@@ -474,7 +496,7 @@ const CreateInvoice = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="flex flex-col gap-1 text-left relative col-span-2">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Party Name</label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" ref={clientRef}>
                     <div className="flex-1 relative">
                       <input 
                         type="text"
@@ -557,7 +579,7 @@ const CreateInvoice = () => {
                 </div>
                 <div className="flex flex-col gap-1 text-left relative">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Transporter Name</label>
-                  <div className="relative">
+                  <div className="relative" ref={transporterRef}>
                     <input 
                       type="text"
                       name="transporterName"
@@ -720,7 +742,7 @@ const CreateInvoice = () => {
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-8 gap-3">
-                <div className="flex flex-col gap-1 col-span-2 text-left relative">
+                <div className="flex flex-col gap-1 col-span-2 text-left relative" ref={itemRef}>
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
                   <input 
                     type="text" 
