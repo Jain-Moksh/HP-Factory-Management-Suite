@@ -21,15 +21,21 @@ const masterService = {
   },
 
   create: async (table, data) => {
+    // Sanitize: convert empty strings to null
+    const clean = {};
+    Object.keys(data).forEach(key => {
+      clean[key] = data[key] === '' ? null : data[key];
+    });
+
     let queryKey, params;
     switch (table) {
       case 'items':
         queryKey = 'createItem';
-        params = [data.name, data.rate, data.stock, data.conversion, data.unit];
+        params = [clean.name, clean.rate, clean.stock, clean.conversion, clean.unit];
         break;
       case 'clients':
         queryKey = 'createClient';
-        params = [data.name, data.street, data.city, data.shortform, data.balance, data.remark];
+        params = [clean.name, clean.street, clean.city, clean.shortform, clean.balance, clean.remark];
         break;
       case 'jobbers':
         queryKey = 'createJobber';
@@ -45,15 +51,21 @@ const masterService = {
   },
 
   update: async (table, id, data) => {
+    // Sanitize: convert empty strings to null
+    const clean = {};
+    Object.keys(data).forEach(key => {
+      clean[key] = data[key] === '' ? null : data[key];
+    });
+
     let queryKey, params;
     switch (table) {
       case 'items':
         queryKey = 'updateItem';
-        params = [data.name, data.rate, data.stock, data.conversion, data.unit, id];
+        params = [clean.name, clean.rate, clean.stock, clean.conversion, clean.unit, id];
         break;
       case 'clients':
         queryKey = 'updateClient';
-        params = [data.name, data.street, data.city, data.shortform, data.balance, data.remark, id];
+        params = [clean.name, clean.street, clean.city, clean.shortform, clean.balance, clean.remark, id];
         break;
       case 'jobbers':
         queryKey = 'updateJobber';

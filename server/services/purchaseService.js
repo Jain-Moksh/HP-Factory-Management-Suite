@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/purchaseQueries');
+const { generateChallanNo } = require('../utils/challanGenerator');
 
 const purchaseService = {
   create: async (purchaseData) => {
@@ -9,8 +10,11 @@ const purchaseService = {
 
       const { jobber_id, date, remark, items } = purchaseData;
 
-      // 1. Insert purchase record
-      const purchaseRes = await client.query(queries.createPurchase, [jobber_id, date, remark]);
+      // 1. Generate custom challan number
+      const challan_no = await generateChallanNo(date, 'purchase', client);
+
+      // 2. Insert purchase record
+      const purchaseRes = await client.query(queries.createPurchase, [jobber_id, date, remark, challan_no]);
       const purchase = purchaseRes.rows[0];
 
       // 2. Insert items and update stock
@@ -48,7 +52,11 @@ const purchaseService = {
     return res.rows;
   },
 
-  getNextId: async () => {
+  getNextId: async (date) => {
+    const { getFormattedChallan } = require('../utils/challanGenerator');
+    if (date) {
+      return await getFormattedChallan(date, 'purchase', db);
+    }
     const res = await db.query(queries.getNextPurchaseId);
     return res.rows[0].next_id;
   },

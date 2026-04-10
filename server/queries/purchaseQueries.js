@@ -1,7 +1,7 @@
 const purchaseQueries = {
     createPurchase: `
-        INSERT INTO purchase (jobber_id, date, remark) 
-        VALUES ($1, $2, $3) 
+        INSERT INTO purchase (jobber_id, date, remark, challan_no) 
+        VALUES ($1, $2, $3, $4) 
         RETURNING *
     `,
     createPurchaseItem: `

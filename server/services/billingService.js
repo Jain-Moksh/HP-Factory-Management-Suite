@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/billingQueries');
+const { generateChallanNo } = require('../utils/challanGenerator');
 
 const billingService = {
   create: async (billData) => {
@@ -13,17 +14,16 @@ const billingService = {
         long_remark, grand_total, items
       } = billData;
 
-      // 1. Insert billing record (initially with null challan_no)
+      // 1. Generate custom challan number
+      const challan_no = await generateChallanNo(date, 'billing', client);
+
+      // 2. Insert billing record
       const billRes = await client.query(queries.createBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, total_amount, short_remark,
-        long_remark, grand_total, null
+        long_remark, grand_total, challan_no
       ]);
       const bill = billRes.rows[0];
-
-      // Update challan_no to be the ID (as requested)
-      await client.query('UPDATE billing SET challan_no = $1 WHERE id = $2', [bill.id.toString(), bill.id]);
-      bill.challan_no = bill.id.toString();
 
       // 2. Insert billing items and update stock
       const billingItems = [];
@@ -66,8 +66,11 @@ const billingService = {
     return result.rows[0];
   },
 
-  getNextId: async () => {
-    const minIncrement = 1;
+  getNextId: async (date) => {
+    const { getFormattedChallan } = require('../utils/challanGenerator');
+    if (date) {
+      return await getFormattedChallan(date, 'billing', db);
+    }
     const result = await db.query(queries.getNextBillId);
     return result.rows[0].next_id;
   }

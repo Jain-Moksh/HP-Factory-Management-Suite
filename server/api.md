@@ -99,7 +99,8 @@ Manages transport service records.
 Used for sales/billing. Creating a bill automatically **decrements** item stock.
 
 *   **POST `/billing`**
-    *   *Description*: Create a new bill with multiple items (Transaction-safe).
+    *   *Description*: Create a new bill with multiple items (Transaction-safe). **Challan Number is automatically generated on the server** based on selected date and financial year.
+    *   *Challan Format*: `<sequence>/<month>/<fy>` (e.g., `103/jan/25-26`). Sequence resets monthly.
     *   *Request Body*:
         ```json
         {
@@ -133,7 +134,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 *   **GET `/billing`**
     *   *Description*: List all billing records with client names.
 *   **GET `/billing/next-id`**
-    *   *Description*: Fetch the dynamic next Challan ID for new invoices.
+    *   *Description*: Fetch the dynamic next numeric ID for internal tracking (Note: This is NOT the formatted Challan Number).
 *   **DELETE `/billing/:id`**
     *   *Description*: Securely delete an invoice and revert stock.
     *   *Request Body*: `{"password": "your_del_pass"}`
@@ -142,7 +143,8 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 Used for receiving stock from jobbers. Creating a purchase automatically **increments** item stock.
 
 *   **POST `/purchase`**
-    *   *Description*: Create a new purchase record.
+    *   *Description*: Create a new purchase record. **Challan Number is automatically generated on the server.**
+    *   *Challan Format*: `P<sequence>/<month>/<fy>` (e.g., `P103/jan/25-26`). Sequence resets monthly.
     *   *Request Body*:
         ```json
         {
@@ -163,7 +165,7 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
 *   **GET `/purchase`**
     *   *Description*: List all purchase transactions with jobber names.
 *   **GET `/purchase/next-id`**
-    *   *Description*: Fetch the next sequence ID for new purchases.
+    *   *Description*: Fetch the next internal numeric sequence ID.
 *   **DELETE `/purchase/:id`**
     *   *Description*: Securely delete a purchase and revert stock.
 

@@ -62,6 +62,12 @@ const masterController = (table) => ({
 
       res.json({ success: true, message: 'Record deleted successfully' });
     } catch (err) {
+      if (err.code === '23503') {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Cannot delete this ${table.replace(/s$/, '')} as it is currently being used in existing transactions (Bills/Purchases).` 
+        });
+      }
       next(err);
     }
   }

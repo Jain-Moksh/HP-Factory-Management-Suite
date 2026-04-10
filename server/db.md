@@ -97,6 +97,7 @@ CREATE TABLE purchase (
     jobber_id INT NOT NULL,
     date DATE,
     remark TEXT,
+    challan_no TEXT,
 
     FOREIGN KEY (jobber_id) REFERENCES jobbers(id)
 );
@@ -138,6 +139,9 @@ CREATE INDEX idx_purchase_items_purchase ON purchase_items(purchase_id);
 
 CREATE INDEX idx_jobber_items_jobber ON jobber_items(jobber_id);
 CREATE INDEX idx_jobber_items_item ON jobber_items(item_id);
+
+CREATE INDEX idx_billing_date ON billing(date);
+CREATE INDEX idx_purchase_date ON purchase(date);
 
 --- Time stamp addition ---
 

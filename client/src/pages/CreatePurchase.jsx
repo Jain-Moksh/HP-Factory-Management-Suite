@@ -101,21 +101,18 @@ const CreatePurchase = () => {
   useEffect(() => {
     const fetchMasters = async () => {
       try {
-        const [jobbersRes, itemsRes, nextIdRes] = await Promise.all([
+        const [jobbersRes, itemsRes] = await Promise.all([
           fetch(`${API_BASE_URL}/jobbers`),
-          fetch(`${API_BASE_URL}/items`),
-          fetch(`${API_BASE_URL}/purchase/next-id`)
+          fetch(`${API_BASE_URL}/items`)
         ]);
 
-        const [jobbersData, itemsData, nextIdData] = await Promise.all([
+        const [jobbersData, itemsData] = await Promise.all([
           jobbersRes.json(),
-          itemsRes.json(),
-          nextIdRes.json()
+          itemsRes.json()
         ]);
 
         if (jobbersData.success) setJobbers(jobbersData.data);
         if (itemsData.success) setItems(itemsData.data);
-        if (nextIdData.success) setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
 
       } catch (err) {
         console.error("Error fetching masters:", err);
@@ -125,6 +122,24 @@ const CreatePurchase = () => {
     };
     fetchMasters();
   }, []);
+
+  // Fetch Next Challan Number when date changes
+  useEffect(() => {
+    const fetchNextChallan = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
+        const data = await res.json();
+        if (data.success) {
+          setFormData(prev => ({ ...prev, challanNo: data.nextId }));
+        }
+      } catch (err) {
+        console.error("Error fetching next challan:", err);
+      }
+    };
+    if (formData.date) {
+      fetchNextChallan();
+    }
+  }, [formData.date]);
 
   // --- Handlers ---
   const handleHeaderChange = (e) => {
@@ -268,11 +283,18 @@ const CreatePurchase = () => {
   const handleSaveNewItem = async () => {
     if (!newItemFormData.name) return;
     setIsSavingNewItem(true);
+    const sanitizedData = {
+      ...newItemFormData,
+      rate: newItemFormData.rate === '' ? null : newItemFormData.rate,
+      stock: newItemFormData.stock === '' ? null : newItemFormData.stock,
+      conversion: newItemFormData.conversion === '' ? null : newItemFormData.conversion
+    };
+
     try {
       const response = await fetch(`${API_BASE_URL}/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newItemFormData)
+        body: JSON.stringify(sanitizedData)
       });
       const result = await response.json();
       if (result.success) {
@@ -325,13 +347,14 @@ const CreatePurchase = () => {
         setItemEntrySearch('');
         
         // Fetch next ID for the next entry
-        const nextIdRes = await fetch(`${API_BASE_URL}/purchase/next-id`);
+        const nextIdRes = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
         const nextIdData = await nextIdRes.json();
         if (nextIdData.success) {
           setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
         }
 
-        alert("Purchase record saved successfully! You can now enter the next one.");
+        alert("Purchase record saved successfully!");
+        navigate('/purchase');
       } else {
         alert(result.message || "Failed to save purchase record");
       }

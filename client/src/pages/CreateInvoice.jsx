@@ -57,37 +57,6 @@ const CreateInvoice = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const fetchMasters = async () => {
-      setIsLoadingMasters(true);
-      try {
-        const [clientsRes, itemsRes, transportersRes, nextIdRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/clients`),
-          fetch(`${API_BASE_URL}/items`),
-          fetch(`${API_BASE_URL}/transporters`),
-          fetch(`${API_BASE_URL}/billing/next-id`)
-        ]);
-        
-        const clientsData = await clientsRes.json();
-        const itemsData = await itemsRes.json();
-        const transportersData = await transportersRes.json();
-        const nextIdData = await nextIdRes.json();
-
-        if (clientsData.success) setClients(clientsData.data);
-        if (itemsData.success) setItems(itemsData.data);
-        if (transportersData.success) setTransporters(transportersData.data);
-        if (nextIdData.success) {
-          setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
-        }
-      } catch (err) {
-        console.error("Error fetching masters:", err);
-      } finally {
-        setIsLoadingMasters(false);
-      }
-    };
-    fetchMasters();
-  }, []);
-
   // --- Header Form State ---
   const [showClientForm, setShowClientForm] = useState(false);
   const [isSavingNewClient, setIsSavingNewClient] = useState(false);
@@ -147,6 +116,50 @@ const CreateInvoice = () => {
   
   // --- In-place Editing State ---
   const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    const fetchMasters = async () => {
+      setIsLoadingMasters(true);
+      try {
+        const [clientsRes, itemsRes, transportersRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/clients`),
+          fetch(`${API_BASE_URL}/items`),
+          fetch(`${API_BASE_URL}/transporters`)
+        ]);
+        
+        const clientsData = await clientsRes.json();
+        const itemsData = await itemsRes.json();
+        const transportersData = await transportersRes.json();
+
+        if (clientsData.success) setClients(clientsData.data);
+        if (itemsData.success) setItems(itemsData.data);
+        if (transportersData.success) setTransporters(transportersData.data);
+      } catch (err) {
+        console.error("Error fetching masters:", err);
+      } finally {
+        setIsLoadingMasters(false);
+      }
+    };
+    fetchMasters();
+  }, []);
+
+  // Fetch Next Challan Number when date changes
+  useEffect(() => {
+    const fetchNextChallan = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/billing/next-id?date=${formData.date}`);
+        const data = await res.json();
+        if (data.success) {
+          setFormData(prev => ({ ...prev, challanNo: data.nextId }));
+        }
+      } catch (err) {
+        console.error("Error fetching next challan:", err);
+      }
+    };
+    if (formData.date) {
+      fetchNextChallan();
+    }
+  }, [formData.date]);
 
   // --- Handlers ---
   const handleFormChange = (e) => {
@@ -265,11 +278,15 @@ const CreateInvoice = () => {
 
   const handleSaveNewClient = async () => {
     setIsSavingNewClient(true);
+    const sanitizedData = {
+      ...newClientFormData,
+      balance: newClientFormData.balance === '' ? null : newClientFormData.balance
+    };
     try {
       const response = await fetch(`${API_BASE_URL}/clients`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newClientFormData)
+        body: JSON.stringify(sanitizedData)
       });
       const result = await response.json();
       if (result.success) {
@@ -293,11 +310,17 @@ const CreateInvoice = () => {
   const handleSaveNewItem = async () => {
     if (!newItemFormData.name) return;
     setIsSavingNewItem(true);
+    const sanitizedData = {
+      ...newItemFormData,
+      rate: newItemFormData.rate === '' ? null : newItemFormData.rate,
+      stock: newItemFormData.stock === '' ? null : newItemFormData.stock,
+      conversion: newItemFormData.conversion === '' ? null : newItemFormData.conversion
+    };
     try {
       const response = await fetch(`${API_BASE_URL}/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newItemFormData)
+        body: JSON.stringify(sanitizedData)
       });
       const result = await response.json();
       if (result.success) {
