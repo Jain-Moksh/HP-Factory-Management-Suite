@@ -1,11 +1,14 @@
 import React from 'react';
 
-const PaymentTable = () => {
-  const data = [
-    { id: 1, challan: 'PAY-001', date: '01/04/2026', client: 'Ajay Traders', amount: 45000 },
-    { id: 2, challan: 'PAY-002', date: '02/04/2026', client: 'Mehta Plastics', amount: 28500 },
-    { id: 3, challan: 'PAY-003', date: '03/04/2026', client: 'Suresh Kumar', amount: 12000 },
-  ];
+const PaymentTable = ({ data = [], loading = false }) => {
+  if (loading) {
+    return (
+      <div className="bg-white border border-border-soft rounded-xl p-12 text-center">
+        <div className="inline-block w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mb-2"></div>
+        <p className="text-[12px] font-medium text-text-light uppercase tracking-widest">Loading Payments...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">

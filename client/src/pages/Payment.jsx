@@ -4,9 +4,34 @@ import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import FilterBar from '../components/FilterBar';
 import PaymentTable from '../components/PaymentTable';
+import MonthFilterFooter from '../components/MonthFilterFooter';
+
+const DUMMY_PAYMENTS = [
+  { id: 1, challan: 'PAY-001', date: '2026-04-01', client: 'Ajay Traders', amount: 45000 },
+  { id: 2, challan: 'PAY-002', date: '2026-04-02', client: 'Mehta Plastics', amount: 28500 },
+  { id: 3, challan: 'PAY-003', date: '2026-04-03', client: 'Suresh Kumar', amount: 12000 },
+  { id: 4, challan: 'PAY-004', date: '2026-03-15', client: 'March Trader', amount: 5000 },
+];
 
 const Payment = () => {
   const navigate = useNavigate();
+  const [payments, setPayments] = React.useState(DUMMY_PAYMENTS);
+  const [searchClient, setSearchClient] = React.useState('');
+  const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const filteredPayments = React.useMemo(() => {
+    return payments.filter(p => {
+      const matchesClient = p.client.toLowerCase().includes(searchClient.toLowerCase());
+      
+      const pDate = new Date(p.date);
+      const matchesMonth = pDate.getMonth() === selectedMonth;
+      const matchesYear = pDate.getFullYear() === selectedYear;
+
+      return matchesClient && matchesMonth && matchesYear;
+    });
+  }, [payments, searchClient, selectedMonth, selectedYear]);
 
   const paymentActions = [
     {
@@ -30,30 +55,20 @@ const Payment = () => {
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          <FilterBar searchPlaceholder2="Search by Client Name" />
-          <PaymentTable />
+          <FilterBar 
+            searchPlaceholder2="Search by Client Name" 
+            onSearch2={setSearchClient}
+          />
+          <PaymentTable data={filteredPayments} loading={isLoading} />
         </div>
 
-        {/* Sticky Footer for Records/Months - Consistency with Purchase/Billing */}
-        <footer className="fixed bottom-0 right-0 left-[210px] bg-white border-t border-border-soft px-6 py-2.5 flex justify-between items-center z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] font-inter">
-          <div className="flex items-center gap-4 text-[10.5px] font-bold text-text-secondary uppercase tracking-tighter">
-            <span className="opacity-50">Records: <span className="text-brand-blue opacity-100">3 Entries</span></span>
-            <div className="flex gap-2.5 ml-2">
-              <span className="hover:text-brand-blue cursor-pointer transition">January</span>
-              <span className="hover:text-brand-blue cursor-pointer transition">February</span>
-              <span className="hover:text-brand-blue cursor-pointer transition">March</span>
-              <span className="bg-brand-blue text-white px-3.5 rounded-md py-1 -my-1 shadow-md shadow-brand-blue/20">April</span>
-            </div>
-          </div>
-          
-          <div className="flex gap-2 items-center text-[10.5px] font-bold text-text-secondary">
-            <span className="opacity-50 uppercase tracking-tighter">Year:</span>
-            <select className="bg-bg-main border border-divider-soft rounded-md px-2 py-0.5 outline-none hover:border-brand-blue transition text-[11px]">
-              <option>2026</option>
-              <option>2025</option>
-            </select>
-          </div>
-        </footer>
+        <MonthFilterFooter 
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={setSelectedMonth}
+          onYearChange={setSelectedYear}
+          recordCount={filteredPayments.length}
+        />
       </div>
     </Layout>
   );
