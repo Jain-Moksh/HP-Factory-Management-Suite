@@ -70,7 +70,7 @@ const purchaseService = {
       const itemsRes = await client.query(queries.getPurchaseItems, [id]);
       const items = itemsRes.rows;
 
-      // 2. Reverse stock updates (decrement)
+      // 2. Reverse stock updates (decrement since it was a purchase)
       for (const item of items) {
         await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
       }
@@ -83,6 +83,51 @@ const purchaseService = {
 
       await client.query('COMMIT');
       return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
+  update: async (id, purchaseData) => {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const { jobber_id, date, remark, items } = purchaseData;
+
+      // 1. Get old items to reverse stock
+      const oldItemsRes = await client.query(queries.getPurchaseItems, [id]);
+      const oldItems = oldItemsRes.rows;
+
+      // 2. Reverse stock updates (Subtract back original quantities added during purchase)
+      for (const item of oldItems) {
+        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      }
+
+      // 3. Delete old purchase items
+      await client.query(queries.deletePurchaseItems, [id]);
+
+      // 4. Update the purchase record
+      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, remark, id]);
+      const purchase = purchaseRes.rows[0];
+
+      // 5. Insert new purchase items and update stock
+      const purchaseItems = [];
+      for (const item of items) {
+        const itemRes = await client.query(queries.createPurchaseItem, [
+          id, item.item_id, item.quantity, item.unit
+        ]);
+        purchaseItems.push(itemRes.rows[0]);
+
+        // Stock Update (Increment)
+        await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
+      }
+
+      await client.query('COMMIT');
+      return { ...purchase, items: purchaseItems };
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;

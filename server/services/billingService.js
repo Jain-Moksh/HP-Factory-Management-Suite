@@ -73,6 +73,60 @@ const billingService = {
     }
     const result = await db.query(queries.getNextBillId);
     return result.rows[0].next_id;
+  },
+
+  update: async (id, billData) => {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const {
+        client_id, transporter_id, date, transport_charge, packing_charge,
+        discount_percent, discount_amount, total_amount, short_remark,
+        long_remark, grand_total, items
+      } = billData;
+
+      // 1. Get old items to reverse stock
+      const oldItemsRes = await client.query(queries.getBillItems, [id]);
+      const oldItems = oldItemsRes.rows;
+
+      // 2. Reverse stock updates (Add back original quantities)
+      for (const item of oldItems) {
+        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      }
+
+      // 3. Delete old billing items
+      await client.query(queries.deleteBillItems, [id]);
+
+      // 4. Update the billing record
+      const billRes = await client.query(queries.updateBill, [
+        client_id, transporter_id, date, transport_charge, packing_charge,
+        discount_percent, discount_amount, total_amount, short_remark,
+        long_remark, grand_total, id
+      ]);
+      const bill = billRes.rows[0];
+
+      // 5. Insert new billing items and update stock
+      const billingItems = [];
+      for (const item of items) {
+        const itemRes = await client.query(queries.createBillItem, [
+          id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
+          item.unit, item.quantity, item.bundle, item.total_amount
+        ]);
+        billingItems.push(itemRes.rows[0]);
+
+        // Stock Update (Decrement)
+        await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
+      }
+
+      await client.query('COMMIT');
+      return { ...bill, items: billingItems };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 };
 

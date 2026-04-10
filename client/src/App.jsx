@@ -6,6 +6,7 @@ import CreateInvoice from './pages/CreateInvoice';
 import ItemList from './pages/master/ItemList';
 import PartyList from './pages/master/PartyList';
 import JobberList from './pages/master/JobberList';
+import TransporterList from './pages/master/TransporterList';
 import Purchase from './pages/Purchase';
 import CreatePurchase from './pages/CreatePurchase';
 import Payment from './pages/Payment';
@@ -19,8 +20,10 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/order-summary" element={<OrderSummary />} />
         <Route path="/create-invoice" element={<CreateInvoice />} />
+        <Route path="/create-invoice/:id" element={<CreateInvoice />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/create-purchase" element={<CreatePurchase />} />
+        <Route path="/create-purchase/:id" element={<CreatePurchase />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/create-payment" element={<CreatePayment />} />
         
@@ -28,6 +31,7 @@ function App() {
         <Route path="/master/items" element={<ItemList />} />
         <Route path="/master/party-list" element={<PartyList />} />
         <Route path="/master/jobber" element={<JobberList />} />
+        <Route path="/master/transporters" element={<TransporterList />} />
         
         {/* Add more routes as needed */}
       </Routes>

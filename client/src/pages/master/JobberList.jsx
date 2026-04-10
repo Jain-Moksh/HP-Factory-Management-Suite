@@ -32,11 +32,26 @@ const JobberList = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // --- Inline Edit State ---
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({ name: '', selectedItems: [] });
+  const [editSearchTerm, setEditSearchTerm] = useState('');
+  const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
+  const editDropdownRef = useRef(null);
+  const editRowRef = useRef(null);
+
   // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (editDropdownRef.current && !editDropdownRef.current.contains(event.target)) {
+        setIsEditDropdownOpen(false);
+      }
+      // Click outside the editing row to cancel
+      if (editRowRef.current && !editRowRef.current.contains(event.target)) {
+        handleEditCancel();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -119,6 +134,69 @@ const JobberList = () => {
     }
   };
 
+  // --- Inline Edit Handlers ---
+  const handleEditClick = (jobber) => {
+    setEditingId(jobber.id);
+    setEditFormData({
+      name: jobber.name,
+      selectedItems: jobber.items || []
+    });
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({ name: '', selectedItems: [] });
+    setEditSearchTerm('');
+  };
+
+  const handleEditSave = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobbers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editFormData.name,
+          item_ids: editFormData.selectedItems.map(item => item.id)
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setJobbers(prev => prev.map(j => j.id === id ? { ...j, name: editFormData.name, items: editFormData.selectedItems } : j));
+        setEditingId(null);
+      } else {
+        alert(result.message || 'Failed to update jobber');
+      }
+    } catch (err) {
+      alert('Network error while updating');
+    }
+  };
+
+  const handleToggleEditItem = (item) => {
+    setEditFormData(prev => ({
+      ...prev,
+      selectedItems: prev.selectedItems.some(si => si.id === item.id)
+        ? prev.selectedItems.filter(i => i.id !== item.id)
+        : [...prev.selectedItems, item]
+    }));
+    setEditSearchTerm('');
+  };
+
+  const removeEditItem = (item) => {
+    setEditFormData(prev => ({
+      ...prev,
+      selectedItems: prev.selectedItems.filter(i => i.id !== item.id)
+    }));
+  };
+
+  const handleEditKeyDown = (e, id) => {
+    if (e.key === 'Enter' && !isEditDropdownOpen) {
+      handleEditSave(id);
+    } else if (e.key === 'Escape') {
+      handleEditCancel();
+    }
+  };
+
   const handleRedo = () => {
     setFormData({ name: '', selectedItems: [] });
     setSearchTerm('');
@@ -152,9 +230,10 @@ const JobberList = () => {
       const result = await response.json();
       if (result.success) {
         setIsDeleteModalOpen(false);
+        setDeletePassword(''); // Clear password
         fetchData();
       } else {
-        setDeleteError('Fail to delete');
+        setDeleteError(result.message || 'Fail to delete');
       }
     } catch (err) {
       setDeleteError('Network error while deleting');
@@ -287,36 +366,113 @@ const JobberList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                  {jobbers.map((jobber) => (
-                    <tr key={jobber.id} className="hover:bg-bg-main/30 transition-colors">
+                   {jobbers.map((jobber) => (
+                    <tr 
+                      key={jobber.id} 
+                      ref={editingId === jobber.id ? editRowRef : null}
+                      className={`transition-colors ${editingId === jobber.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
+                    >
                       <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                        {jobber.name}
+                        {editingId === jobber.id ? (
+                          <input 
+                            value={editFormData.name}
+                            onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                            onKeyDown={(e) => handleEditKeyDown(e, jobber.id)}
+                            autoFocus
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue"
+                          />
+                        ) : jobber.name}
                       </td>
-                      <td className="px-5 py-2 border-r border-border-soft">
-                        <div className="flex flex-wrap gap-1.5">
-                          {jobber.items?.map(item => (
-                            <span key={item?.id || Math.random()} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
-                              {item?.name || 'Unknown Item'}
-                            </span>
-                          ))}
-                        </div>
+                      <td className="px-5 py-2 border-r border-border-soft relative" ref={editingId === jobber.id ? editDropdownRef : null}>
+                        {editingId === jobber.id ? (
+                          <div className="flex flex-wrap gap-1.5 items-center">
+                            {editFormData.selectedItems.map(item => (
+                              <span key={item.id} className="bg-brand-blue/10 text-brand-blue text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-brand-blue/20">
+                                {item.name}
+                                <button onClick={() => removeEditItem(item)} className="hover:text-red-500">
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                              </span>
+                            ))}
+                            <input 
+                              type="text"
+                              value={editSearchTerm}
+                              onChange={(e) => {
+                                setEditSearchTerm(e.target.value);
+                                setIsEditDropdownOpen(true);
+                              }}
+                              onFocus={() => setIsEditDropdownOpen(true)}
+                              onKeyDown={(e) => handleEditKeyDown(e, jobber.id)}
+                              className="flex-1 min-w-[100px] bg-white border border-brand-blue/20 rounded px-2 py-0.5 outline-none text-[12px]"
+                              placeholder="Add items..."
+                            />
+                            {isEditDropdownOpen && (availableItems.filter(i => i.name.toLowerCase().includes(editSearchTerm.toLowerCase()) && !editFormData.selectedItems.some(si => si.id === i.id)).length > 0) && (
+                              <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-xl rounded-lg z-[100] max-h-40 overflow-y-auto mt-1">
+                                {availableItems
+                                  .filter(i => i.name.toLowerCase().includes(editSearchTerm.toLowerCase()) && !editFormData.selectedItems.some(si => si.id === i.id))
+                                  .map(item => (
+                                    <button
+                                      key={item.id}
+                                      onClick={() => handleToggleEditItem(item)}
+                                      className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-bg-main/50 text-text-secondary hover:text-brand-blue font-medium transition-colors"
+                                    >
+                                      {item.name}
+                                    </button>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {jobber.items?.map(item => (
+                              <span key={item?.id || Math.random()} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
+                                {item?.name || 'Unknown Item'}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
-                          <button className="text-brand-blue hover:scale-110 transition p-1" title="Edit Jobber">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button 
-                            onClick={() => openDeleteModal(jobber.id)}
-                            className="text-red-500 hover:scale-110 transition p-1" 
-                            title="Delete Jobber"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          {editingId === jobber.id ? (
+                            <>
+                              <button 
+                                onClick={() => handleEditSave(jobber.id)}
+                                className="text-green-600 hover:scale-110 transition p-1" 
+                                title="Save"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                              </button>
+                              <button 
+                                onClick={handleEditCancel}
+                                className="text-red-500 hover:scale-110 transition p-1" 
+                                title="Cancel"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => handleEditClick(jobber)}
+                                className="text-brand-blue hover:scale-110 transition p-1" 
+                                title="Edit Jobber"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button 
+                                onClick={() => openDeleteModal(jobber.id)}
+                                className="text-red-500 hover:scale-110 transition p-1" 
+                                title="Delete Jobber"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

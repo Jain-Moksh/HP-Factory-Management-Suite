@@ -17,6 +17,9 @@ const billingQueries = {
     updateItemStock: `
         UPDATE items SET stock = stock - $1 WHERE id = $2
     `,
+    reverseStockUpdate: `
+        UPDATE items SET stock = stock + $1 WHERE id = $2
+    `,
     getBillById: `
         SELECT 
             b.*,
@@ -44,7 +47,18 @@ const billingQueries = {
         ORDER BY b.date DESC, b.id DESC
     `,
     deleteBill: 'DELETE FROM billing WHERE id = $1 RETURNING *',
-    getNextBillId: 'SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM billing'
+    getNextBillId: 'SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM billing',
+    updateBill: `
+        UPDATE billing SET 
+            client_id = $1, transporter_id = $2, date = $3, 
+            transport_charge = $4, packing_charge = $5, 
+            discount_percent = $6, discount_amount = $7, 
+            total_amount = $8, short_remark = $9, 
+            long_remark = $10, grand_total = $11
+        WHERE id = $12
+        RETURNING *
+    `,
+    deleteBillItems: 'DELETE FROM billing_items WHERE billing_id = $1'
 };
 
 module.exports = billingQueries;

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DeleteModal from './UI/DeleteModal';
 
 const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
+  const navigate = useNavigate();
   // --- Deletion State ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -54,14 +56,18 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
             <tbody className="divide-y divide-border-soft">
               {data.map((row) => (
                 <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
-                  <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.id}</td>
+                  <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan_no}</td>
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">
                     {new Date(row.date).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber_name}</td>
                   <td className="px-3 py-1.5 border-x border-border-soft">
                     <div className="flex items-center justify-center gap-2.5">
-                      <button className="text-brand-blue hover:scale-110 p-1.5 rounded transition" title="Edit Purchase">
+                      <button 
+                        onClick={() => navigate(`/create-purchase/${row.id}`)}
+                        className="text-brand-blue hover:scale-110 p-1.5 rounded transition" 
+                        title="Edit Purchase"
+                      >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>

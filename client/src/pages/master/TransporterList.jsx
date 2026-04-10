@@ -1,24 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
-import Card from '../../components/UI/Card';
 import Button from '../../components/UI/Button';
-import Modal from '../../components/UI/Modal';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
 
-const ItemList = () => {
+const TransporterList = () => {
   // --- Form State ---
   const [formData, setFormData] = useState({
-    name: '',
-    rate: '',
-    unit: 'DOZ',
-    conversion: '1',
-    stock: ''
+    name: ''
   });
 
   // --- List State ---
-  const [items, setItems] = useState([]);
+  const [transporters, setTransporters] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,6 +20,12 @@ const ItemList = () => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const editRowRef = useRef(null);
+
+  // --- Delete Modal State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transporterToDelete, setTransporterToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   // Close editing on click outside
   useEffect(() => {
@@ -40,20 +40,14 @@ const ItemList = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [editingId]);
 
-  // --- Delete Modal State ---
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deleteError, setDeleteError] = useState('');
-
-  // --- Fetch Items ---
-  const fetchItems = async () => {
+  // --- Fetch Transporters ---
+  const fetchTransporters = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/items`);
+      const response = await fetch(`${API_BASE_URL}/transporters`);
       const result = await response.json();
       if (result.success) {
-        setItems(result.data);
+        setTransporters(result.data);
       } else {
         setError(result.message);
       }
@@ -65,7 +59,7 @@ const ItemList = () => {
   };
 
   useEffect(() => {
-    fetchItems();
+    fetchTransporters();
   }, []);
 
   // --- Handlers ---
@@ -79,24 +73,20 @@ const ItemList = () => {
     
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/items`, {
+      const response = await fetch(`${API_BASE_URL}/transporters`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
-          rate: parseFloat(formData.rate) || 0,
-          stock: parseFloat(formData.stock) || 0,
-          conversion: parseFloat(formData.conversion) || 1,
-          unit: formData.unit
+          name: formData.name
         })
       });
 
       const result = await response.json();
       if (result.success) {
-        await fetchItems();
+        await fetchTransporters();
         handleRedo();
       } else {
-        alert(result.message || 'Failed to save item');
+        alert(result.message || 'Failed to save transporter');
       }
     } catch (err) {
       alert('Network error while saving');
@@ -107,23 +97,15 @@ const ItemList = () => {
 
   const handleRedo = () => {
     setFormData({
-      name: '',
-      rate: '',
-      unit: 'DOZ',
-      conversion: '1',
-      stock: ''
+      name: ''
     });
   };
 
   // --- Inline Edit Handlers ---
-  const handleEditClick = (item) => {
-    setEditingId(item.id);
+  const handleEditClick = (transporter) => {
+    setEditingId(transporter.id);
     setEditFormData({
-      name: item.name,
-      rate: item.rate,
-      unit: item.unit,
-      conversion: item.conversion,
-      stock: item.stock
+      name: transporter.name
     });
   };
 
@@ -139,24 +121,20 @@ const ItemList = () => {
 
   const handleEditSave = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/transporters/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: editFormData.name,
-          rate: parseFloat(editFormData.rate) || 0,
-          stock: parseFloat(editFormData.stock) || 0,
-          conversion: parseFloat(editFormData.conversion) || 1,
-          unit: editFormData.unit
+          name: editFormData.name
         })
       });
 
       const result = await response.json();
       if (result.success) {
-        setItems(prev => prev.map(item => item.id === id ? { ...item, ...editFormData } : item));
+        setTransporters(prev => prev.map(t => t.id === id ? { ...t, ...editFormData } : t));
         setEditingId(null);
       } else {
-        alert(result.message || 'Failed to update item');
+        alert(result.message || 'Failed to update transporter');
       }
     } catch (err) {
       alert('Network error while updating');
@@ -172,7 +150,7 @@ const ItemList = () => {
   };
 
   const openDeleteModal = (id) => {
-    setItemToDelete(id);
+    setTransporterToDelete(id);
     setIsDeleteModalOpen(true);
     setDeletePassword('');
     setDeleteError('');
@@ -190,7 +168,7 @@ const ItemList = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/items/${itemToDelete}`, {
+      const response = await fetch(`${API_BASE_URL}/transporters/${transporterToDelete}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: deletePassword })
@@ -199,8 +177,8 @@ const ItemList = () => {
       const result = await response.json();
       if (result.success) {
         setIsDeleteModalOpen(false);
-        setDeletePassword(''); // Clear password
-        fetchItems();
+        setDeletePassword('');
+        fetchTransporters();
       } else {
         setDeleteError(result.message || 'Fail to delete');
       }
@@ -213,83 +191,34 @@ const ItemList = () => {
     <Layout>
       <div className="flex flex-col min-h-screen pb-10">
         <PageHeader 
-          title="Item List" 
-          subtitle="MANAGE SYSTEM ITEM MASTER DATA" 
+          title="Transporter List" 
+          subtitle="MANAGE SYSTEM TRANSPORTER MASTER DATA" 
         />
 
         <div className="px-6 flex flex-col gap-6">
           {/* Data Entry Section */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
             <div className="bg-table-header px-4 py-2 border-b border-border-soft">
-              <h3 className="text-[11px] font-bold text-white uppercase tracking-widest">New Item Entry</h3>
+              <h3 className="text-[11px] font-bold text-white uppercase tracking-widest">New Transporter Entry</h3>
             </div>
             
             <div className="p-0">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-secondary">
-                    <th className="px-4 py-2 text-left border-r border-border-soft">Item Name</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32">Rate</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32">Unit</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32">Conversion</th>
-                    <th className="px-4 py-2 text-left w-32 leading-tight">Opening <br /> Stock</th>
+                    <th className="px-4 py-2 text-left">Transporter Name</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-border-soft/50">
-                    <td className="p-0 border-r border-border-soft">
+                    <td className="p-0">
                       <input 
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
-                        placeholder="Enter item name..."
-                      />
-                    </td>
-                    <td className="p-0 border-r border-border-soft">
-                      <input 
-                        type="number"
-                        name="rate"
-                        value={formData.rate}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-bold text-brand-blue"
-                        placeholder="0.00"
-                      />
-                    </td>
-                    <td className="p-0 border-r border-border-soft">
-                      <select 
-                        name="unit"
-                        value={formData.unit}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 bg-transparent outline-none text-[12px] font-bold text-text-secondary cursor-pointer"
-                      >
-                        <option value="GMS">GMS</option>
-                        <option value="BUNDLE">BUNDLE</option>
-                        <option value="GROSS">GROSS</option>
-                        <option value="SET">SET</option>
-                        <option value="PCS">PCS</option>
-                        <option value="DOZ">DOZ</option>
-                      </select>
-                    </td>
-                    <td className="p-0 border-r border-border-soft">
-                      <input 
-                        type="number"
-                        name="conversion"
-                        value={formData.conversion}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
-                        placeholder="1"
-                      />
-                    </td>
-                    <td className="p-0">
-                      <input 
-                        type="number"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
-                        placeholder="0"
+                        placeholder="Enter transporter name..."
                       />
                     </td>
                   </tr>
@@ -316,7 +245,7 @@ const ItemList = () => {
                 <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                Save Item
+                Save Transporter
               </Button>
             </div>
           </div>
@@ -325,100 +254,42 @@ const ItemList = () => {
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 px-1">
               <div className="w-1.5 h-4 bg-brand-blue rounded-full"></div>
-              <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Existing Items Master</h2>
+              <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Transporter Master</h2>
             </div>
             
             <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
-                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Rate</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Unit</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Conversion</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Opening <br /> Stock</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Transporter Name</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                   {items.map((item) => (
+                   {transporters.map((transporter) => (
                     <tr 
-                      key={item.id} 
-                      ref={editingId === item.id ? editRowRef : null}
-                      className={`transition-colors ${editingId === item.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
+                      key={transporter.id} 
+                      ref={editingId === transporter.id ? editRowRef : null}
+                      className={`transition-colors ${editingId === transporter.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
                     >
                       <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                        {editingId === item.id ? (
+                        {editingId === transporter.id ? (
                           <input 
                             name="name"
                             value={editFormData.name}
                             onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
+                            onKeyDown={(e) => handleKeyDown(e, transporter.id)}
                             autoFocus
                             className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue"
                           />
-                        ) : item.name}
-                      </td>
-                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue border-r border-border-soft">
-                        {editingId === item.id ? (
-                          <input 
-                            type="number"
-                            name="rate"
-                            value={editFormData.rate}
-                            onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
-                          />
-                        ) : `₹${parseFloat(item.rate).toFixed(2)}`}
-                      </td>
-                      <td className="px-5 py-1.5 text-center text-[11.5px] font-bold text-text-secondary border-r border-border-soft uppercase">
-                        {editingId === item.id ? (
-                          <select 
-                            name="unit"
-                            value={editFormData.unit}
-                            onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="bg-white border border-brand-blue/30 rounded px-1 py-1 outline-none focus:border-brand-blue"
-                          >
-                            <option value="GMS">GMS</option>
-                            <option value="BUNDLE">BUNDLE</option>
-                            <option value="GROSS">GROSS</option>
-                            <option value="SET">SET</option>
-                            <option value="PCS">PCS</option>
-                            <option value="DOZ">DOZ</option>
-                          </select>
-                        ) : item.unit}
-                      </td>
-                      <td className="px-5 py-1.5 text-center text-[12.5px] font-medium text-text-light border-r border-border-soft">
-                        {editingId === item.id ? (
-                          <input 
-                            type="number"
-                            name="conversion"
-                            value={editFormData.conversion}
-                            onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center"
-                          />
-                        ) : item.conversion}
-                      </td>
-                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue border-r border-border-soft">
-                        {editingId === item.id ? (
-                          <input 
-                            type="number"
-                            name="stock"
-                            value={editFormData.stock}
-                            onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
-                          />
-                        ) : (item.stock || 0)}
+                        ) : transporter.name}
                       </td>
                       <td className="px-4 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-2.5">
-                          {editingId === item.id ? (
+                          {editingId === transporter.id ? (
                             <>
                               <button 
-                                onClick={() => handleEditSave(item.id)}
+                                onClick={() => handleEditSave(transporter.id)}
                                 className="text-green-600 hover:scale-110 transition p-1" 
                                 title="Save"
                               >
@@ -435,18 +306,18 @@ const ItemList = () => {
                           ) : (
                             <>
                               <button 
-                                onClick={() => handleEditClick(item)}
+                                onClick={() => handleEditClick(transporter)}
                                 className="text-brand-blue hover:scale-110 transition p-1" 
-                                title="Edit Item"
+                                title="Edit Transporter"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </button>
                               <button 
-                                onClick={() => openDeleteModal(item.id)}
+                                onClick={() => openDeleteModal(transporter.id)}
                                 className="text-red-500 hover:scale-110 transition p-1" 
-                                title="Delete Item"
+                                title="Delete Transporter"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -458,16 +329,16 @@ const ItemList = () => {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && !isLoading && (
+                  {transporters.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-10 text-center text-text-light italic text-[13px]">
-                        No items found in master. Add a new item to get started.
+                      <td colSpan="2" className="px-6 py-10 text-center text-text-light italic text-[13px]">
+                        No transporters found in master. Add a new transporter to get started.
                       </td>
                     </tr>
                   )}
                   {isLoading && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                      <td colSpan="2" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
                         Loading master data...
                       </td>
                     </tr>
@@ -492,4 +363,4 @@ const ItemList = () => {
   );
 };
 
-export default ItemList;
+export default TransporterList;

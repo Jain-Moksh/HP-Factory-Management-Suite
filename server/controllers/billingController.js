@@ -55,6 +55,16 @@ const billingController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  update: async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const data = await billingService.update(id, req.body);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

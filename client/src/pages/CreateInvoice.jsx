@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
@@ -11,6 +11,8 @@ import { API_BASE_URL } from '../config';
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
 
   // --- Master Data State ---
   const [clients, setClients] = useState([]);
@@ -143,6 +145,55 @@ const CreateInvoice = () => {
     fetchMasters();
   }, []);
 
+  // --- Fetch Bill Data for Edit Mode ---
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchBillData = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/billing/${id}`);
+          const result = await response.json();
+          if (result.success) {
+            const bill = result.data;
+            setFormData({
+              challanNo: bill.challan_no,
+              date: bill.date.split('T')[0],
+              transporter_id: bill.transporter_id || '',
+              transporterName: bill.transporter_name || '',
+              client_id: bill.client_id,
+              clientName: bill.client_name,
+              address1: bill.address1 || '', // Note: Check if these exist in DB or map from client
+              address2: bill.address2 || '',
+              short_remark: bill.short_remark || '',
+              long_remark: bill.long_remark || '',
+              transport: bill.transport_charge || '0',
+              packing: bill.packing_charge || '0',
+              extraDiscountPercent: bill.discount_percent || '0',
+              extraDiscountAmount: bill.discount_amount || '0',
+              roundOff: '' // Calculated automatically
+            });
+
+            // Map billing items
+            const mappedItems = bill.items.map(item => ({
+              id: item.id, // Or use a separate internal ID
+              item_id: item.item_id,
+              item: item.item_name,
+              qty: item.quantity,
+              unit: item.unit,
+              rate: item.rate,
+              dPercent: item.discount_percent,
+              dAmount: item.discount_amount,
+              total: item.total_amount
+            }));
+            setAddedItems(mappedItems);
+          }
+        } catch (err) {
+          console.error("Error fetching bill data:", err);
+        }
+      };
+      fetchBillData();
+    }
+  }, [isEditMode, id]);
+
   // Fetch Next Challan Number when date changes
   useEffect(() => {
     const fetchNextChallan = async () => {
@@ -156,10 +207,10 @@ const CreateInvoice = () => {
         console.error("Error fetching next challan:", err);
       }
     };
-    if (formData.date) {
+    if (formData.date && !isEditMode) {
       fetchNextChallan();
     }
-  }, [formData.date]);
+  }, [formData.date, isEditMode]);
 
   // --- Handlers ---
   const handleFormChange = (e) => {
@@ -470,8 +521,11 @@ const CreateInvoice = () => {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/billing`, {
-        method: 'POST',
+      const url = isEditMode ? `${API_BASE_URL}/billing/${id}` : `${API_BASE_URL}/billing`;
+      const method = isEditMode ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -479,11 +533,11 @@ const CreateInvoice = () => {
       if (result.success) {
         navigate('/order-summary');
       } else {
-        alert(result.message || 'Failed to save invoice');
+        alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} invoice`);
       }
     } catch (err) {
-      console.error("Error saving invoice:", err);
-      alert('Network error while saving invoice');
+      console.error(`Error ${isEditMode ? 'updating' : 'saving'} invoice:`, err);
+      alert(`Network error while ${isEditMode ? 'updating' : 'saving'} invoice`);
     }
   };
 
@@ -503,8 +557,8 @@ const CreateInvoice = () => {
     <Layout>
       <div className="flex flex-col min-h-screen pb-16">
         <PageHeader 
-          title="Create Invoice" 
-          subtitle="GENERATE SALES INVOICE AND MANAGE CLIENT BILLING" 
+          title={isEditMode ? "Edit Invoice" : "Create Invoice"} 
+          subtitle={isEditMode ? "MODIFY EXISTING SALES INVOICE AND BILLING DETAILS" : "GENERATE SALES INVOICE AND MANAGE CLIENT BILLING"} 
         />
 
         <div className="px-6 flex flex-col gap-5 w-full">
@@ -1295,7 +1349,7 @@ const CreateInvoice = () => {
                       className="w-full h-12 text-[13px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-blue/20"
                       onClick={handleFinalSave}
                     >
-                      Save Invoice
+                      {isEditMode ? "Update Invoice" : "Save Invoice"}
                     </Button>
                   </div>
                 </div>

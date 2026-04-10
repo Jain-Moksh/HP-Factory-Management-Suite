@@ -47,6 +47,12 @@ const purchaseQueries = {
     `,
     reverseStockUpdate: `
         UPDATE items SET stock = stock - $1 WHERE id = $2
+    `,
+    updatePurchase: `
+        UPDATE purchase SET 
+            jobber_id = $1, date = $2, remark = $3
+        WHERE id = $4
+        RETURNING *
     `
 };
 

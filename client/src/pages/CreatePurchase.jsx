@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
@@ -12,6 +12,8 @@ const API_BASE_URL = 'http://localhost:5000/api';
 
 const CreatePurchase = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
 
   // --- Master Data State ---
   const [jobbers, setJobbers] = useState([]);
@@ -122,24 +124,66 @@ const CreatePurchase = () => {
     };
     fetchMasters();
   }, []);
-
-  // Fetch Next Challan Number when date changes
-  useEffect(() => {
-    const fetchNextChallan = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
-        const data = await res.json();
-        if (data.success) {
-          setFormData(prev => ({ ...prev, challanNo: data.nextId }));
-        }
-      } catch (err) {
-        console.error("Error fetching next challan:", err);
+  const fetchNextChallan = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
+      const data = await response.json();
+      if (data.success) {
+        setFormData(prev => ({ ...prev, challanNo: data.nextId }));
       }
-    };
-    if (formData.date) {
+    } catch (err) {
+      console.error("Error fetching next ID:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (formData.date && !isEditMode) {
       fetchNextChallan();
     }
-  }, [formData.date]);
+  }, [formData.date, isEditMode]);
+
+  // --- Fetch Purchase Data for Edit Mode ---
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchPurchaseData = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/purchase/${id}`);
+          const result = await response.json();
+          if (result.success) {
+            const purchase = result.data;
+            setFormData({
+              challanNo: purchase.challan_no, 
+              date: purchase.date.split('T')[0],
+              jobber_id: purchase.jobber_id,
+              jobberName: purchase.jobber_name,
+              remarks: purchase.remark || ''
+            });
+            setJobberSearch(purchase.jobber_name);
+
+            // Fetch jobber items for validation
+            const resJ = await fetch(`${API_BASE_URL}/jobbers/${purchase.jobber_id}/items`);
+            const dataJ = await resJ.json();
+            if (dataJ.success) {
+              setJobberItems(dataJ.data);
+            }
+
+            // Map purchase items
+            const mappedItems = purchase.items.map(item => ({
+              id: item.id,
+              item_id: item.item_id,
+              item: item.item_name,
+              qty: item.quantity,
+              unit: item.unit
+            }));
+            setAddedItems(mappedItems);
+          }
+        } catch (err) {
+          console.error("Error fetching purchase data:", err);
+        }
+      };
+      fetchPurchaseData();
+    }
+  }, [isEditMode, id]);
 
   // --- Handlers ---
   const handleHeaderChange = (e) => {
@@ -328,39 +372,43 @@ const CreatePurchase = () => {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase`, {
-        method: 'POST',
+      const url = isEditMode ? `${API_BASE_URL}/purchase/${id}` : `${API_BASE_URL}/purchase`;
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       const result = await response.json();
       if (result.success) {
-        // --- Form Reset and Prepare for Next Entry ---
-        setAddedItems([]);
-        setFormData(prev => ({
-          ...prev,
-          remarks: '',
-          // challanNo will be updated below
-        }));
-        setJobberSearch('');
-        setCurrentItem({ item_id: '', item: '', qty: '', unit: 'DOZ' });
-        setItemEntrySearch('');
-        
-        // Fetch next ID for the next entry
-        const nextIdRes = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
-        const nextIdData = await nextIdRes.json();
-        if (nextIdData.success) {
-          setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
+        if (!isEditMode) {
+          // --- Form Reset and Prepare for Next Entry (Only if Creating) ---
+          setAddedItems([]);
+          setFormData(prev => ({
+            ...prev,
+            remarks: '',
+          }));
+          setJobberSearch('');
+          setCurrentItem({ item_id: '', item: '', qty: '', unit: 'DOZ' });
+          setItemEntrySearch('');
+          
+          // Fetch next ID for the next entry
+          const nextIdRes = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
+          const nextIdData = await nextIdRes.json();
+          if (nextIdData.success) {
+            setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
+          }
         }
 
-        alert("Purchase record saved successfully!");
+        alert(`Purchase record ${isEditMode ? 'updated' : 'saved'} successfully!`);
         navigate('/purchase');
       } else {
-        alert(result.message || "Failed to save purchase record");
+        alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} purchase record`);
       }
     } catch (err) {
-      console.error("Error saving purchase:", err);
-      alert("Network error occurred while saving.");
+      console.error(`Error ${isEditMode ? 'updating' : 'saving'} purchase:`, err);
+      alert(`Network error occurred while ${isEditMode ? 'updating' : 'saving'}.`);
     }
   };
 
@@ -368,8 +416,8 @@ const CreatePurchase = () => {
     <Layout>
       <div className="flex flex-col min-h-screen pb-16">
         <PageHeader 
-          title="Create Purchase" 
-          subtitle="ADD NEW PURCHASE CONTRACT AND ASSIGN JOBBER DETAILS" 
+          title={isEditMode ? "Edit Purchase" : "Create Purchase"} 
+          subtitle={isEditMode ? "MODIFY EXISTING PURCHASE CONTRACT AND JOBBER DETAILS" : "ADD NEW PURCHASE CONTRACT AND ASSIGN JOBBER DETAILS"} 
         />
 
         <div className="px-6 flex flex-col gap-5 w-full">
@@ -382,8 +430,9 @@ const CreatePurchase = () => {
                   type="text"
                   name="challanNo"
                   value={formData.challanNo}
+                  readOnly={isEditMode}
                   onChange={handleHeaderChange}
-                  className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
+                  className={`w-full h-9 px-3 ${isEditMode ? 'bg-bg-main cursor-not-allowed font-bold text-brand-blue' : 'bg-white'} border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm`}
                   placeholder="Enter Challan No."
                 />
               </div>
@@ -852,7 +901,7 @@ const CreatePurchase = () => {
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                       </svg>
-                      Save Purchase
+                      {isEditMode ? "Update Purchase" : "Save Purchase"}
                     </button>
                   </div>
                 </div>

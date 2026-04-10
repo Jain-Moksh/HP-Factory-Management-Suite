@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DeleteModal from './UI/DeleteModal';
 
 const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
+  const navigate = useNavigate();
   // --- Deletion State (Modals kept internal for UI cleanliness) ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [billToDelete, setBillToDelete] = useState(null);
@@ -53,7 +55,11 @@ const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
                   <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">{row.short_remark || '-'}</td>
                   <td className="px-3 py-1 border-x border-border-soft">
                     <div className="flex items-center justify-center gap-2">
-                      <button className="text-brand-blue hover:scale-110 p-1 rounded transition" title="Edit">
+                      <button 
+                        onClick={() => navigate(`/create-invoice/${row.id}`)}
+                        className="text-brand-blue hover:scale-110 p-1 rounded transition" 
+                        title="Edit"
+                      >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>

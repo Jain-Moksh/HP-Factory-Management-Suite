@@ -135,6 +135,9 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
     *   *Description*: List all billing records with client names.
 *   **GET `/billing/next-id`**
     *   *Description*: Fetch the dynamic next numeric ID for internal tracking (Note: This is NOT the formatted Challan Number).
+*   **PUT `/billing/:id`**
+    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes based on the updated items.
+    *   *Request Body*: Same as POST.
 *   **DELETE `/billing/:id`**
     *   *Description*: Securely delete an invoice and revert stock.
     *   *Request Body*: `{"password": "your_del_pass"}`
@@ -166,6 +169,9 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
     *   *Description*: List all purchase transactions with jobber names.
 *   **GET `/purchase/next-id`**
     *   *Description*: Fetch the next internal numeric sequence ID.
+*   **PUT `/purchase/:id`**
+    *   *Description*: Update an existing purchase and its items. This operation **reverts** the stock changes of the old purchase and **applies** new stock changes.
+    *   *Request Body*: Same as POST.
 *   **DELETE `/purchase/:id`**
     *   *Description*: Securely delete a purchase and revert stock.
 

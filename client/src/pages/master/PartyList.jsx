@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
@@ -21,6 +21,24 @@ const PartyList = () => {
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // --- Inline Edit State ---
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const editRowRef = useRef(null);
+
+  // Close editing on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (editRowRef.current && !editRowRef.current.contains(event.target)) {
+        handleEditCancel();
+      }
+    };
+    if (editingId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [editingId]);
 
   // --- Delete Modal State ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -99,6 +117,64 @@ const PartyList = () => {
     });
   };
 
+  // --- Inline Edit Handlers ---
+  const handleEditClick = (client) => {
+    setEditingId(client.id);
+    setEditFormData({
+      name: client.name,
+      shortform: client.shortform || '',
+      street: client.street || '',
+      city: client.city || '',
+      balance: client.balance || 0,
+      remark: client.remark || ''
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
+
+  const handleEditSave = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editFormData.name,
+          shortform: editFormData.shortform,
+          street: editFormData.street,
+          city: editFormData.city,
+          balance: parseFloat(editFormData.balance) || 0,
+          remark: editFormData.remark
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setClients(prev => prev.map(client => client.id === id ? { ...client, ...editFormData } : client));
+        setEditingId(null);
+      } else {
+        alert(result.message || 'Failed to update client');
+      }
+    } catch (err) {
+      alert('Network error while updating');
+    }
+  };
+
+  const handleKeyDown = (e, id) => {
+    if (e.key === 'Enter') {
+      handleEditSave(id);
+    } else if (e.key === 'Escape') {
+      handleEditCancel();
+    }
+  };
+
   const openDeleteModal = (id) => {
     setClientToDelete(id);
     setIsDeleteModalOpen(true);
@@ -127,9 +203,10 @@ const PartyList = () => {
       const result = await response.json();
       if (result.success) {
         setIsDeleteModalOpen(false);
+        setDeletePassword(''); // Clear password
         fetchClients();
       } else {
-        setDeleteError('Fail to delete');
+        setDeleteError(result.message || 'Fail to delete');
       }
     } catch (err) {
       setDeleteError('Network error while deleting');
@@ -274,39 +351,125 @@ const PartyList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                  {clients.map((client) => (
-                    <tr key={client.id} className="hover:bg-bg-main/30 transition-colors">
+                   {clients.map((client) => (
+                    <tr 
+                      key={client.id} 
+                      ref={editingId === client.id ? editRowRef : null}
+                      className={`transition-colors ${editingId === client.id ? 'bg-brand-blue/[0.04]' : 'hover:bg-bg-main/30'}`}
+                    >
                       <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                        {client.name} {client.shortform && <span className="text-text-secondary font-medium ml-1">({client.shortform})</span>}
+                        {editingId === client.id ? (
+                          <div className="flex flex-col gap-1">
+                            <input 
+                              name="name"
+                              value={editFormData.name}
+                              onChange={handleEditChange}
+                              onKeyDown={(e) => handleKeyDown(e, client.id)}
+                              autoFocus
+                              placeholder="Name"
+                              className="w-full bg-white border border-brand-blue/30 rounded px-2 py-0.5 outline-none focus:border-brand-blue"
+                            />
+                            <input 
+                              name="shortform"
+                              value={editFormData.shortform}
+                              onChange={handleEditChange}
+                              onKeyDown={(e) => handleKeyDown(e, client.id)}
+                              placeholder="Short"
+                              className="w-full bg-white border border-brand-blue/20 rounded px-2 py-0.5 outline-none focus:border-brand-blue text-[10px]"
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            {client.name} {client.shortform && <span className="text-text-secondary font-medium ml-1">({client.shortform})</span>}
+                          </>
+                        )}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
-                        {client.street}
+                        {editingId === client.id ? (
+                          <input 
+                            name="street"
+                            value={editFormData.street}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, client.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-0.5 outline-none"
+                          />
+                        ) : client.street}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft">
-                        {client.city}
+                        {editingId === client.id ? (
+                          <input 
+                            name="city"
+                            value={editFormData.city}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, client.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-0.5 outline-none"
+                          />
+                        ) : client.city}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue border-r border-border-soft">
-                        ₹{parseFloat(client.balance || 0).toLocaleString()}
+                        {editingId === client.id ? (
+                          <input 
+                            type="number"
+                            name="balance"
+                            value={editFormData.balance}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, client.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-0.5 outline-none font-bold text-brand-blue"
+                          />
+                        ) : `₹${parseFloat(client.balance || 0).toLocaleString()}`}
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft italic">
-                        {client.remark || '-'}
+                        {editingId === client.id ? (
+                          <input 
+                            name="remark"
+                            value={editFormData.remark}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, client.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-0.5 outline-none"
+                          />
+                        ) : (client.remark || '-')}
                       </td>
                       <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
-                          <button className="text-brand-blue hover:scale-110 transition p-1" title="Edit Party">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button 
-                            onClick={() => openDeleteModal(client.id)}
-                            className="text-red-500 hover:scale-110 transition p-1" 
-                            title="Delete Party"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          {editingId === client.id ? (
+                            <>
+                              <button 
+                                onClick={() => handleEditSave(client.id)}
+                                className="text-green-600 hover:scale-110 transition p-1" 
+                                title="Save"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                              </button>
+                              <button 
+                                onClick={handleEditCancel}
+                                className="text-red-500 hover:scale-110 transition p-1" 
+                                title="Cancel"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => handleEditClick(client)}
+                                className="text-brand-blue hover:scale-110 transition p-1" 
+                                title="Edit Party"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button 
+                                onClick={() => openDeleteModal(client.id)}
+                                className="text-red-500 hover:scale-110 transition p-1" 
+                                title="Delete Party"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

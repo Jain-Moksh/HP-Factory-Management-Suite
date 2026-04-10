@@ -64,7 +64,7 @@ const Purchase = () => {
 
   const filteredPurchases = useMemo(() => {
     return purchases.filter(p => {
-      const matchesChallan = (p.id?.toString() || '').includes(searchChallan);
+      const matchesChallan = (p.challan_no?.toString() || '').includes(searchChallan);
       const matchesJobber = (p.jobber_name?.toLowerCase() || '').includes(searchJobber.toLowerCase());
       
       const pDateStr = p.date ? p.date.split('T')[0] : '';
