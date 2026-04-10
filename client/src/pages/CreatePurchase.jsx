@@ -6,6 +6,7 @@ import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import DeleteModal from '../components/UI/DeleteModal';
+import WarningModal from '../components/UI/WarningModal';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -92,6 +93,11 @@ const CreatePurchase = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
 
+  // --- Warning Modal State ---
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState('');
+  const [jobberItems, setJobberItems] = useState([]); // Master list of items assigned to current jobber
+
   useEffect(() => {
     const fetchMasters = async () => {
       try {
@@ -133,12 +139,27 @@ const CreatePurchase = () => {
 
   const handleAppend = () => {
     if (!currentItem.item || !currentItem.qty) return;
+
+    // --- Validation: Check if item is assigned to jobber ---
+    const isAssigned = jobberItems.some(ji => ji.id === parseInt(currentItem.item_id));
+    
+    if (formData.jobber_id && !isAssigned) {
+      setWarningMessage(`The item "${currentItem.item}" is NOT currently assigned to "${formData.jobberName}" in the Master Database. Do you want to proceed anyway?`);
+      setIsWarningOpen(true);
+      return;
+    }
+
+    proceedAppend();
+  };
+
+  const proceedAppend = () => {
     const newItem = {
       ...currentItem,
       id: Date.now(),
     };
     setAddedItems([...addedItems, newItem]);
     handleRedo(); 
+    setIsWarningOpen(false);
   };
 
   const handleRedo = () => {
@@ -185,7 +206,7 @@ const CreatePurchase = () => {
     }));
   };
 
-  const handleSelectJobber = (jobber) => {
+  const handleSelectJobber = async (jobber) => {
     setFormData(prev => ({
       ...prev,
       jobber_id: jobber.id,
@@ -193,6 +214,17 @@ const CreatePurchase = () => {
     }));
     setJobberSearch(jobber.name);
     setShowJobberDropdown(false);
+
+    // Fetch assigned items for validation
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobbers/${jobber.id}/items`);
+      const data = await res.json();
+      if (data.success) {
+        setJobberItems(data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching jobber items:", err);
+    }
   };
 
   const handleSelectItem = (item) => {
@@ -813,6 +845,13 @@ const CreatePurchase = () => {
             </div>
           )}
         </div>
+        {/* Reusable Warning Modal */}
+        <WarningModal 
+          isOpen={isWarningOpen}
+          onClose={() => setIsWarningOpen(false)}
+          onConfirm={proceedAppend}
+          message={warningMessage}
+        />
       </div>
     </Layout>
   );

@@ -6,6 +6,7 @@ import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import DeleteModal from '../components/UI/DeleteModal';
+import WarningModal from '../components/UI/WarningModal';
 import { API_BASE_URL } from '../config';
 
 const CreateInvoice = () => {
@@ -29,6 +30,10 @@ const CreateInvoice = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
+
+  // --- Warning Modal State ---
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState('');
 
   // --- Refs for Click Outside ---
   const clientRef = useRef(null);
@@ -149,6 +154,32 @@ const CreateInvoice = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAppendItem = () => {
+    if (!currentItem.item || !currentItem.qty) return;
+
+    // --- Validation: Check for negative stock ---
+    const stock = parseFloat(currentItem.stock) || 0;
+    const qty = parseFloat(currentItem.qty) || 0;
+
+    if (qty > stock) {
+      setWarningMessage(`Current stock is only ${stock} ${currentItem.unit}, but you are entering ${qty} ${currentItem.unit}. This will result in negative stock. Do you want to proceed?`);
+      setIsWarningOpen(true);
+      return;
+    }
+
+    proceedAppend();
+  };
+
+  const proceedAppend = () => {
+    const newItem = {
+      ...currentItem,
+      id: Date.now(),
+    };
+    setAddedItems([...addedItems, newItem]);
+    handleRedoCurrent();
+    setIsWarningOpen(false);
+  };
+
   const handleSummaryFieldChange = (e) => {
     const { name, value } = e.target;
     updateSummaryValue(name, value);
@@ -221,16 +252,6 @@ const CreateInvoice = () => {
     const current = parseFloat(currentItem[field]) || 0;
     const nextValue = Math.max(0, current + delta).toString();
     updateEntryValue(field, nextValue);
-  };
-
-  const handleAppendItem = () => {
-    if (!currentItem.item || !currentItem.qty) return;
-    const newItem = {
-      ...currentItem,
-      id: Date.now()
-    };
-    setAddedItems([...addedItems, newItem]);
-    handleRedoCurrent();
   };
 
   const handleRedoCurrent = () => {
@@ -1269,6 +1290,13 @@ const CreateInvoice = () => {
             message="You are about to remove an item from this invoice. This action cannot be undone."
           />
         </div>
+        {/* Reusable Warning Modal */}
+        <WarningModal 
+          isOpen={isWarningOpen}
+          onClose={() => setIsWarningOpen(false)}
+          onConfirm={proceedAppend}
+          message={warningMessage}
+        />
       </div>
     </Layout>
   );
