@@ -2,7 +2,7 @@ import React from 'react';
 
 const FilterBar = ({ 
   searchPlaceholder1 = "Search by Challan No.", 
-  searchPlaceholder2 = "Search by Customer Name",
+  searchPlaceholder2 = "Search by Party Name",
   onSearch1,
   onSearch2,
   onStartDate,

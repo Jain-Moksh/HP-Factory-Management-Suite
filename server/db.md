@@ -62,6 +62,7 @@ CREATE TABLE billing (
     short_remark TEXT,
     long_remark TEXT,
     grand_total NUMERIC,
+    challan_no TEXT,
 
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (transporter_id) REFERENCES transporters(id)

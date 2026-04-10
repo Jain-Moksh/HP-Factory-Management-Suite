@@ -92,7 +92,8 @@ const CreateInvoice = () => {
     clientName: '',
     address1: '',
     address2: '',
-    remarks: '',
+    short_remark: '',
+    long_remark: '',
     transport: '',
     packing: '',
     extraDiscountPercent: '',
@@ -387,8 +388,8 @@ const CreateInvoice = () => {
       discount_percent: parseFloat(formData.extraDiscountPercent) || 0,
       discount_amount: discountAmount,
       total_amount: itemsSubtotal,
-      short_remark: formData.remarks,
-      long_remark: '',
+      short_remark: formData.short_remark,
+      long_remark: formData.long_remark,
       grand_total: grandTotal,
       items: addedItems.map(item => ({
         item_id: item.item_id,
@@ -410,7 +411,7 @@ const CreateInvoice = () => {
       });
       const result = await response.json();
       if (result.success) {
-        navigate('/billing-entries');
+        navigate('/order-summary');
       } else {
         alert(result.message || 'Failed to save invoice');
       }
@@ -472,7 +473,7 @@ const CreateInvoice = () => {
               {/* Row 2: Client & Address Details */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="flex flex-col gap-1 text-left relative col-span-2">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Client Name</label>
+                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Party Name</label>
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
                       <input 
@@ -485,7 +486,7 @@ const CreateInvoice = () => {
                         }}
                         onFocus={() => setShowClientDropdown(true)}
                         className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue shadow-sm"
-                        placeholder="Search Client Database..."
+                        placeholder="Search Party Database..."
                         autoComplete="off"
                       />
                       {showClientDropdown && (
@@ -513,7 +514,7 @@ const CreateInvoice = () => {
                       className="whitespace-nowrap h-9 px-5 text-[11px] font-bold uppercase tracking-wide rounded-lg shadow-sm"
                       onClick={() => setShowClientForm(true)}
                     >
-                      New Client
+                      New Party
                     </Button>
                   </div>
                 </div>
@@ -547,11 +548,11 @@ const CreateInvoice = () => {
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Remark</label>
                   <input 
                     type="text"
-                    name="remarks"
-                    value={formData.remarks}
+                    name="short_remark"
+                    value={formData.short_remark}
                     onChange={handleFormChange}
                     className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                    placeholder="Reference or Notes"
+                    placeholder="Short Reference / Note"
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-left relative">
@@ -603,7 +604,7 @@ const CreateInvoice = () => {
                 <div className="bg-table-header px-6 py-3 flex justify-between items-center">
                   <div className="flex items-center gap-2.5">
                     <div className="w-1.5 h-4 bg-white/30 rounded-full"></div>
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">New Client Entry</h3>
+                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">New Party Entry</h3>
                   </div>
                   <button onClick={() => setShowClientForm(false)} className="p-1 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -613,7 +614,7 @@ const CreateInvoice = () => {
                 <div className="p-6 flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5 flex-1">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Client Name</label>
+                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Party Name</label>
                       <input 
                         type="text"
                         name="name"
@@ -704,7 +705,7 @@ const CreateInvoice = () => {
                     disabled={isSavingNewClient}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
                   >
-                    {isSavingNewClient ? "Saving..." : "Save Client"}
+                    {isSavingNewClient ? "Saving..." : "Save Party"}
                   </Button>
                 </div>
               </Card>
@@ -1116,11 +1117,11 @@ const CreateInvoice = () => {
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block opacity-70 ml-1">Invoice Remarks</label>
                   <textarea 
-                    name="remarks"
-                    value={formData.remarks}
+                    name="long_remark"
+                    value={formData.long_remark}
                     onChange={handleFormChange}
                     className="w-full h-full min-h-[180px] px-4 py-3 bg-white border border-border-soft rounded-xl text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 transition-all shadow-sm placeholder:italic placeholder:opacity-20 resize-none"
-                    placeholder="Enter customer notes, terms, or internal billing details..."
+                    placeholder="Enter detailed customer notes, terms, or internal billing details..."
                   />
                 </div>
 
@@ -1203,7 +1204,7 @@ const CreateInvoice = () => {
                       <Button 
                         variant="secondary" 
                         className="flex-1 h-10 text-[11px] font-bold uppercase tracking-widest"
-                        onClick={() => navigate('/billing-entries')}
+                        onClick={() => navigate('/order-summary')}
                       >
                         Cancel
                       </Button>

@@ -5,7 +5,7 @@ import FilterBar from '../components/FilterBar';
 import BillingTable from '../components/BillingTable';
 import { API_BASE_URL } from '../config';
 
-const BillingEntries = () => {
+const OrderSummary = () => {
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -70,7 +70,7 @@ const BillingEntries = () => {
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
-          title="Billing Entries" 
+          title="Order Summary" 
           subtitle="MANAGE AND TRACK ALL BILLING RECORDS" 
         />
         
@@ -112,4 +112,4 @@ const BillingEntries = () => {
   );
 };
 
-export default BillingEntries;
+export default OrderSummary;

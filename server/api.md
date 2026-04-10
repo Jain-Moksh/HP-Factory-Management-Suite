@@ -130,6 +130,13 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
         ```
 *   **GET `/billing/:id`**
     *   *Description*: Returns bill details, client name, transporter name, and item list with item names.
+*   **GET `/billing`**
+    *   *Description*: List all billing records with client names.
+*   **GET `/billing/next-id`**
+    *   *Description*: Fetch the dynamic next Challan ID for new invoices.
+*   **DELETE `/billing/:id`**
+    *   *Description*: Securely delete an invoice and revert stock.
+    *   *Request Body*: `{"password": "your_del_pass"}`
 
 ### 2. Purchase
 Used for receiving stock from jobbers. Creating a purchase automatically **increments** item stock.
@@ -153,6 +160,12 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
         ```
 *   **GET `/purchase/:id`**
     *   *Description*: Returns purchase details with jobber name and item list with item names.
+*   **GET `/purchase`**
+    *   *Description*: List all purchase transactions with jobber names.
+*   **GET `/purchase/next-id`**
+    *   *Description*: Fetch the next sequence ID for new purchases.
+*   **DELETE `/purchase/:id`**
+    *   *Description*: Securely delete a purchase and revert stock.
 
 ---
 

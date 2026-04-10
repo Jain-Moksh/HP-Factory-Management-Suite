@@ -19,12 +19,6 @@ const Purchase = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // --- Delete State ---
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deleteError, setDeleteError] = useState('');
-
   useEffect(() => {
     fetchPurchases();
   }, []);
@@ -44,32 +38,24 @@ const Purchase = () => {
     }
   };
 
-  const openDeleteModal = (id) => {
-    setItemToDelete(id);
-    setIsDeleteModalOpen(true);
-    setDeletePassword('');
-    setDeleteError('');
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (deletePassword !== 'Pass@123') {
-      setDeleteError('Incorrect master password');
-      return;
-    }
-
+  const handleDeleteRow = async (id, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase/${itemToDelete}`, {
-        method: 'DELETE'
+      const response = await fetch(`${API_BASE_URL}/purchase/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
       });
       const result = await response.json();
       if (result.success) {
-        setIsDeleteModalOpen(false);
         fetchPurchases();
+        return true;
       } else {
-        setDeleteError(result.message || 'Failed to delete record');
+        alert(result.message || 'Deletion failed');
+        return false;
       }
     } catch (err) {
-      setDeleteError('Network error occurred');
+      console.error("Delete error:", err);
+      return false;
     }
   };
 
@@ -118,19 +104,9 @@ const Purchase = () => {
           <PurchaseTable 
             data={filteredPurchases} 
             loading={loading}
-            onDelete={openDeleteModal}
+            onDelete={handleDeleteRow}
           />
         </div>
-
-        <DeleteModal 
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={handleDeleteConfirm}
-          password={deletePassword}
-          setPassword={setDeletePassword}
-          error={deleteError}
-          message="You are about to delete a purchase record. This will also adjust your stock levels by reversing the entry."
-        />
 
         {/* Sticky Footer for Months/Year - Reused from Billing for UI consistency */}
         <footer className="fixed bottom-0 right-0 left-[210px] bg-white border-t border-border-soft px-6 py-2.5 flex justify-between items-center z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] font-inter">
