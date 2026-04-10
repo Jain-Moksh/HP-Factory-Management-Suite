@@ -12,7 +12,7 @@ const ItemList = () => {
   const [formData, setFormData] = useState({
     name: '',
     rate: '',
-    unit: 'PCS',
+    unit: 'DOZ',
     conversion: '1',
     stock: ''
   });
@@ -91,7 +91,7 @@ const ItemList = () => {
     setFormData({
       name: '',
       rate: '',
-      unit: 'PCS',
+      unit: 'DOZ',
       conversion: '1',
       stock: ''
     });
@@ -189,10 +189,12 @@ const ItemList = () => {
                         onChange={handleInputChange}
                         className="w-full h-10 px-3 bg-transparent outline-none text-[12px] font-bold text-text-secondary cursor-pointer"
                       >
+                        <option value="GMS">GMS</option>
+                        <option value="BUNDLE">BUNDLE</option>
+                        <option value="GROSS">GROSS</option>
+                        <option value="SET">SET</option>
                         <option value="PCS">PCS</option>
-                        <option value="DOZEN">DOZEN</option>
-                        <option value="KGS">KGS</option>
-                        <option value="MTRS">MTRS</option>
+                        <option value="DOZ">DOZ</option>
                       </select>
                     </td>
                     <td className="p-0 border-r border-border-soft">

@@ -36,7 +36,7 @@ const CreatePurchase = () => {
   const [newItemFormData, setNewItemFormData] = useState({
     name: '',
     rate: '',
-    unit: 'PCS',
+    unit: 'DOZ',
     conversion: '1',
     stock: '0'
   });
@@ -54,7 +54,7 @@ const CreatePurchase = () => {
     item_id: '',
     item: '',
     qty: '',
-    unit: 'PCS'
+    unit: 'DOZ'
   });
 
   // --- Batch Summary State (Appended Items) ---
@@ -116,7 +116,7 @@ const CreatePurchase = () => {
   };
 
   const handleRedo = () => {
-    setCurrentItem({ item_id: '', item: '', qty: '', unit: 'PCS' });
+    setCurrentItem({ item_id: '', item: '', qty: '', unit: 'DOZ' });
     setItemEntrySearch('');
   };
 
@@ -157,7 +157,7 @@ const CreatePurchase = () => {
       ...prev,
       item_id: item.id,
       item: item.name,
-      unit: item.unit || 'PCS'
+      unit: item.unit || 'DOZ'
     }));
     setItemEntrySearch(item.name);
     setShowItemDropdown(false);
@@ -200,7 +200,7 @@ const CreatePurchase = () => {
         setItems(prev => [...prev, result.data]);
         handleSelectItem(result.data);
         setShowItemModal(false);
-        setNewItemFormData({ name: '', rate: '', unit: 'PCS', conversion: '1', stock: '0' });
+        setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0' });
       }
     } catch (err) {
       console.error("Error saving item:", err);
@@ -242,7 +242,7 @@ const CreatePurchase = () => {
           // challanNo will be updated below
         }));
         setJobberSearch('');
-        setCurrentItem({ item_id: '', item: '', qty: '', unit: 'PCS' });
+        setCurrentItem({ item_id: '', item: '', qty: '', unit: 'DOZ' });
         setItemEntrySearch('');
         
         // Fetch next ID for the next entry
@@ -411,10 +411,12 @@ const CreatePurchase = () => {
                     onChange={handleEntryChange}
                     className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-secondary outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 cursor-pointer shadow-sm appearance-none"
                   >
+                    <option value="GMS">GMS</option>
+                    <option value="BUNDLE">BUNDLE</option>
+                    <option value="GROSS">GROSS</option>
+                    <option value="SET">SET</option>
                     <option value="PCS">PCS</option>
-                    <option value="KGS">KGS</option>
-                    <option value="DOZEN">DOZEN</option>
-                    <option value="MTR">MTR</option>
+                    <option value="DOZ">DOZ</option>
                   </select>
                 </div>
               </div>
@@ -563,10 +565,12 @@ const CreatePurchase = () => {
                         onChange={(e) => setNewItemFormData(prev => ({ ...prev, unit: e.target.value }))}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer appearance-none shadow-sm"
                       >
+                        <option value="GMS">GMS</option>
+                        <option value="BUNDLE">BUNDLE</option>
+                        <option value="GROSS">GROSS</option>
+                        <option value="SET">SET</option>
                         <option value="PCS">PCS</option>
-                        <option value="KGS">KGS</option>
-                        <option value="DOZEN">DOZEN</option>
-                        <option value="MTR">MTR</option>
+                        <option value="DOZ">DOZ</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -597,7 +601,7 @@ const CreatePurchase = () => {
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
                   <button 
                     onClick={() => {
-                        setNewItemFormData({ name: '', rate: '', unit: 'PCS', conversion: '1', stock: '0' });
+                        setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0' });
                         setShowItemModal(false);
                     }}
                     className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-red-500 transition-all uppercase tracking-widest"

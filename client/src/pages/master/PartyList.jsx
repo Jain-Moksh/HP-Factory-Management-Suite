@@ -269,6 +269,7 @@ const PartyList = () => {
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 1</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Address 2</th>
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Opening Balance</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Remarks</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
@@ -286,6 +287,9 @@ const PartyList = () => {
                       </td>
                       <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue border-r border-border-soft">
                         ₹{parseFloat(client.balance || 0).toLocaleString()}
+                      </td>
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft italic">
+                        {client.remark || '-'}
                       </td>
                       <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">

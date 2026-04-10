@@ -79,7 +79,7 @@ const CreateInvoice = () => {
   const [newItemFormData, setNewItemFormData] = useState({
     name: '',
     rate: '',
-    unit: 'PCS',
+    unit: 'DOZ',
     conversion: '1',
     stock: '0'
   });
@@ -107,7 +107,7 @@ const CreateInvoice = () => {
     item: '',
     stock: '0',
     qty: '',
-    unit: 'PCS',
+    unit: 'DOZ',
     rate: '',
     dPercent: '',
     dAmount: '',
@@ -212,7 +212,7 @@ const CreateInvoice = () => {
   };
 
   const handleRedoCurrent = () => {
-    setCurrentItem({ item: '', stock: '0', qty: '', unit: 'PCS', rate: '', dPercent: '', dAmount: '', discount: '0.00', total: '0.00' });
+    setCurrentItem({ item: '', stock: '0', qty: '', unit: 'DOZ', rate: '', dPercent: '', dAmount: '', discount: '0.00', total: '0.00' });
   };
 
   const handleNewClientChange = (e) => {
@@ -279,7 +279,7 @@ const CreateInvoice = () => {
   };
 
   const handleRedoNewItem = () => {
-    setNewItemFormData({ name: '', rate: '', unit: 'PCS', conversion: '1', stock: '0' });
+    setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0' });
   };
 
   const handleSelectClient = (client) => {
@@ -780,10 +780,12 @@ const CreateInvoice = () => {
                       onChange={handleEntryChange}
                       className="w-20 h-9 px-2 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-secondary outline-none focus:border-brand-blue cursor-pointer shadow-sm appearance-none"
                     >
+                      <option value="GMS">GMS</option>
+                      <option value="BUNDLE">BUNDLE</option>
+                      <option value="GROSS">GROSS</option>
+                      <option value="SET">SET</option>
                       <option value="PCS">PCS</option>
-                      <option value="KGS">KGS</option>
-                      <option value="DOZEN">DOZEN</option>
-                      <option value="MTR">MTR</option>
+                      <option value="DOZ">DOZ</option>
                     </select>
                   </div>
                 </div>
@@ -915,10 +917,12 @@ const CreateInvoice = () => {
                         onChange={handleNewItemFormChange}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer appearance-none shadow-sm"
                       >
+                        <option value="GMS">GMS</option>
+                        <option value="BUNDLE">BUNDLE</option>
+                        <option value="GROSS">GROSS</option>
+                        <option value="SET">SET</option>
                         <option value="PCS">PCS</option>
-                        <option value="KGS">KGS</option>
-                        <option value="DOZEN">DOZEN</option>
-                        <option value="MTR">MTR</option>
+                        <option value="DOZ">DOZ</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -1029,10 +1033,12 @@ const CreateInvoice = () => {
                               onChange={(e) => handleSummaryRowChange(item.id, 'unit', e.target.value)}
                               className="bg-white border border-brand-blue/20 rounded px-1 py-0.5 text-[11px] font-bold text-text-secondary outline-none"
                             >
-                              <option>PCS</option>
-                              <option>KGS</option>
-                              <option>MTR</option>
-                              <option>DOZEN</option>
+                              <option value="GMS">GMS</option>
+                              <option value="BUNDLE">BUNDLE</option>
+                              <option value="GROSS">GROSS</option>
+                              <option value="SET">SET</option>
+                              <option value="PCS">PCS</option>
+                              <option value="DOZ">DOZ</option>
                             </select>
                           ) : (
                             <span className="text-text-secondary font-bold text-[11px]">{item.unit}</span>
