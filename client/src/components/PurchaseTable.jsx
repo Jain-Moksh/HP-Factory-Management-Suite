@@ -1,11 +1,13 @@
 import React from 'react';
 
-const PurchaseTable = () => {
-  const data = [
-    { id: 1, challan: 'PUR-882', date: '28/03/2026', jobber: 'Hemant Plast' },
-    { id: 2, challan: 'PUR-883', date: '29/03/2026', jobber: 'RK Industries' },
-    { id: 3, challan: 'PUR-884', date: '30/03/2026', jobber: 'Suresh Kumar' },
-  ];
+const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
+  if (loading) {
+    return (
+      <div className="bg-white border border-border-soft rounded-xl shadow-sm p-12 text-center text-text-light font-medium italic animate-pulse">
+        Loading purchase records...
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
@@ -22,9 +24,11 @@ const PurchaseTable = () => {
           <tbody className="divide-y divide-border-soft">
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">{row.date}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.id}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">
+                  {new Date(row.date).toLocaleDateString('en-GB')}
+                </td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber_name}</td>
                 <td className="px-3 py-1.5 border-x border-border-soft">
                   <div className="flex items-center justify-center gap-2.5">
                     <button className="text-brand-blue hover:scale-110 p-1.5 rounded transition" title="Edit Purchase">
@@ -32,7 +36,11 @@ const PurchaseTable = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
-                    <button className="text-red-500 hover:scale-110 p-1.5 rounded transition" title="Delete Purchase">
+                    <button 
+                      className="text-red-500 hover:scale-110 p-1.5 rounded transition" 
+                      title="Delete Purchase"
+                      onClick={() => onDelete(row.id)}
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>

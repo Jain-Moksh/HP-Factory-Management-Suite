@@ -1,12 +1,90 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import FilterBar from '../components/FilterBar';
 import PurchaseTable from '../components/PurchaseTable';
+import DeleteModal from '../components/UI/DeleteModal';
+
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const Purchase = () => {
   const navigate = useNavigate();
+  const [purchases, setPurchases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // --- Filter State ---
+  const [searchChallan, setSearchChallan] = useState('');
+  const [searchJobber, setSearchJobber] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // --- Delete State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  useEffect(() => {
+    fetchPurchases();
+  }, []);
+
+  const fetchPurchases = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/purchase`);
+      const result = await response.json();
+      if (result.success) {
+        setPurchases(result.data);
+      }
+    } catch (err) {
+      console.error("Error fetching purchases:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDeleteModal = (id) => {
+    setItemToDelete(id);
+    setIsDeleteModalOpen(true);
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deletePassword !== 'Pass@123') {
+      setDeleteError('Incorrect master password');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/purchase/${itemToDelete}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      if (result.success) {
+        setIsDeleteModalOpen(false);
+        fetchPurchases();
+      } else {
+        setDeleteError(result.message || 'Failed to delete record');
+      }
+    } catch (err) {
+      setDeleteError('Network error occurred');
+    }
+  };
+
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter(p => {
+      const matchesChallan = (p.id?.toString() || '').includes(searchChallan);
+      const matchesJobber = (p.jobber_name?.toLowerCase() || '').includes(searchJobber.toLowerCase());
+      
+      const pDate = p.date ? p.date.split('T')[0] : '';
+      const matchesStart = !startDate || (pDate && pDate >= startDate);
+      const matchesEnd = !endDate || (pDate && pDate <= endDate);
+
+      return matchesChallan && matchesJobber && matchesStart && matchesEnd;
+    });
+  }, [purchases, searchChallan, searchJobber, startDate, endDate]);
 
   const purchaseActions = [
     {
@@ -30,9 +108,29 @@ const Purchase = () => {
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          <FilterBar searchPlaceholder2="Search by Jobber Name" />
-          <PurchaseTable />
+          <FilterBar 
+            searchPlaceholder2="Search by Jobber Name" 
+            onSearch1={setSearchChallan}
+            onSearch2={setSearchJobber}
+            onStartDate={setStartDate}
+            onEndDate={setEndDate}
+          />
+          <PurchaseTable 
+            data={filteredPurchases} 
+            loading={loading}
+            onDelete={openDeleteModal}
+          />
         </div>
+
+        <DeleteModal 
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteConfirm}
+          password={deletePassword}
+          setPassword={setDeletePassword}
+          error={deleteError}
+          message="You are about to delete a purchase record. This will also adjust your stock levels by reversing the entry."
+        />
 
         {/* Sticky Footer for Months/Year - Reused from Billing for UI consistency */}
         <footer className="fixed bottom-0 right-0 left-[210px] bg-white border-t border-border-soft px-6 py-2.5 flex justify-between items-center z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] font-inter">

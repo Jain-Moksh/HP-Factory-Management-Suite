@@ -1,42 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
+import DeleteModal from '../components/UI/DeleteModal';
+
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const CreatePurchase = () => {
   const navigate = useNavigate();
 
+  // --- Master Data State ---
+  const [jobbers, setJobbers] = useState([]);
+  const [items, setItems] = useState([]);
+  const [isMastersLoading, setIsMastersLoading] = useState(true);
+
+  // --- Dropdown States ---
+  const [showJobberDropdown, setShowJobberDropdown] = useState(false);
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
+  const [jobberSearch, setJobberSearch] = useState('');
+  const [itemEntrySearch, setItemEntrySearch] = useState('');
+
   // --- Jobber Entry Modal State ---
   const [showJobberForm, setShowJobberForm] = useState(false);
+  const [isSavingNewJobber, setIsSavingNewJobber] = useState(false);
   const [newJobberData, setNewJobberData] = useState({
-    name: '',
-    assignedItems: []
+    name: ''
   });
-  const [itemSearch, setItemSearch] = useState('');
-  const mockAvailableItems = ['Fabric A', 'Zip 20"', 'Button High Gloss', 'Lining Material', 'Thread 40/2', 'Metal Clip'];
 
   // --- New Item Modal State ---
   const [showItemModal, setShowItemModal] = useState(false);
+  const [isSavingNewItem, setIsSavingNewItem] = useState(false);
   const [newItemFormData, setNewItemFormData] = useState({
-    itemName: '',
+    name: '',
     rate: '',
     unit: 'PCS',
     conversion: '1',
-    openingStock: '0'
+    stock: '0'
   });
 
   const [formData, setFormData] = useState({
-    challanNo: '',
+    challanNo: 'AUTO',
     date: new Date().toISOString().split('T')[0],
-    jobber: '',
+    jobber_id: '',
+    jobberName: '',
     remarks: ''
   });
 
   // --- Current Entry State (Single Row) ---
   const [currentItem, setCurrentItem] = useState({
+    item_id: '',
     item: '',
     qty: '',
     unit: 'PCS'
@@ -44,6 +59,40 @@ const CreatePurchase = () => {
 
   // --- Batch Summary State (Appended Items) ---
   const [addedItems, setAddedItems] = useState([]);
+
+  // --- Delete Modal State ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  useEffect(() => {
+    const fetchMasters = async () => {
+      try {
+        const [jobbersRes, itemsRes, nextIdRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/jobbers`),
+          fetch(`${API_BASE_URL}/items`),
+          fetch(`${API_BASE_URL}/purchase/next-id`)
+        ]);
+
+        const [jobbersData, itemsData, nextIdData] = await Promise.all([
+          jobbersRes.json(),
+          itemsRes.json(),
+          nextIdRes.json()
+        ]);
+
+        if (jobbersData.success) setJobbers(jobbersData.data);
+        if (itemsData.success) setItems(itemsData.data);
+        if (nextIdData.success) setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
+
+      } catch (err) {
+        console.error("Error fetching masters:", err);
+      } finally {
+        setIsMastersLoading(false);
+      }
+    };
+    fetchMasters();
+  }, []);
 
   // --- Handlers ---
   const handleHeaderChange = (e) => {
@@ -67,7 +116,8 @@ const CreatePurchase = () => {
   };
 
   const handleRedo = () => {
-    setCurrentItem({ item: '', qty: '', unit: 'PCS' });
+    setCurrentItem({ item_id: '', item: '', qty: '', unit: 'PCS' });
+    setItemEntrySearch('');
   };
 
   const handleDelete = (id) => {
@@ -78,10 +128,12 @@ const CreatePurchase = () => {
     const itemToEdit = addedItems.find(item => item.id === id);
     if (!itemToEdit) return;
     setCurrentItem({
+      item_id: itemToEdit.item_id,
       item: itemToEdit.item,
       qty: itemToEdit.qty,
       unit: itemToEdit.unit
     });
+    setItemEntrySearch(itemToEdit.item);
     setAddedItems(addedItems.filter(item => item.id !== id));
   };
 
@@ -90,35 +142,124 @@ const CreatePurchase = () => {
     setNewJobberData(prev => ({ ...prev, [name]: value }));
   };
 
-  const toggleAssignedItem = (itemName) => {
-    setNewJobberData(prev => {
-      const isSelected = prev.assignedItems.includes(itemName);
-      if (isSelected) {
-        return { ...prev, assignedItems: prev.assignedItems.filter(i => i !== itemName) };
-      } else {
-        return { ...prev, assignedItems: [...prev.assignedItems, itemName] };
+  const handleSelectJobber = (jobber) => {
+    setFormData(prev => ({
+      ...prev,
+      jobber_id: jobber.id,
+      jobberName: jobber.name
+    }));
+    setJobberSearch(jobber.name);
+    setShowJobberDropdown(false);
+  };
+
+  const handleSelectItem = (item) => {
+    setCurrentItem(prev => ({
+      ...prev,
+      item_id: item.id,
+      item: item.name,
+      unit: item.unit || 'PCS'
+    }));
+    setItemEntrySearch(item.name);
+    setShowItemDropdown(false);
+  };
+
+  const handleSaveJobber = async () => {
+    if (!newJobberData.name) return;
+    setIsSavingNewJobber(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobbers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newJobberData)
+      });
+      const result = await response.json();
+      if (result.success) {
+        setJobbers(prev => [...prev, result.data]);
+        handleSelectJobber(result.data);
+        setShowJobberForm(false);
+        setNewJobberData({ name: '' });
       }
-    });
-    setItemSearch('');
+    } catch (err) {
+      console.error("Error saving jobber:", err);
+    } finally {
+      setIsSavingNewJobber(false);
+    }
   };
 
-  const handleSaveJobber = () => {
-    setShowJobberForm(false);
-    setNewJobberData({ name: '', assignedItems: [] });
+  const handleSaveNewItem = async () => {
+    if (!newItemFormData.name) return;
+    setIsSavingNewItem(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItemFormData)
+      });
+      const result = await response.json();
+      if (result.success) {
+        setItems(prev => [...prev, result.data]);
+        handleSelectItem(result.data);
+        setShowItemModal(false);
+        setNewItemFormData({ name: '', rate: '', unit: 'PCS', conversion: '1', stock: '0' });
+      }
+    } catch (err) {
+      console.error("Error saving item:", err);
+    } finally {
+      setIsSavingNewItem(false);
+    }
   };
 
-  const handleNewItemFormChange = (e) => {
-    const { name, value } = e.target;
-    setNewItemFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const handleFinalSave = async () => {
+    if (!formData.jobber_id || addedItems.length === 0) {
+      alert("Please select a jobber and add at least one item.");
+      return;
+    }
 
-  const handleSaveNewItem = () => {
-    setShowItemModal(false);
-    handleRedoNewItem();
-  };
+    const payload = {
+      jobber_id: formData.jobber_id,
+      date: formData.date,
+      remark: formData.remarks,
+      items: addedItems.map(i => ({
+        item_id: i.item_id,
+        quantity: i.qty,
+        unit: i.unit
+      }))
+    };
 
-  const handleRedoNewItem = () => {
-    setNewItemFormData({ itemName: '', rate: '', unit: 'PCS', conversion: '1', openingStock: '0' });
+    try {
+      const response = await fetch(`${API_BASE_URL}/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (result.success) {
+        // --- Form Reset and Prepare for Next Entry ---
+        setAddedItems([]);
+        setFormData(prev => ({
+          ...prev,
+          remarks: '',
+          // challanNo will be updated below
+        }));
+        setJobberSearch('');
+        setCurrentItem({ item_id: '', item: '', qty: '', unit: 'PCS' });
+        setItemEntrySearch('');
+        
+        // Fetch next ID for the next entry
+        const nextIdRes = await fetch(`${API_BASE_URL}/purchase/next-id`);
+        const nextIdData = await nextIdRes.json();
+        if (nextIdData.success) {
+          setFormData(prev => ({ ...prev, challanNo: nextIdData.nextId }));
+        }
+
+        alert("Purchase record saved successfully! You can now enter the next one.");
+      } else {
+        alert(result.message || "Failed to save purchase record");
+      }
+    } catch (err) {
+      console.error("Error saving purchase:", err);
+      alert("Network error occurred while saving.");
+    }
   };
 
   return (
@@ -131,7 +272,7 @@ const CreatePurchase = () => {
 
         <div className="px-6 flex flex-col gap-5 w-full">
           {/* Top Identification Card - Perfectly Uniform for Hub Rhythm */}
-          <Card className="p-4 bg-white/80 backdrop-blur-sm border-border-soft/60">
+          <Card className="p-4 bg-white/80 backdrop-blur-sm border-border-soft/60 relative z-[100] overflow-visible">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Challan No</label>
@@ -156,15 +297,41 @@ const CreatePurchase = () => {
               </div>
               <div className="flex flex-col gap-1 text-left relative col-span-2">
                 <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Jobber Name</label>
-                <div className="flex gap-2">
-                  <input 
-                    type="text"
-                    name="jobber"
-                    value={formData.jobber}
-                    onChange={handleHeaderChange}
-                    className="flex-1 h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                    placeholder="Select or Search Jobber..."
-                  />
+                <div className="flex gap-2 relative">
+                  <div className="relative flex-1 group">
+                    <input 
+                      type="text"
+                      name="jobberName"
+                      value={jobberSearch}
+                      onChange={(e) => {
+                        setJobberSearch(e.target.value);
+                        setShowJobberDropdown(true);
+                        if (!e.target.value) setFormData(prev => ({ ...prev, jobber_id: '', jobberName: '' }));
+                      }}
+                      onFocus={() => setShowJobberDropdown(true)}
+                      className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
+                      placeholder="Select or Search Jobber..."
+                      autoComplete="off"
+                    />
+                    {showJobberDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-soft rounded-xl shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in slide-in-from-top-1 duration-200">
+                        {jobbers.filter(j => j.name.toLowerCase().includes(jobberSearch.toLowerCase())).length > 0 ? (
+                          jobbers.filter(j => j.name.toLowerCase().includes(jobberSearch.toLowerCase())).map(jobber => (
+                            <button 
+                              key={jobber.id}
+                              onClick={() => handleSelectJobber(jobber)}
+                              className="w-full px-4 py-2.5 text-left text-[12.5px] font-medium hover:bg-bg-main transition-colors flex items-center justify-between group"
+                            >
+                              <span className="group-hover:text-brand-blue transition-colors font-bold uppercase tracking-tight">{jobber.name}</span>
+                              <span className="text-[10px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity font-bold uppercase tracking-widest bg-brand-blue/5 px-2 py-0.5 rounded">Select</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-[11px] text-text-light italic text-center">No jobbers found for "{jobberSearch}"</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <Button 
                     variant="primary" 
                     size="sm" 
@@ -179,23 +346,51 @@ const CreatePurchase = () => {
           </Card>
 
           {/* New Data Entry Section - Grid based, clean stacking */}
-          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-visible flex flex-col relative z-[50]">
             <div className="bg-table-header h-9 px-4 flex items-center">
               <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">New Data Entry</h3>
             </div>
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex flex-col gap-1 col-span-2">
+                <div className="flex flex-col gap-1 col-span-2 relative">
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
-                  <input 
-                    type="text" 
-                    name="item"
-                    value={currentItem.item}
-                    onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-20 shadow-sm" 
-                    placeholder="Search or Type Material..."
-                  />
+                  <div className="relative group">
+                    <input 
+                      type="text" 
+                      name="item"
+                      value={itemEntrySearch}
+                      onChange={(e) => {
+                        setItemEntrySearch(e.target.value);
+                        setShowItemDropdown(true);
+                      }}
+                      onFocus={() => setShowItemDropdown(true)}
+                      className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-20 shadow-sm" 
+                      placeholder="Search or Type Material..."
+                      autoComplete="off"
+                    />
+                    {showItemDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-soft rounded-xl shadow-xl z-[9999] max-h-60 overflow-y-auto animate-in slide-in-from-top-1 duration-200">
+                        {items.filter(i => i.name.toLowerCase().includes(itemEntrySearch.toLowerCase())).length > 0 ? (
+                          items.filter(i => i.name.toLowerCase().includes(itemEntrySearch.toLowerCase())).map(item => (
+                            <button 
+                              key={item.id}
+                              onClick={() => handleSelectItem(item)}
+                              className="w-full px-4 py-2.5 text-left text-[12.5px] font-medium hover:bg-bg-main transition-colors flex items-center justify-between group"
+                            >
+                              <div className="flex flex-col">
+                                <span className="group-hover:text-brand-blue transition-colors font-bold uppercase tracking-tight">{item.name}</span>
+                                <span className="text-[10px] text-text-light font-bold">Stock: {item.stock} {item.unit}</span>
+                              </div>
+                              <span className="text-[10px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity font-bold uppercase tracking-widest bg-brand-blue/5 px-2 py-0.5 rounded">Select</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-[11px] text-text-light italic text-center">No items found for "{itemEntrySearch}"</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Quantity</label>
@@ -249,12 +444,12 @@ const CreatePurchase = () => {
                   </button>
                   <button 
                     onClick={handleAppend}
-                    className="bg-brand-blue text-white px-5 h-8 rounded-lg text-[12px] font-bold flex items-center gap-2 hover:bg-brand-blue-hover transition transform active:scale-95"
+                    className="bg-brand-blue text-white px-5 h-8 rounded-lg text-[12px] font-bold flex items-center gap-2 hover:bg-brand-blue-hover transition transform active:scale-95 shadow-lg shadow-brand-blue/20"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                     </svg>
-                    Save Item
+                    Add to Summary
                   </button>
                 </div>
               </div>
@@ -279,7 +474,7 @@ const CreatePurchase = () => {
                   </button>
                 </div>
                 
-                <div className="p-6 flex flex-col gap-6">
+                 <div className="p-6 flex flex-col gap-6">
                   {/* Jobber Name Input */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Jobber Name</label>
@@ -292,46 +487,6 @@ const CreatePurchase = () => {
                       placeholder="Enter provider or contractor name..."
                       autoFocus
                     />
-                  </div>
-
-                  {/* Multi-Select Assigned Items Input */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Assigned Item List (Multi-Select)</label>
-                    <div className="min-h-[44px] p-2 bg-bg-main border border-border-soft rounded-lg flex flex-wrap gap-2 focus-within:border-brand-blue focus-within:ring-1 focus-within:ring-brand-blue/10 transition-all cursor-text relative group">
-                      {newJobberData.assignedItems.map(item => (
-                        <div key={item} className="flex items-center gap-1.5 bg-brand-blue text-white px-2 py-1 rounded-md shadow-sm animate-in zoom-in-75 duration-200">
-                          <span className="text-[11px] font-bold uppercase tracking-wide">{item}</span>
-                          <button onClick={() => toggleAssignedItem(item)} className="hover:bg-white/20 rounded transition-all">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                          </button>
-                        </div>
-                      ))}
-                      <input 
-                        type="text"
-                        className="flex-1 bg-transparent border-none outline-none text-[13px] px-2 min-w-[120px] placeholder:text-text-light/30 lowercase italic"
-                        placeholder={newJobberData.assignedItems.length === 0 ? "Type to search items..." : "add more..."}
-                        value={itemSearch}
-                        onChange={(e) => setItemSearch(e.target.value)}
-                      />
-
-                      {/* Dropdown Results (Mock) */}
-                      {itemSearch && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border-soft rounded-xl shadow-xl z-10 overflow-hidden animate-in slide-in-from-top-1 duration-200">
-                          {mockAvailableItems.filter(i => i.toLowerCase().includes(itemSearch.toLowerCase()) && !newJobberData.assignedItems.includes(i)).map(item => (
-                            <button 
-                              key={item}
-                              onClick={() => toggleAssignedItem(item)}
-                              className="w-full px-4 py-2.5 text-left text-[12.5px] font-medium hover:bg-bg-main transition-colors flex items-center justify-between group"
-                            >
-                              <span>{item}</span>
-                              <svg className="w-4 h-4 text-brand-blue opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" />
-                              </svg>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
 
@@ -346,9 +501,10 @@ const CreatePurchase = () => {
                     variant="primary" 
                     size="sm" 
                     onClick={handleSaveJobber}
+                    disabled={isSavingNewJobber}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
                   >
-                    Save Jobber
+                    {isSavingNewJobber ? "Saving..." : "Save Jobber"}
                   </Button>
                 </div>
               </Card>
@@ -377,9 +533,9 @@ const CreatePurchase = () => {
                     <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Item Name</label>
                     <input 
                       type="text"
-                      name="itemName"
-                      value={newItemFormData.itemName}
-                      onChange={handleNewItemFormChange}
+                      name="name"
+                      value={newItemFormData.name}
+                      onChange={(e) => setNewItemFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
                       placeholder="Enter new item name..."
                       autoFocus
@@ -394,7 +550,7 @@ const CreatePurchase = () => {
                         type="number"
                         name="rate"
                         value={newItemFormData.rate}
-                        onChange={handleNewItemFormChange}
+                        onChange={(e) => setNewItemFormData(prev => ({ ...prev, rate: e.target.value }))}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-bold text-brand-blue outline-none focus:border-brand-blue transition-all"
                         placeholder="0.00"
                       />
@@ -404,7 +560,7 @@ const CreatePurchase = () => {
                       <select 
                         name="unit"
                         value={newItemFormData.unit}
-                        onChange={handleNewItemFormChange}
+                        onChange={(e) => setNewItemFormData(prev => ({ ...prev, unit: e.target.value }))}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer appearance-none shadow-sm"
                       >
                         <option value="PCS">PCS</option>
@@ -419,7 +575,7 @@ const CreatePurchase = () => {
                         type="number"
                         name="conversion"
                         value={newItemFormData.conversion}
-                        onChange={handleNewItemFormChange}
+                        onChange={(e) => setNewItemFormData(prev => ({ ...prev, conversion: e.target.value }))}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium text-text-primary outline-none focus:border-brand-blue transition-all"
                         placeholder="1"
                       />
@@ -428,9 +584,9 @@ const CreatePurchase = () => {
                       <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Opening Stock</label>
                       <input 
                         type="number"
-                        name="openingStock"
-                        value={newItemFormData.openingStock}
-                        onChange={handleNewItemFormChange}
+                        name="stock"
+                        value={newItemFormData.stock}
+                        onChange={(e) => setNewItemFormData(prev => ({ ...prev, stock: e.target.value }))}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-bold text-brand-blue outline-none focus:border-brand-blue transition-all"
                         placeholder="0"
                       />
@@ -440,19 +596,22 @@ const CreatePurchase = () => {
 
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
                   <button 
-                    onClick={handleRedoNewItem}
-                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-text-primary transition-all uppercase tracking-widest"
+                    onClick={() => {
+                        setNewItemFormData({ name: '', rate: '', unit: 'PCS', conversion: '1', stock: '0' });
+                        setShowItemModal(false);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-red-500 transition-all uppercase tracking-widest"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    REDO
+                    Cancel
                   </button>
                   <Button 
                     variant="primary" 
                     size="sm" 
                     onClick={handleSaveNewItem}
+                    disabled={isSavingNewItem}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
                   >
-                    Save Item
+                    {isSavingNewItem ? "Saving..." : "Save Item"}
                   </Button>
                 </div>
               </Card>
@@ -531,8 +690,8 @@ const CreatePurchase = () => {
                       Cancel
                     </button>
                     <button 
-                      onClick={() => navigate('/purchase')}
-                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-extrabold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest"
+                      onClick={handleFinalSave}
+                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-extrabold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest shadow-lg shadow-brand-blue/20"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />

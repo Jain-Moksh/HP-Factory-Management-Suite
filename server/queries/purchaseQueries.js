@@ -27,6 +27,26 @@ const purchaseQueries = {
         FROM purchase_items pi
         JOIN items i ON pi.item_id = i.id
         WHERE pi.purchase_id = $1
+    `,
+    getAllPurchases: `
+        SELECT 
+            p.*,
+            j.name as jobber_name
+        FROM purchase p
+        JOIN jobbers j ON p.jobber_id = j.id
+        ORDER BY p.date DESC, p.id DESC
+    `,
+    getNextPurchaseId: `
+        SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM purchase
+    `,
+    deletePurchase: `
+        DELETE FROM purchase WHERE id = $1
+    `,
+    deletePurchaseItems: `
+        DELETE FROM purchase_items WHERE purchase_id = $1
+    `,
+    reverseStockUpdate: `
+        UPDATE items SET stock = stock - $1 WHERE id = $2
     `
 };
 

@@ -20,6 +20,33 @@ const purchaseController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getAll: async (req, res, next) => {
+    try {
+      const data = await purchaseService.getAll();
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getNextId: async (req, res, next) => {
+    try {
+      const data = await purchaseService.getNextId();
+      res.json({ success: true, nextId: data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  delete: async (req, res, next) => {
+    try {
+      await purchaseService.delete(req.params.id);
+      res.json({ success: true, message: 'Purchase record deleted successfully' });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

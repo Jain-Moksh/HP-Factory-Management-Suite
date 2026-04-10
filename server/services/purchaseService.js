@@ -41,6 +41,46 @@ const purchaseService = {
 
     const itemsRes = await db.query(queries.getPurchaseItems, [id]);
     return { ...purchaseRes.rows[0], items: itemsRes.rows };
+  },
+
+  getAll: async () => {
+    const res = await db.query(queries.getAllPurchases);
+    return res.rows;
+  },
+
+  getNextId: async () => {
+    const res = await db.query(queries.getNextPurchaseId);
+    return res.rows[0].next_id;
+  },
+
+  delete: async (id) => {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Get items to reverse stock
+      const itemsRes = await client.query(queries.getPurchaseItems, [id]);
+      const items = itemsRes.rows;
+
+      // 2. Reverse stock updates (decrement)
+      for (const item of items) {
+        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      }
+
+      // 3. Delete purchase items
+      await client.query(queries.deletePurchaseItems, [id]);
+
+      // 4. Delete purchase record
+      await client.query(queries.deletePurchase, [id]);
+
+      await client.query('COMMIT');
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 };
 

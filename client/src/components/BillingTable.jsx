@@ -3,37 +3,12 @@ import { API_BASE_URL } from '../config';
 import Modal from './UI/Modal';
 import Button from './UI/Button';
 
-const BillingTable = () => {
-  const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // --- Deletion State ---
+const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
+  // --- Deletion State (Modals kept internal for UI cleanliness) ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [billToDelete, setBillToDelete] = useState(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
-
-  const fetchBills = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/billing`);
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data);
-      } else {
-        setError(result.message || 'Failed to fetch billing data');
-      }
-    } catch (err) {
-      setError('Network error while fetching billing');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBills();
-  }, []);
 
   const openDeleteModal = (id) => {
     setBillToDelete(id);
@@ -42,28 +17,16 @@ const BillingTable = () => {
     setDeleteError('');
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!deletePassword) {
       setDeleteError('Password is required');
       return;
     }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/billing/${billToDelete}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: deletePassword })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setIsDeleteModalOpen(false);
-        fetchBills();
-      } else {
-        setDeleteError(result.message || 'Fail to delete');
-      }
-    } catch (err) {
-      setDeleteError('Network error while deleting');
+    const success = await onDelete(billToDelete, deletePassword);
+    if (success) {
+      setIsDeleteModalOpen(false);
+    } else {
+      setDeleteError('Incorrect password or server error');
     }
   };
 
@@ -144,7 +107,7 @@ const BillingTable = () => {
             <Button variant="secondary" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="primary" size="sm" onClick={handleDelete} className="bg-red-500 hover:bg-red-600 border-red-500">
+            <Button variant="primary" size="sm" onClick={handleConfirmDelete} className="bg-red-500 hover:bg-red-600 border-red-500">
               Confirm Delete
             </Button>
           </>
