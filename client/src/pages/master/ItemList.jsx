@@ -110,6 +110,11 @@ const ItemList = () => {
       return;
     }
 
+    if (deletePassword !== import.meta.env.VITE_DEL_PASS) {
+      setDeleteError('Incorrect master password');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/items/${itemToDelete}`, {
         method: 'DELETE',

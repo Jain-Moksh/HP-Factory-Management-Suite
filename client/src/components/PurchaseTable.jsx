@@ -17,7 +17,7 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
 
   const handleConfirmDelete = async () => {
     // Standardize password check for UI consistency
-    if (deletePassword !== 'Pass@123' && deletePassword !== 'moksh@123') {
+    if (deletePassword !== import.meta.env.VITE_DEL_PASS) {
       setDeleteError('Incorrect master password');
       return;
     }

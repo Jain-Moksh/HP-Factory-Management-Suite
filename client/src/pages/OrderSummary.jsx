@@ -35,6 +35,10 @@ const OrderSummary = () => {
   }, []);
 
   const handleDelete = async (id, password) => {
+    if (password !== import.meta.env.VITE_DEL_PASS) {
+      return false;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/billing/${id}`, {
         method: 'DELETE',

@@ -330,7 +330,7 @@ const CreateInvoice = () => {
   };
 
   const handleDeleteItem = () => {
-    if (deletePassword === 'Pass@123') {
+    if (deletePassword === import.meta.env.VITE_DEL_PASS) {
       setAddedItems(prev => prev.filter(item => item.id !== itemToDelete));
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
