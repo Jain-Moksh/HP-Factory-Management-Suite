@@ -410,6 +410,7 @@ const CreateInvoice = () => {
           unit: result.data.unit,
           rate: result.data.rate.toString(),
           stock: result.data.stock.toString(),
+          conversion: (result.data.conversion || 1).toString(),
           min_stock: (result.data.min_stock || 0).toString()
         }));
         setShowItemModal(false);
@@ -431,6 +432,7 @@ const CreateInvoice = () => {
       ...prev,
       client_id: client.id,
       clientName: `${client.name}${client.shortform ? ` (${client.shortform})` : ''}`,
+      clientRawName: client.name,
       address1: client.street || '',
       address2: client.city || ''
     }));
@@ -445,6 +447,7 @@ const CreateInvoice = () => {
       rate: item.rate || '',
       unit: item.unit || 'PCS',
       stock: item.stock || '0',
+      conversion: item.conversion || 1,
       min_stock: item.min_stock || '0'
     }));
     setShowItemDropdown(false);
