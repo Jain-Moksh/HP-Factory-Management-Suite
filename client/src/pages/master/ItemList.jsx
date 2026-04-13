@@ -14,7 +14,8 @@ const ItemList = () => {
     rate: '',
     unit: 'DOZ',
     conversion: '1',
-    stock: ''
+    stock: '',
+    min_stock: ''
   });
 
   // --- List State ---
@@ -87,7 +88,8 @@ const ItemList = () => {
           rate: parseFloat(formData.rate) || 0,
           stock: parseFloat(formData.stock) || 0,
           conversion: parseFloat(formData.conversion) || 1,
-          unit: formData.unit
+          unit: formData.unit,
+          min_stock: parseFloat(formData.min_stock) || 0
         })
       });
 
@@ -111,7 +113,8 @@ const ItemList = () => {
       rate: '',
       unit: 'DOZ',
       conversion: '1',
-      stock: ''
+      stock: '',
+      min_stock: ''
     });
   };
 
@@ -123,7 +126,8 @@ const ItemList = () => {
       rate: item.rate,
       unit: item.unit,
       conversion: item.conversion,
-      stock: item.stock
+      stock: item.stock,
+      min_stock: item.min_stock
     });
   };
 
@@ -147,7 +151,8 @@ const ItemList = () => {
           rate: parseFloat(editFormData.rate) || 0,
           stock: parseFloat(editFormData.stock) || 0,
           conversion: parseFloat(editFormData.conversion) || 1,
-          unit: editFormData.unit
+          unit: editFormData.unit,
+          min_stock: parseFloat(editFormData.min_stock) || 0
         })
       });
 
@@ -232,7 +237,8 @@ const ItemList = () => {
                     <th className="px-4 py-2 text-left border-r border-border-soft w-32">Rate</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft w-32">Unit</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft w-32">Conversion</th>
-                    <th className="px-4 py-2 text-left w-32 leading-tight">Opening <br /> Stock</th>
+                    <th className="px-4 py-2 text-left border-r border-border-soft w-32 leading-tight">Opening <br /> Stock</th>
+                    <th className="px-4 py-2 text-left w-32 leading-tight">Min <br /> Stock</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -282,11 +288,21 @@ const ItemList = () => {
                         placeholder="1"
                       />
                     </td>
-                    <td className="p-0">
+                    <td className="p-0 border-r border-border-soft">
                       <input 
                         type="number"
                         name="stock"
                         value={formData.stock}
+                        onChange={handleInputChange}
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
+                        placeholder="0"
+                      />
+                    </td>
+                    <td className="p-0">
+                      <input 
+                        type="number"
+                        name="min_stock"
+                        value={formData.min_stock}
                         onChange={handleInputChange}
                         className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
                         placeholder="0"
@@ -337,6 +353,7 @@ const ItemList = () => {
                     <th className="px-5 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Unit</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Conversion</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Opening <br /> Stock</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Min <br /> Stock</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
@@ -412,6 +429,18 @@ const ItemList = () => {
                             className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
                           />
                         ) : (item.stock || 0)}
+                      </td>
+                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-red-500 border-r border-border-soft">
+                        {editingId === item.id ? (
+                          <input 
+                            type="number"
+                            name="min_stock"
+                            value={editFormData.min_stock}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, item.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
+                          />
+                        ) : (item.min_stock || 0)}
                       </td>
                       <td className="px-4 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-2.5">

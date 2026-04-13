@@ -31,7 +31,7 @@ const masterService = {
     switch (table) {
       case 'items':
         queryKey = 'createItem';
-        params = [clean.name, clean.rate, clean.stock, clean.conversion, clean.unit];
+        params = [clean.name, clean.rate, clean.stock, clean.conversion, clean.unit, clean.min_stock];
         break;
       case 'clients':
         queryKey = 'createClient';
@@ -61,7 +61,7 @@ const masterService = {
     switch (table) {
       case 'items':
         queryKey = 'updateItem';
-        params = [clean.name, clean.rate, clean.stock, clean.conversion, clean.unit, id];
+        params = [clean.name, clean.rate, clean.stock, clean.conversion, clean.unit, clean.min_stock, id];
         break;
       case 'clients':
         queryKey = 'updateClient';

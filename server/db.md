@@ -8,7 +8,8 @@ CREATE TABLE items (
     rate NUMERIC,
     stock NUMERIC,
     conversion NUMERIC,
-    unit TEXT
+    unit TEXT,
+    min_stock NUMERIC DEFAULT 0
 );
 
 CREATE TABLE clients (

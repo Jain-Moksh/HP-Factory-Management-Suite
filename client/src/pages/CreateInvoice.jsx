@@ -110,7 +110,8 @@ const CreateInvoice = () => {
     dPercent: '',
     dAmount: '',
     discount: '0.00',
-    total: '0.00'
+    total: '0.00',
+    min_stock: '0'
   });
 
   // --- Invoice Summary State ---
@@ -224,9 +225,16 @@ const CreateInvoice = () => {
     // --- Validation: Check for negative stock ---
     const stock = parseFloat(currentItem.stock) || 0;
     const qty = parseFloat(currentItem.qty) || 0;
+    const minStock = parseFloat(currentItem.min_stock) || 0;
 
     if (qty > stock) {
       setWarningMessage(`Current stock is only ${stock} ${currentItem.unit}, but you are entering ${qty} ${currentItem.unit}. This will result in negative stock. Do you want to proceed?`);
+      setIsWarningOpen(true);
+      return;
+    }
+
+    if (stock - qty < minStock) {
+      setWarningMessage(`This transaction will leave you with ${(stock - qty).toFixed(2)} ${currentItem.unit} in stock, which is BELOW your Minimum Stock threshold of ${minStock} ${currentItem.unit}. Do you want to proceed?`);
       setIsWarningOpen(true);
       return;
     }
@@ -365,7 +373,8 @@ const CreateInvoice = () => {
       ...newItemFormData,
       rate: newItemFormData.rate === '' ? null : newItemFormData.rate,
       stock: newItemFormData.stock === '' ? null : newItemFormData.stock,
-      conversion: newItemFormData.conversion === '' ? null : newItemFormData.conversion
+      conversion: newItemFormData.conversion === '' ? null : newItemFormData.conversion,
+      min_stock: newItemFormData.min_stock === '' ? null : newItemFormData.min_stock
     };
     try {
       const response = await fetch(`${API_BASE_URL}/items`, {
@@ -383,7 +392,8 @@ const CreateInvoice = () => {
           item: result.data.name,
           unit: result.data.unit,
           rate: result.data.rate.toString(),
-          stock: result.data.stock.toString()
+          stock: result.data.stock.toString(),
+          min_stock: (result.data.min_stock || 0).toString()
         }));
         setShowItemModal(false);
         handleRedoNewItem();
@@ -396,7 +406,7 @@ const CreateInvoice = () => {
   };
 
   const handleRedoNewItem = () => {
-    setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0' });
+    setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0', min_stock: '0' });
   };
 
   const handleSelectClient = (client) => {
@@ -417,7 +427,8 @@ const CreateInvoice = () => {
       item: item.name,
       rate: item.rate || '',
       unit: item.unit || 'PCS',
-      stock: item.stock || '0'
+      stock: item.stock || '0',
+      min_stock: item.min_stock || '0'
     }));
     setShowItemDropdown(false);
   };
@@ -1017,7 +1028,7 @@ const CreateInvoice = () => {
                   </div>
 
                   {/* Settings Grid */}
-                  <div className="grid grid-cols-4 gap-6">
+                  <div className="grid grid-cols-5 gap-6">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Base Rate (₹)</label>
                       <input 
@@ -1046,13 +1057,13 @@ const CreateInvoice = () => {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Conversion Factor</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Conversion</label>
                       <input 
                         type="number"
                         name="conversion"
                         value={newItemFormData.conversion}
                         onChange={handleNewItemFormChange}
-                        className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium text-text-primary outline-none focus:border-brand-blue transition-all"
+                        className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[12.5px] font-medium text-text-primary outline-none focus:border-brand-blue transition-all"
                         placeholder="1"
                       />
                     </div>
@@ -1064,6 +1075,17 @@ const CreateInvoice = () => {
                         value={newItemFormData.stock}
                         onChange={handleNewItemFormChange}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-bold text-brand-blue outline-none focus:border-brand-blue transition-all"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Min Stock</label>
+                      <input 
+                        type="number"
+                        name="min_stock"
+                        value={newItemFormData.min_stock}
+                        onChange={handleNewItemFormChange}
+                        className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-bold text-red-500 outline-none focus:border-brand-blue transition-all"
                         placeholder="0"
                       />
                     </div>

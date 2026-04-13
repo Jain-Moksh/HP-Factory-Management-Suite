@@ -27,7 +27,8 @@ Manages the inventory of items.
           "rate": 10.50,
           "stock": 100,
           "conversion": 1,
-          "unit": "Pcs"
+          "unit": "Pcs",
+          "min_stock": 20
         }
         ```
 *   **PUT `/items/:id`**
