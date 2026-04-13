@@ -424,7 +424,7 @@ const CreatePurchase = () => {
           <Card className="p-4 bg-white/80 backdrop-blur-sm border-border-soft/60 relative z-[100] overflow-visible">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Challan No</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Challan No</label>
                 <input 
                   type="text"
                   name="challanNo"
@@ -436,7 +436,7 @@ const CreatePurchase = () => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Date</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Date</label>
                 <input 
                   type="date"
                   name="date"
@@ -446,7 +446,7 @@ const CreatePurchase = () => {
                 />
               </div>
               <div className="flex flex-col gap-1 text-left relative col-span-2">
-                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Jobber Name</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Jobber Name</label>
                 <div className="flex gap-2 relative" ref={jobberRef}>
                   <div className="relative flex-1 group">
                     <input 
@@ -473,11 +473,11 @@ const CreatePurchase = () => {
                               className="w-full px-4 py-2.5 text-left text-[12.5px] font-medium hover:bg-bg-main transition-colors flex items-center justify-between group"
                             >
                               <span className="group-hover:text-brand-blue transition-colors font-bold uppercase tracking-tight">{jobber.name}</span>
-                              <span className="text-[10px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity font-bold uppercase tracking-widest bg-brand-blue/5 px-2 py-0.5 rounded">Select</span>
+                              <span className="text-[10px] text-text-primary opacity-0 group-hover:opacity-100 transition-opacity font-bold uppercase tracking-widest bg-brand-blue/5 px-2 py-0.5 rounded">Select</span>
                             </button>
                           ))
                         ) : (
-                          <div className="px-4 py-3 text-[11px] text-text-light italic text-center">No jobbers found for "{jobberSearch}"</div>
+                          <div className="px-4 py-3 text-[11px] text-text-primary italic text-center">No jobbers found for "{jobberSearch}"</div>
                         )}
                       </div>
                     )}
@@ -504,7 +504,7 @@ const CreatePurchase = () => {
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="flex flex-col gap-1 col-span-2 relative" ref={itemRef}>
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Item Name</label>
                   <div className="relative group">
                     <input 
                       type="text" 
@@ -530,20 +530,20 @@ const CreatePurchase = () => {
                             >
                               <div className="flex flex-col">
                                 <span className="group-hover:text-brand-blue transition-colors font-bold uppercase tracking-tight">{item.name}</span>
-                                <span className="text-[10px] text-text-light font-bold">Stock: {item.stock} {item.unit}</span>
+                                <span className={`text-[10px] font-bold ${parseFloat(item.stock) > 0 ? 'text-green-600' : 'text-red-500'}`}>Stock: {item.stock} {item.unit}</span>
                               </div>
-                              <span className="text-[10px] text-text-light opacity-0 group-hover:opacity-100 transition-opacity font-bold uppercase tracking-widest bg-brand-blue/5 px-2 py-0.5 rounded">Select</span>
+                              <span className="text-[10px] text-text-primary opacity-0 group-hover:opacity-100 transition-opacity font-bold uppercase tracking-widest bg-brand-blue/5 px-2 py-0.5 rounded">Select</span>
                             </button>
                           ))
                         ) : (
-                          <div className="px-4 py-3 text-[11px] text-text-light italic text-center">No items found for "{itemEntrySearch}"</div>
+                          <div className="px-4 py-3 text-[11px] text-text-primary italic text-center">No items found for "{itemEntrySearch}"</div>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Quantity</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Quantity</label>
                   <input 
                     type="number" 
                     name="qty"
@@ -554,12 +554,12 @@ const CreatePurchase = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Unit</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Unit</label>
                   <select 
                     name="unit"
                     value={currentItem.unit}
                     onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-secondary outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 cursor-pointer shadow-sm appearance-none"
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 cursor-pointer shadow-sm appearance-none"
                   >
                     <option value="GMS">GMS</option>
                     <option value="BUNDLE">BUNDLE</option>
@@ -587,7 +587,7 @@ const CreatePurchase = () => {
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={handleRedo}
-                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-secondary hover:text-text-primary hover:bg-bg-main transition shadow-sm uppercase tracking-wider"
+                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary hover:bg-bg-main transition shadow-sm uppercase tracking-wider"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -629,13 +629,13 @@ const CreatePurchase = () => {
                  <div className="p-6 flex flex-col gap-6">
                   {/* Jobber Name Input */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Jobber Name</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Jobber Name</label>
                     <input 
                       type="text"
                       name="name"
                       value={newJobberData.name}
                       onChange={handleJobberFormChange}
-                      className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                      className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                       placeholder="Enter provider or contractor name..."
                       autoFocus
                     />
@@ -643,7 +643,7 @@ const CreatePurchase = () => {
 
                   {/* Assigned Items Multi-Select */}
                   <div className="flex flex-col gap-1.5 overflow-visible">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Assign Items to Jobber</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Assign Items to Jobber</label>
                     <div className="relative w-full border border-border-soft rounded-xl bg-bg-main p-3" ref={modalDropdownRef}>
                       <div className="flex flex-wrap gap-2 items-center">
                         {newJobberData.selectedItems.map(item => (
@@ -664,7 +664,7 @@ const CreatePurchase = () => {
                             setIsModalDropdownOpen(true);
                           }}
                           onFocus={() => setIsModalDropdownOpen(true)}
-                          className="flex-1 min-w-[150px] bg-transparent outline-none text-[13px] placeholder:text-text-light/40 font-medium h-7"
+                          className="flex-1 min-w-[150px] bg-transparent outline-none text-[13px] placeholder:text-text-primary/40 font-medium h-7"
                           placeholder={newJobberData.selectedItems.length === 0 ? "Search brands or items..." : "Assign more..."}
                         />
                       </div>
@@ -680,11 +680,11 @@ const CreatePurchase = () => {
                                 className="w-full text-left px-5 py-3 text-[13px] hover:bg-bg-main text-text-primary hover:text-brand-blue font-bold transition-all border-b border-border-soft/30 last:border-none flex items-center justify-between group"
                               >
                                 <span>{item.name}</span>
-                                <span className="text-[10px] text-text-light opacity-0 group-hover:opacity-100 uppercase tracking-widest font-black bg-brand-blue/5 px-2 py-0.5 rounded transition-opacity">Assign</span>
+                                <span className="text-[10px] text-text-primary opacity-0 group-hover:opacity-100 uppercase tracking-widest font-black bg-brand-blue/5 px-2 py-0.5 rounded transition-opacity">Assign</span>
                               </button>
                             ))}
                           {items.filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id)).length === 0 && (
-                            <div className="px-5 py-4 text-[12px] text-text-light italic text-center">No matching brands found</div>
+                            <div className="px-5 py-4 text-[12px] text-text-primary italic text-center">No matching brands found</div>
                           )}
                         </div>
                       )}
@@ -695,7 +695,7 @@ const CreatePurchase = () => {
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
                   <button 
                     onClick={() => setShowJobberForm(false)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-black text-text-secondary hover:text-red-500 transition-all uppercase tracking-[0.2em]"
+                    className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-black text-text-primary hover:text-red-500 transition-all uppercase tracking-[0.2em]"
                   >
                     Cancel
                   </button>
@@ -732,13 +732,13 @@ const CreatePurchase = () => {
                 <div className="p-6 flex flex-col gap-6">
                   {/* Item Name Main Row */}
                   <div className="flex flex-col gap-1.5 min-w-0">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Item Name</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Item Name</label>
                     <input 
                       type="text"
                       name="name"
                       value={newItemFormData.name}
                       onChange={(e) => setNewItemFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                      className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                       placeholder="Enter new item name..."
                       autoFocus
                     />
@@ -747,7 +747,7 @@ const CreatePurchase = () => {
                   {/* Settings Grid */}
                   <div className="grid grid-cols-4 gap-6">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Base Rate (₹)</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Base Rate (₹)</label>
                       <input 
                         type="number"
                         name="rate"
@@ -758,7 +758,7 @@ const CreatePurchase = () => {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Selling Unit</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Selling Unit</label>
                       <select 
                         name="unit"
                         value={newItemFormData.unit}
@@ -774,7 +774,7 @@ const CreatePurchase = () => {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Conversion Factor</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Conversion Factor</label>
                       <input 
                         type="number"
                         name="conversion"
@@ -785,7 +785,7 @@ const CreatePurchase = () => {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Opening Stock</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Opening Stock</label>
                       <input 
                         type="number"
                         name="stock"
@@ -804,7 +804,7 @@ const CreatePurchase = () => {
                         setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0' });
                         setShowItemModal(false);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-red-500 transition-all uppercase tracking-widest"
+                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-primary hover:text-red-500 transition-all uppercase tracking-widest"
                   >
                     Cancel
                   </button>
@@ -830,7 +830,7 @@ const CreatePurchase = () => {
                   <div className="w-1 h-4 bg-brand-blue rounded-full"></div>
                   <h3 className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">Purchase Summary</h3>
                 </div>
-                <div className="text-[10px] font-bold text-text-light opacity-50 uppercase tracking-widest bg-bg-main px-2 py-0.5 rounded border border-border-soft">
+                <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest bg-bg-main px-2 py-0.5 rounded border border-border-soft">
                   {addedItems.length} {addedItems.length === 1 ? 'Item' : 'Items'} Added
                 </div>
               </div>
@@ -849,10 +849,10 @@ const CreatePurchase = () => {
                   <tbody className="divide-y divide-border-soft/50">
                     {addedItems.map((item, idx) => (
                       <tr key={item.id} className="hover:bg-bg-main/30 group transition-colors duration-75">
-                        <td className="px-4 py-2 text-center text-[11px] text-text-light font-bold border-r border-border-soft/50">{idx + 1}</td>
+                        <td className="px-4 py-2 text-center text-[11px] text-text-primary font-bold border-r border-border-soft/50">{idx + 1}</td>
                         <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary border-r border-border-soft/50 uppercase tracking-tight">{item.item}</td>
                         <td className="px-5 py-2 text-center font-bold text-brand-blue border-r border-border-soft/50 text-[13px]">{item.qty}</td>
-                        <td className="px-5 py-2 text-center font-bold text-text-secondary border-r border-border-soft/50 uppercase text-[11px] tracking-wide">{item.unit}</td>
+                        <td className="px-5 py-2 text-center font-bold text-text-primary border-r border-border-soft/50 uppercase text-[11px] tracking-wide">{item.unit}</td>
                         <td className="px-5 py-2 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button 
@@ -884,12 +884,12 @@ const CreatePurchase = () => {
               {/* Footer Section - Perfectly Aligned Actions with Label */}
               <div className="flex flex-col gap-2 mt-4 pb-12 animate-in fade-in duration-500">
                 <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block opacity-70">Purchase Remarks</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Purchase Remarks</label>
                   
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => navigate('/purchase')}
-                      className="flex items-center justify-center px-5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-extrabold text-text-secondary hover:text-red-500 hover:bg-bg-main transition uppercase tracking-widest shadow-sm"
+                      className="flex items-center justify-center px-5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-extrabold text-text-primary hover:text-red-500 hover:bg-bg-main transition uppercase tracking-widest shadow-sm"
                     >
                       Cancel
                     </button>

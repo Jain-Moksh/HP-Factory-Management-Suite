@@ -568,7 +568,7 @@ const CreateInvoice = () => {
               {/* Row 1: Core Identification */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Challan No / Invoice No</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Challan No / Invoice No</label>
                   <input 
                     type="text"
                     name="challanNo"
@@ -579,7 +579,7 @@ const CreateInvoice = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Date</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Date</label>
                   <input 
                     type="date"
                     name="date"
@@ -593,7 +593,7 @@ const CreateInvoice = () => {
               {/* Row 2: Client & Address Details */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="flex flex-col gap-1 text-left relative col-span-2">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Party Name</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Party Name</label>
                   <div className="flex gap-2" ref={clientRef}>
                     <div className="flex-1 relative">
                       <input 
@@ -620,11 +620,11 @@ const CreateInvoice = () => {
                                  className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
                                >
                                  <div className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{c.name}</div>
-                                 <div className="text-[10px] font-bold text-text-light opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
+                                 <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
                                </div>
                              ))
                            }
-                           <div onClick={() => setShowClientDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-light hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
+                           <div onClick={() => setShowClientDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
                         </div>
                       )}
                     </div>
@@ -639,7 +639,7 @@ const CreateInvoice = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Address Line 1</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Address Line 1</label>
                   <input 
                     type="text"
                     name="address1"
@@ -650,7 +650,7 @@ const CreateInvoice = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Address Line 2</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Address Line 2</label>
                   <input 
                     type="text"
                     name="address2"
@@ -665,7 +665,7 @@ const CreateInvoice = () => {
               {/* Row 3: Remarks & Transporter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left relative">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Remark</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Remark</label>
                   <input 
                     type="text"
                     name="short_remark"
@@ -676,7 +676,7 @@ const CreateInvoice = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-left relative">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Transporter Name</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Transporter Name</label>
                   <div className="relative" ref={transporterRef}>
                     <input 
                       type="text"
@@ -706,7 +706,7 @@ const CreateInvoice = () => {
                              </div>
                            ))
                          }
-                         <div onClick={() => setShowTransporterDropdown(false)} className="bg-bg-main/50 px-4 py-1 text-center text-[9px] font-black text-text-light hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close</div>
+                         <div onClick={() => setShowTransporterDropdown(false)} className="bg-bg-main/50 px-4 py-1 text-center text-[9px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close</div>
                       </div>
                     )}
                   </div>
@@ -734,24 +734,24 @@ const CreateInvoice = () => {
                 <div className="p-6 flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5 flex-1">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Party Name</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Party Name</label>
                       <input 
                         type="text"
                         name="name"
                         value={newClientFormData.name}
                         onChange={handleNewClientChange}
-                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                         placeholder="Enter primary business name..."
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 flex-1">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Pet Name / Shorthand</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Pet Name / Shorthand</label>
                       <input 
                         type="text"
                         name="shortform"
                         value={newClientFormData.shortform}
                         onChange={handleNewClientChange}
-                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30 italic"
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30 italic"
                         placeholder="Reference name..."
                       />
                     </div>
@@ -759,24 +759,24 @@ const CreateInvoice = () => {
 
                   <div className="grid grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Address Line 1</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Address Line 1</label>
                       <input 
                         type="text"
                         name="street"
                         value={newClientFormData.street}
                         onChange={handleNewClientChange}
-                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                         placeholder="GIDC, Area or Street"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Address Line 2</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Address Line 2</label>
                       <input 
                         type="text"
                         name="city"
                         value={newClientFormData.city}
                         onChange={handleNewClientChange}
-                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                         placeholder="City, State"
                       />
                     </div>
@@ -784,27 +784,27 @@ const CreateInvoice = () => {
 
                   <div className="grid grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Opening Balance (₹)</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Opening Balance (₹)</label>
                       <div className="relative">
                         <input 
                           type="number"
                           name="balance"
                           value={newClientFormData.balance}
                           onChange={handleNewClientChange}
-                          className="w-full h-10 pl-6 pr-3 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-black text-brand-blue outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                          className="w-full h-10 pl-6 pr-3 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-black text-brand-blue outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                           placeholder="0.00"
                         />
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-brand-blue/40">₹</span>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Internal Remarks</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Internal Remarks</label>
                       <input 
                         type="text"
                         name="remark"
                         value={newClientFormData.remark}
                         onChange={handleNewClientChange}
-                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                        className="w-full h-10 px-3 bg-bg-main border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                         placeholder="Payment cycle, instructions, etc."
                       />
                     </div>
@@ -814,7 +814,7 @@ const CreateInvoice = () => {
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60">
                   <button 
                     onClick={() => setShowClientForm(false)}
-                    className="px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-red-500 transition-all uppercase tracking-[0.1em]"
+                    className="px-4 py-2 text-[11px] font-bold text-text-primary hover:text-red-500 transition-all uppercase tracking-[0.1em]"
                   >
                     Cancel
                   </button>
@@ -841,7 +841,7 @@ const CreateInvoice = () => {
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-8 gap-3">
                 <div className="flex flex-col gap-1 col-span-2 text-left relative" ref={itemRef}>
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Item Name</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Item Name</label>
                   <input 
                     type="text" 
                     name="item"
@@ -869,22 +869,22 @@ const CreateInvoice = () => {
                                 <span className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{i.name}</span>
                                 <span className="text-[10px] font-black text-brand-blue ml-2">₹{i.rate}</span>
                              </div>
-                             <div className="text-[10px] font-bold text-text-light opacity-50 uppercase tracking-widest">Stock: {i.stock} {i.unit}</div>
+                             <div className={`text-[10px] font-bold uppercase tracking-widest ${parseFloat(i.stock) > 0 ? 'text-green-600' : 'text-red-500'}`}>Stock: {i.stock} {i.unit}</div>
                            </div>
                          ))
                        }
-                       <div onClick={() => setShowItemDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-light hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
+                       <div onClick={() => setShowItemDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col gap-1 text-center">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Stock</label>
-                  <div className="w-full h-9 flex items-center justify-center bg-bg-main border border-border-soft rounded-lg text-[13px] font-bold text-text-light opacity-60 shadow-inner">
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Stock</label>
+                  <div className={`w-full h-9 flex items-center justify-center bg-bg-main border border-border-soft rounded-lg text-[13px] font-bold shadow-inner ${parseFloat(currentItem.stock) > 0 ? 'text-green-600' : 'text-red-500'}`}>
                     {currentItem.stock}
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest ml-0.5 opacity-70">Qty / Unit</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Qty / Unit</label>
                   <div className="flex gap-1">
                     <input 
                       type="number" 
@@ -898,7 +898,7 @@ const CreateInvoice = () => {
                       name="unit"
                       value={currentItem.unit}
                       onChange={handleEntryChange}
-                      className="w-20 h-9 px-2 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-secondary outline-none focus:border-brand-blue cursor-pointer shadow-sm appearance-none"
+                      className="w-20 h-9 px-2 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer shadow-sm appearance-none"
                     >
                       <option value="GMS">GMS</option>
                       <option value="BUNDLE">BUNDLE</option>
@@ -910,7 +910,7 @@ const CreateInvoice = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 text-center">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Rate (₹)</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Rate (₹)</label>
                   <input 
                     type="number" 
                     name="rate"
@@ -921,7 +921,7 @@ const CreateInvoice = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-center">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Disc %</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Disc %</label>
                   <input 
                     type="number" 
                     name="dPercent"
@@ -932,7 +932,7 @@ const CreateInvoice = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-center">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70">Disc (₹)</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Disc (₹)</label>
                   <input 
                     type="number" 
                     name="dAmount"
@@ -943,7 +943,7 @@ const CreateInvoice = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-right">
-                  <label className="text-[10px] uppercase font-bold text-text-secondary tracking-widest opacity-70 mr-1">Total Amount</label>
+                  <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest opacity-70 mr-1">Total Amount</label>
                   <div className="w-full h-9 flex items-center justify-end px-3 bg-bg-main border border-brand-blue/10 rounded-lg text-[14px] font-black text-brand-blue">
                     ₹{currentItem.total}
                   </div>
@@ -965,7 +965,7 @@ const CreateInvoice = () => {
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={handleRedoCurrent}
-                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-secondary hover:text-text-primary transition shadow-sm uppercase tracking-wider"
+                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary transition shadow-sm uppercase tracking-wider"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1004,13 +1004,13 @@ const CreateInvoice = () => {
                 
                 <div className="p-6 flex flex-col gap-6">
                   <div className="flex flex-col gap-1.5 min-w-0">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Item Name</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Item Name</label>
                     <input 
                       type="text"
                       name="name"
                       value={newItemFormData.name}
                       onChange={handleNewItemFormChange}
-                      className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-light/30"
+                      className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[13.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:text-text-primary/30"
                       placeholder="Enter new item name..."
                       autoFocus
                     />
@@ -1019,7 +1019,7 @@ const CreateInvoice = () => {
                   {/* Settings Grid */}
                   <div className="grid grid-cols-4 gap-6">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Base Rate (₹)</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Base Rate (₹)</label>
                       <input 
                         type="number"
                         name="rate"
@@ -1030,7 +1030,7 @@ const CreateInvoice = () => {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Selling Unit</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Selling Unit</label>
                       <select 
                         name="unit"
                         value={newItemFormData.unit}
@@ -1046,7 +1046,7 @@ const CreateInvoice = () => {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Conversion Factor</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Conversion Factor</label>
                       <input 
                         type="number"
                         name="conversion"
@@ -1057,7 +1057,7 @@ const CreateInvoice = () => {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-1">Opening Stock</label>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Opening Stock</label>
                       <input 
                         type="number"
                         name="stock"
@@ -1073,7 +1073,7 @@ const CreateInvoice = () => {
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
                   <button 
                     onClick={handleRedoNewItem}
-                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-secondary hover:text-text-primary transition-all uppercase tracking-widest"
+                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-primary hover:text-text-primary transition-all uppercase tracking-widest"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     REDO
@@ -1100,7 +1100,7 @@ const CreateInvoice = () => {
                   <div className="w-1 h-4 bg-brand-blue rounded-full"></div>
                   <h3 className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">Invoice Summary</h3>
                 </div>
-                <div className="text-[10px] font-bold text-text-light opacity-50 uppercase tracking-widest bg-bg-main px-2 py-0.5 rounded border border-border-soft">
+                <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest bg-bg-main px-2 py-0.5 rounded border border-border-soft">
                   {addedItems.length} {addedItems.length === 1 ? 'Item' : 'Items'} Ready to Bill
                 </div>
               </div>
@@ -1151,7 +1151,7 @@ const CreateInvoice = () => {
                             <select 
                               value={item.unit}
                               onChange={(e) => handleSummaryRowChange(item.id, 'unit', e.target.value)}
-                              className="bg-white border border-brand-blue/20 rounded px-1 py-0.5 text-[11px] font-bold text-text-secondary outline-none"
+                              className="bg-white border border-brand-blue/20 rounded px-1 py-0.5 text-[11px] font-bold text-text-primary outline-none"
                             >
                               <option value="GMS">GMS</option>
                               <option value="BUNDLE">BUNDLE</option>
@@ -1161,7 +1161,7 @@ const CreateInvoice = () => {
                               <option value="DOZ">DOZ</option>
                             </select>
                           ) : (
-                            <span className="text-text-secondary font-bold text-[11px]">{item.unit}</span>
+                            <span className="text-text-primary font-bold text-[11px]">{item.unit}</span>
                           )}
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50">
@@ -1173,7 +1173,7 @@ const CreateInvoice = () => {
                               className="w-20 bg-white border border-brand-blue/20 rounded px-2 py-0.5 text-[12.5px] font-bold text-center outline-none"
                             />
                           ) : (
-                            <span className="text-text-secondary text-[12.5px] font-medium">₹{item.rate}</span>
+                            <span className="text-text-primary text-[12.5px] font-medium">₹{item.rate}</span>
                           )}
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50">
@@ -1185,10 +1185,10 @@ const CreateInvoice = () => {
                               className="w-16 bg-white border border-brand-blue/20 rounded px-2 py-0.5 text-[11px] font-bold text-center outline-none"
                             />
                           ) : (
-                            <span className="text-text-light text-[11px] font-bold">{item.dPercent}%</span>
+                            <span className="text-text-primary text-[11px] font-bold">{item.dPercent}%</span>
                           )}
                         </td>
-                        <td className="px-5 py-2 text-center border-r border-border-soft/50 font-bold text-text-light text-[11px]">
+                        <td className="px-5 py-2 text-center border-r border-border-soft/50 font-bold text-text-primary text-[11px]">
                            {editingId === item.id ? (
                             <input 
                               type="number"
@@ -1222,7 +1222,7 @@ const CreateInvoice = () => {
                             </button>
                             <button 
                                onClick={() => openDeleteModal(item.id)}
-                              className="p-1.5 text-text-light hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
+                              className="p-1.5 text-text-primary hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
                               title="Delete Row"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1241,7 +1241,7 @@ const CreateInvoice = () => {
               <div className="flex gap-6 mt-4">
                 {/* Left Side: Remarks */}
                 <div className="flex-1 flex flex-col gap-2">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest block opacity-70 ml-1">Invoice Remarks</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Invoice Remarks</label>
                   <textarea 
                     name="long_remark"
                     value={formData.long_remark}
@@ -1254,12 +1254,12 @@ const CreateInvoice = () => {
                 {/* Right Side: Totals Stack */}
                 <div className="w-full md:w-80 bg-white border border-border-soft rounded-xl p-4 shadow-sm flex flex-col gap-4">
                   <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Total Amount</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Total Amount</label>
                     <span className="text-[14px] font-bold text-text-primary">₹{totalAmount.toFixed(2)}</span>
                   </div>
 
                   <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Transport (₹)</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Transport (₹)</label>
                     <input 
                       type="number"
                       name="transport"
@@ -1270,7 +1270,7 @@ const CreateInvoice = () => {
                   </div>
 
                   <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Packing (₹)</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Packing (₹)</label>
                     <input 
                       type="number"
                       name="packing"
@@ -1281,7 +1281,7 @@ const CreateInvoice = () => {
                   </div>
 
                   <div className="flex flex-col gap-2 bg-bg-main/20 p-2 rounded-lg border border-border-soft/50">
-                    <label className="text-[9px] font-black text-text-light uppercase tracking-[0.2em] opacity-50 ml-1">Discount</label>
+                    <label className="text-[9px] font-black text-text-primary uppercase tracking-[0.2em]">Discount</label>
                     <div className="flex items-center gap-2">
                        <div className="flex-1 relative">
                           <input 
@@ -1289,10 +1289,10 @@ const CreateInvoice = () => {
                             name="extraDiscountPercent"
                             value={formData.extraDiscountPercent}
                             onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light outline-none focus:border-brand-blue transition-all"
+                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
                             placeholder="0"
                           />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-light opacity-40">%</span>
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">%</span>
                        </div>
                        <div className="flex-1 relative">
                           <input 
@@ -1300,16 +1300,16 @@ const CreateInvoice = () => {
                             name="extraDiscountAmount"
                             value={formData.extraDiscountAmount}
                             onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-light text-right outline-none focus:border-brand-blue transition-all"
+                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
                             placeholder="0.00"
                           />
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-light opacity-40">₹</span>
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">₹</span>
                        </div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-bold text-text-light uppercase tracking-widest opacity-60">Round Off</label>
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Round Off</label>
                     <input 
                       type="text"
                       readOnly

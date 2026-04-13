@@ -258,7 +258,7 @@ const JobberList = () => {
             <div className="p-0 overflow-visible">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-secondary">
+                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-primary">
                     <th className="px-4 py-2 text-left border-r border-border-soft w-1/3">Jobber Name</th>
                     <th className="px-4 py-2 text-left">Assigned Item List (Multi-Select)</th>
                   </tr>
@@ -270,7 +270,7 @@ const JobberList = () => {
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full h-full px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-full px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="Enter jobber name..."
                       />
                     </td>
@@ -295,7 +295,7 @@ const JobberList = () => {
                               setIsDropdownOpen(true);
                             }}
                             onFocus={() => setIsDropdownOpen(true)}
-                            className="flex-1 min-w-[120px] bg-transparent outline-none text-[12px] placeholder:text-text-light/50 h-8"
+                            className="flex-1 min-w-[120px] bg-transparent outline-none text-[12px] placeholder:text-text-primary/50 h-8"
                             placeholder={formData.selectedItems.length === 0 ? "Type to filter items..." : "Add more..."}
                           />
                         </div>
@@ -306,13 +306,13 @@ const JobberList = () => {
                               <button
                                 key={item.id}
                                 onClick={() => handleToggleItem(item)}
-                                className="w-full text-left px-4 py-2 text-[12px] hover:bg-bg-main/50 text-text-secondary hover:text-brand-blue font-medium transition-colors border-b last:border-none border-border-soft/30"
+                                className="w-full text-left px-4 py-2 text-[12px] hover:bg-bg-main/50 text-text-primary hover:text-brand-blue font-medium transition-colors border-b last:border-none border-border-soft/30"
                               >
                                 {item.name}
                               </button>
                             ))}
                             {filteredItems.length === 0 && (
-                              <div className="px-4 py-3 text-[12px] text-text-light italic">
+                              <div className="px-4 py-3 text-[12px] text-text-primary italic">
                                 No matching items found
                               </div>
                             )}
@@ -328,7 +328,7 @@ const JobberList = () => {
             <div className="px-4 py-2.5 bg-bg-main/30 flex justify-end gap-3 border-t border-border-soft">
               <button 
                 onClick={handleRedo}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-[11.5px] font-bold text-text-secondary hover:text-text-primary transition uppercase tracking-tight"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-[11.5px] font-bold text-text-primary hover:text-text-primary transition uppercase tracking-tight"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -414,7 +414,7 @@ const JobberList = () => {
                                     <button
                                       key={item.id}
                                       onClick={() => handleToggleEditItem(item)}
-                                      className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-bg-main/50 text-text-secondary hover:text-brand-blue font-medium transition-colors"
+                                      className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-bg-main/50 text-text-primary hover:text-brand-blue font-medium transition-colors"
                                     >
                                       {item.name}
                                     </button>
@@ -425,7 +425,7 @@ const JobberList = () => {
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
                             {jobber.items?.map(item => (
-                              <span key={item?.id || Math.random()} className="text-[10px] font-bold text-text-secondary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
+                              <span key={item?.id || Math.random()} className="text-[10px] font-bold text-text-primary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
                                 {item?.name || 'Unknown Item'}
                               </span>
                             ))}
@@ -479,7 +479,7 @@ const JobberList = () => {
                   ))}
                   {jobbers.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="3" className="px-6 py-10 text-center text-text-light italic text-[13px]">
+                      <td colSpan="3" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
                         No jobbers found in master. Add a new jobber to get started.
                       </td>
                     </tr>

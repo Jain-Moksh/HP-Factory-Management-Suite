@@ -22,7 +22,7 @@ const Dashboard = () => {
               <Card key={stat.label} className="p-4 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-lg">{stat.icon}</div>
                 <div>
-                  <p className="text-[10px] font-bold text-text-light uppercase tracking-wider">{stat.label}</p>
+                  <p className="text-[10px] font-bold text-text-primary uppercase tracking-wider">{stat.label}</p>
                   <h2 className="text-xl font-bold text-text-primary tracking-tight">{stat.value}</h2>
                 </div>
               </Card>

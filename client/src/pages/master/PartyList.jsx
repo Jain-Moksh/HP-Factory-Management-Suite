@@ -231,7 +231,7 @@ const PartyList = () => {
             <div className="p-0">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-secondary">
+                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-primary">
                     <th className="px-4 py-2 text-left border-r border-border-soft">Party Name</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft">Pet Name</th>
                     <th className="px-4 py-2 text-left border-r border-border-soft">Address 1</th>
@@ -248,7 +248,7 @@ const PartyList = () => {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="Enter party name..."
                       />
                     </td>
@@ -258,7 +258,7 @@ const PartyList = () => {
                         name="shortform"
                         value={formData.shortform}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="Pet name"
                       />
                     </td>
@@ -268,7 +268,7 @@ const PartyList = () => {
                         name="street"
                         value={formData.street}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="GIDC/Street"
                       />
                     </td>
@@ -278,7 +278,7 @@ const PartyList = () => {
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="City/State"
                       />
                     </td>
@@ -298,7 +298,7 @@ const PartyList = () => {
                         name="remark"
                         value={formData.remark}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="Any remarks"
                       />
                     </td>
@@ -310,7 +310,7 @@ const PartyList = () => {
             <div className="px-4 py-2.5 bg-bg-main/30 flex justify-end gap-3 border-t border-border-soft">
               <button 
                 onClick={handleRedo}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-[11.5px] font-bold text-text-secondary hover:text-text-primary transition uppercase tracking-tight"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-[11.5px] font-bold text-text-primary hover:text-text-primary transition uppercase tracking-tight"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -380,11 +380,11 @@ const PartyList = () => {
                           </div>
                         ) : (
                           <>
-                            {client.name} {client.shortform && <span className="text-text-secondary font-medium ml-1">({client.shortform})</span>}
+                            {client.name} {client.shortform && <span className="text-text-primary font-medium ml-1">({client.shortform})</span>}
                           </>
                         )}
                       </td>
-                      <td className="px-5 py-1.5 text-[12.5px] text-text-secondary border-r border-border-soft">
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-primary border-r border-border-soft">
                         {editingId === client.id ? (
                           <input 
                             name="street"
@@ -395,7 +395,7 @@ const PartyList = () => {
                           />
                         ) : client.street}
                       </td>
-                      <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft">
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-primary border-r border-border-soft">
                         {editingId === client.id ? (
                           <input 
                             name="city"
@@ -418,7 +418,7 @@ const PartyList = () => {
                           />
                         ) : `₹${parseFloat(client.balance || 0).toLocaleString()}`}
                       </td>
-                      <td className="px-5 py-1.5 text-[12.5px] text-text-light border-r border-border-soft italic">
+                      <td className="px-5 py-1.5 text-[12.5px] text-text-primary border-r border-border-soft italic">
                         {editingId === client.id ? (
                           <input 
                             name="remark"
@@ -476,7 +476,7 @@ const PartyList = () => {
                   ))}
                   {clients.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-10 text-center text-text-light italic text-[13px]">
+                      <td colSpan="6" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
                         No parties found in master. Add a new party to get started.
                       </td>
                     </tr>

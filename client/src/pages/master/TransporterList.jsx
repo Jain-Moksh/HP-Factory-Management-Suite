@@ -205,7 +205,7 @@ const TransporterList = () => {
             <div className="p-0">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-secondary">
+                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-primary">
                     <th className="px-4 py-2 text-left">Transporter Name</th>
                   </tr>
                 </thead>
@@ -217,7 +217,7 @@ const TransporterList = () => {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-light/50"
+                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="Enter transporter name..."
                       />
                     </td>
@@ -229,7 +229,7 @@ const TransporterList = () => {
             <div className="px-4 py-2.5 bg-bg-main/30 flex justify-end gap-3 border-t border-border-soft">
               <button 
                 onClick={handleRedo}
-                className="flex items-center gap-1.5 px-4 py-1.5 text-[11.5px] font-bold text-text-secondary hover:text-text-primary transition uppercase tracking-tight"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-[11.5px] font-bold text-text-primary hover:text-text-primary transition uppercase tracking-tight"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -331,7 +331,7 @@ const TransporterList = () => {
                   ))}
                   {transporters.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="2" className="px-6 py-10 text-center text-text-light italic text-[13px]">
+                      <td colSpan="2" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
                         No transporters found in master. Add a new transporter to get started.
                       </td>
                     </tr>

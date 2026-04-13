@@ -4,7 +4,7 @@ const Input = ({ label, error, className = '', ...props }) => {
   return (
     <div className={`flex flex-col gap-1.5 w-full ${className}`}>
       {label && (
-        <label className="text-[11px] font-bold text-text-light uppercase tracking-tight ml-0.5">
+        <label className="text-[11px] font-bold text-text-primary uppercase tracking-tight ml-0.5">
           {label}
         </label>
       )}

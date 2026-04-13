@@ -44,7 +44,7 @@ const CreatePayment = () => {
           <Card className="p-4 bg-white border-border-soft/60 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Challan No</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Challan No</label>
                 <input 
                   type="text"
                   name="challanNo"
@@ -55,7 +55,7 @@ const CreatePayment = () => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Date</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Date</label>
                 <input 
                   type="date"
                   name="date"
@@ -65,7 +65,7 @@ const CreatePayment = () => {
                 />
               </div>
               <div className="flex flex-col gap-1 col-span-2 text-left relative">
-                <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Client Name / Jobber</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Client Name / Jobber</label>
                 <input 
                   type="text"
                   name="clientName"
@@ -83,7 +83,7 @@ const CreatePayment = () => {
             <div className={`flex flex-col gap-5 transition-all duration-300 ${formData.clientName ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
               <div className="flex items-center justify-between border-b border-border-soft/50 pb-3">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-bold text-text-light uppercase tracking-[0.15em]">Opening Pending Amount</span>
+                  <span className="text-[9px] font-bold text-text-primary uppercase tracking-[0.15em]">Opening Pending Amount</span>
                   <span className="text-lg font-black text-red-500 tracking-tight leading-none">₹15,450.00</span>
                 </div>
                 <div className="text-[9px] font-bold text-brand-blue bg-brand-blue/5 px-2.5 py-1 rounded border border-brand-blue/10 uppercase tracking-widest">
@@ -93,7 +93,7 @@ const CreatePayment = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
                 <div className="flex flex-col gap-1.5 col-span-2">
-                  <label className="text-[10px] font-bold text-text-light uppercase tracking-widest ml-0.5">Amount Paid (₹)</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Amount Paid (₹)</label>
                   <div className="flex gap-2">
                     <input 
                       type="number"
@@ -106,13 +106,13 @@ const CreatePayment = () => {
                     <div className="flex p-0.5 bg-bg-main rounded-lg border border-border-soft h-9 shrink-0">
                       <button 
                         onClick={() => togglePaymentMode('Bank')}
-                        className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Bank' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-light hover:text-text-primary'}`}
+                        className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Bank' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
                       >
                         Bank
                       </button>
                       <button 
                         onClick={() => togglePaymentMode('Cash')}
-                        className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Cash' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-light hover:text-text-primary'}`}
+                        className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Cash' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
                       >
                         Cash
                       </button>
@@ -122,11 +122,11 @@ const CreatePayment = () => {
 
                 <div className="col-span-2 flex items-center justify-end">
                   <div className="text-right pr-4 border-r border-border-soft/50 mr-4 h-8 flex flex-col justify-center">
-                    <div className="text-[8px] font-bold text-text-light uppercase tracking-widest opacity-60">Adjustment</div>
-                    <div className="text-xs font-bold text-text-secondary leading-none">- ₹{(parseFloat(formData.amountPaid) || 0).toLocaleString()}</div>
+                    <div className="text-[8px] font-bold text-text-primary uppercase tracking-widest opacity-60">Adjustment</div>
+                    <div className="text-xs font-bold text-text-primary leading-none">- ₹{(parseFloat(formData.amountPaid) || 0).toLocaleString()}</div>
                   </div>
                   <div className="text-right flex flex-col justify-center h-8">
-                    <div className="text-[9px] font-bold text-text-light uppercase tracking-[0.15em] mb-0.5">Closing Balance</div>
+                    <div className="text-[9px] font-bold text-text-primary uppercase tracking-[0.15em] mb-0.5">Closing Balance</div>
                     <div className="text-base font-black text-text-primary leading-none">₹{(15450 - (parseFloat(formData.amountPaid) || 0)).toLocaleString()}.00</div>
                   </div>
                 </div>
@@ -135,7 +135,7 @@ const CreatePayment = () => {
 
             {!formData.clientName && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-300">
-                <span className="bg-white px-3 py-1.5 rounded border border-border-soft shadow-lg text-[10px] font-bold text-text-light uppercase tracking-widest flex items-center gap-2">
+                <span className="bg-white px-3 py-1.5 rounded border border-border-soft shadow-lg text-[10px] font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-ping"></div>
                   Identify Client to access Ledger
                 </span>
@@ -146,7 +146,7 @@ const CreatePayment = () => {
           {/* Footer Section: Remarks beside Actions - High Efficiency Pattern */}
           <div className="flex flex-row gap-4 items-start mt-1 pb-12 animate-in fade-in duration-700">
             <div className="flex-[3] relative group">
-              <label className="absolute -top-2 left-3 px-1.5 bg-[#f8fafc] text-[9px] font-bold text-text-light uppercase tracking-widest group-focus-within:text-brand-blue transition-colors z-10">Internal Payment Remarks</label>
+              <label className="absolute -top-2 left-3 px-1.5 bg-[#f8fafc] text-[9px] font-bold text-text-primary uppercase tracking-widest group-focus-within:text-brand-blue transition-colors z-10">Internal Payment Remarks</label>
               <textarea 
                 name="remarks"
                 value={formData.remarks}
@@ -168,7 +168,7 @@ const CreatePayment = () => {
               </button>
               <button 
                 onClick={() => navigate('/payment')}
-                className="h-8 flex items-center justify-center bg-white border border-border-soft rounded-lg text-[10.5px] font-bold text-text-secondary hover:text-red-500 hover:bg-red-50 transition uppercase tracking-widest shadow-sm"
+                className="h-8 flex items-center justify-center bg-white border border-border-soft rounded-lg text-[10.5px] font-bold text-text-primary hover:text-red-500 hover:bg-red-50 transition uppercase tracking-widest shadow-sm"
               >
                 Discard
               </button>
