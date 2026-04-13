@@ -8,6 +8,8 @@ import Modal from '../components/UI/Modal';
 import DeleteModal from '../components/UI/DeleteModal';
 import WarningModal from '../components/UI/WarningModal';
 import { API_BASE_URL } from '../config';
+import PrintInvoice from '../components/PrintInvoice';
+
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
@@ -119,6 +121,21 @@ const CreateInvoice = () => {
   
   // --- In-place Editing State ---
   const [editingId, setEditingId] = useState(null);
+
+  // --- Print State ---
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  // Print lifecycle: trigger window.print() after component mounts
+  useEffect(() => {
+    if (isPrinting) {
+      const timer = setTimeout(() => {
+        window.print();
+        setIsPrinting(false);
+        navigate('/order-summary');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinting, navigate]);
 
   useEffect(() => {
     const fetchMasters = async () => {
@@ -512,10 +529,10 @@ const CreateInvoice = () => {
     updateTableRowValue(id, field, nextValue);
   };
 
-  const handleFinalSave = async () => {
+  const handleFinalSave = async (shouldNavigate = true) => {
     if (addedItems.length === 0 || !formData.client_id) {
         alert("Please select a client and add at least one item.");
-        return;
+        return false;
     }
     
     const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
@@ -544,7 +561,7 @@ const CreateInvoice = () => {
         discount_amount: parseFloat(item.dAmount) || 0,
         unit: item.unit,
         quantity: parseFloat(item.qty),
-        bundle: 1, // Defaulting to 1 for now
+        bundle: 1,
         total_amount: parseFloat(item.total)
       }))
     };
@@ -560,13 +577,24 @@ const CreateInvoice = () => {
       });
       const result = await response.json();
       if (result.success) {
-        navigate('/order-summary');
+        if (shouldNavigate) navigate('/order-summary');
+        return true;
       } else {
         alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} invoice`);
+        return false;
       }
     } catch (err) {
       console.error(`Error ${isEditMode ? 'updating' : 'saving'} invoice:`, err);
       alert(`Network error while ${isEditMode ? 'updating' : 'saving'} invoice`);
+      return false;
+    }
+  };
+
+  const handleSaveAndPrint = async () => {
+    // Save without navigating; on success, set isPrinting which triggers the useEffect
+    const success = await handleFinalSave(false);
+    if (success) {
+      setIsPrinting(true);
     }
   };
 
@@ -1393,11 +1421,11 @@ const CreateInvoice = () => {
                         Cancel
                       </Button>
                       <button 
-                        onClick={handleFinalSave}
+                        onClick={handleSaveAndPrint}
                         className="flex-1 h-10 bg-white border-2 border-brand-blue text-brand-blue rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all flex items-center justify-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
                         Save & Print
                       </button>
@@ -1414,6 +1442,20 @@ const CreateInvoice = () => {
               </div>
             </div>
           )}
+          
+          {/* Print Component — rendered only when isPrinting is true */}
+          {isPrinting && (
+            <PrintInvoice 
+              data={{
+                ...formData,
+                itemsSubtotal,
+                grandTotal,
+                roundOffDisplay
+              }} 
+              items={addedItems} 
+            />
+          )}
+
           {/* Secure Delete Confirmation Modal */}
           <DeleteModal 
             isOpen={isDeleteModalOpen}
