@@ -65,14 +65,14 @@ const CreatePayment = () => {
                 />
               </div>
               <div className="flex flex-col gap-1 col-span-2 text-left relative">
-                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Client Name / Jobber</label>
+                <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Party Name / Jobber</label>
                 <input 
                   type="text"
                   name="clientName"
                   value={formData.clientName}
                   onChange={handleInputChange}
                   className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-bold text-brand-blue uppercase tracking-tight outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
-                  placeholder="Search Client Database..."
+                  placeholder="Search Party Database..."
                 />
               </div>
             </div>
@@ -137,7 +137,7 @@ const CreatePayment = () => {
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-300">
                 <span className="bg-white px-3 py-1.5 rounded border border-border-soft shadow-lg text-[10px] font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-ping"></div>
-                  Identify Client to access Ledger
+                  Identify Party to access Ledger
                 </span>
               </div>
             )}

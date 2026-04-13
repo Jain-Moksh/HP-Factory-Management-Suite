@@ -7,7 +7,7 @@ const Dashboard = () => {
   const stats = [
     { label: 'Total Revenue', value: '$124,500.00', change: '+12.5%', icon: '💰' },
     { label: 'Total Orders', value: '1,240', change: '+8.2%', icon: '🛒' },
-    { label: 'Active Customers', value: '482', change: '+3.1%', icon: '👥' },
+    { label: 'Active Parties', value: '482', change: '+3.1%', icon: '👥' },
     { label: 'Pending Shipments', value: '18', change: '-2.4%', icon: '📦' },
   ];
 

@@ -14,7 +14,7 @@
  */
 const getFormattedChallan = async (dateStr, type, dbOrClient) => {
   const dateObj = new Date(dateStr);
-  const monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthName = monthsShort[dateObj.getMonth()];
   const monthNum = dateObj.getMonth() + 1;
   const calendarYear = dateObj.getFullYear();

@@ -24,6 +24,7 @@ const billingQueries = {
         SELECT 
             b.*,
             c.name as client_name,
+            c.shortform as client_shortform,
             t.name as transporter_name
         FROM billing b
         JOIN clients c ON b.client_id = c.id
@@ -41,7 +42,8 @@ const billingQueries = {
     getAllBills: `
         SELECT 
             b.*,
-            c.name as client_name
+            c.name as client_name,
+            c.shortform as client_shortform
         FROM billing b
         JOIN clients c ON b.client_id = c.id
         ORDER BY b.date DESC, b.id DESC

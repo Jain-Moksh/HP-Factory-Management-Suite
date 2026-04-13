@@ -413,7 +413,7 @@ const CreateInvoice = () => {
     setFormData(prev => ({
       ...prev,
       client_id: client.id,
-      clientName: client.name,
+      clientName: `${client.name}${client.shortform ? ` (${client.shortform})` : ''}`,
       address1: client.street || '',
       address2: client.city || ''
     }));
@@ -440,6 +440,24 @@ const CreateInvoice = () => {
       transporterName: transporter.name
     }));
     setShowTransporterDropdown(false);
+  };
+
+  const handleCreateTransporter = async (name) => {
+    if (!name) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/transporters`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setTransporters(prev => [...prev, result.data]);
+        handleSelectTransporter(result.data);
+      }
+    } catch (err) {
+      console.error("Error creating transporter:", err);
+    }
   };
 
   const handleToggleEdit = (id) => {
@@ -630,8 +648,10 @@ const CreateInvoice = () => {
                                  onClick={() => handleSelectClient(c)}
                                  className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
                                >
-                                 <div className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{c.name}</div>
-                                 <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
+                               <div className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">
+                                 {c.name} {c.shortform && <span className="text-text-primary/50 font-medium ml-1">({c.shortform})</span>}
+                               </div>
+                               <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
                                </div>
                              ))
                            }
@@ -717,6 +737,22 @@ const CreateInvoice = () => {
                              </div>
                            ))
                          }
+                         {/* Dynamic "Add New" Option */}
+                         {formData.transporterName && !transporters.some(t => t.name.toLowerCase() === formData.transporterName.toLowerCase()) && (
+                           <div 
+                             onClick={() => handleCreateTransporter(formData.transporterName)}
+                             className="px-4 py-3 bg-brand-blue/5 hover:bg-brand-blue/10 cursor-pointer border-t border-border-soft/50 group"
+                           >
+                              <div className="flex items-center gap-2">
+                                <span className="text-brand-blue">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </span>
+                                <span className="text-[12px] font-black text-brand-blue uppercase tracking-tight">Add "{formData.transporterName}"</span>
+                              </div>
+                           </div>
+                         )}
                          <div onClick={() => setShowTransporterDropdown(false)} className="bg-bg-main/50 px-4 py-1 text-center text-[9px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close</div>
                       </div>
                     )}

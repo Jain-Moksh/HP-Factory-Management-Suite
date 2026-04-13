@@ -48,7 +48,9 @@ const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
                   <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">
                     {new Date(row.date).toLocaleDateString('en-GB')}
                   </td>
-                  <td className="px-3 py-1 border-x border-border-soft text-[12px] font-medium text-brand-blue">{row.client_name}</td>
+                  <td className="px-3 py-1 border-x border-border-soft text-[12px] font-medium text-brand-blue">
+                    {row.client_name} {row.client_shortform && <span className="text-text-primary/50 font-medium ml-1">({row.client_shortform})</span>}
+                  </td>
                   <td className="px-3 py-1 border-x border-border-soft text-[12px] font-bold text-text-primary text-right">
                     ₹{parseFloat(row.grand_total || 0).toLocaleString('en-IN')}
                   </td>

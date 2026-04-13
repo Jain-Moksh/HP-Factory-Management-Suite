@@ -97,7 +97,7 @@ const PartyList = () => {
         await fetchClients();
         handleRedo();
       } else {
-        alert(result.message || 'Failed to save client');
+        alert(result.message || 'Failed to save party');
       }
     } catch (err) {
       alert('Network error while saving');
@@ -160,7 +160,7 @@ const PartyList = () => {
         setClients(prev => prev.map(client => client.id === id ? { ...client, ...editFormData } : client));
         setEditingId(null);
       } else {
-        alert(result.message || 'Failed to update client');
+        alert(result.message || 'Failed to update party');
       }
     } catch (err) {
       alert('Network error while updating');

@@ -7,10 +7,10 @@ import PaymentTable from '../components/PaymentTable';
 import MonthFilterFooter from '../components/MonthFilterFooter';
 
 const DUMMY_PAYMENTS = [
-  { id: 1, challan: 'PAY-001', date: '2026-04-01', client: 'Ajay Traders', amount: 45000 },
-  { id: 2, challan: 'PAY-002', date: '2026-04-02', client: 'Mehta Plastics', amount: 28500 },
-  { id: 3, challan: 'PAY-003', date: '2026-04-03', client: 'Suresh Kumar', amount: 12000 },
-  { id: 4, challan: 'PAY-004', date: '2026-03-15', client: 'March Trader', amount: 5000 },
+  { id: 1, challan: 'PAY-001', date: '2026-04-01', client: 'Ajay Traders', shortform: 'AT', amount: 45000 },
+  { id: 2, challan: 'PAY-002', date: '2026-04-02', client: 'Mehta Plastics', shortform: 'MP', amount: 28500 },
+  { id: 3, challan: 'PAY-003', date: '2026-04-03', client: 'Suresh Kumar', shortform: '', amount: 12000 },
+  { id: 4, challan: 'PAY-004', date: '2026-03-15', client: 'March Trader', shortform: 'MT', amount: 5000 },
 ];
 
 const Payment = () => {
@@ -50,13 +50,13 @@ const Payment = () => {
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
           title="Payment" 
-          subtitle="MANAGE AND TRACK ALL CLIENT PAYMENTS AND TRANSACTIONS" 
+          subtitle="MANAGE AND TRACK ALL PARTY PAYMENTS AND TRANSACTIONS" 
           actions={paymentActions}
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
           <FilterBar 
-            searchPlaceholder2="Search by Client Name" 
+            searchPlaceholder2="Search by Party Name" 
             onSearch2={setSearchClient}
           />
           <PaymentTable data={filteredPayments} loading={isLoading} />

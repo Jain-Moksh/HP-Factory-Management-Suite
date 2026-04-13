@@ -83,7 +83,7 @@ const OrderSummary = () => {
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
           title="Order Summary" 
-          subtitle="MANAGE AND TRACK ALL BILLING RECORDS" 
+          subtitle="MANAGE AND TRACK ALL PARTY BILLING RECORDS" 
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">

@@ -18,7 +18,7 @@ const PaymentTable = ({ data = [], loading = false }) => {
             <tr className="bg-table-header text-white">
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Challan No.</th>
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-40">Date</th>
-              <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Client Name</th>
+              <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Party Name</th>
               <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-32">Amount</th>
               <th className="px-3 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest text-center w-24">Action</th>
             </tr>
@@ -28,7 +28,9 @@ const PaymentTable = ({ data = [], loading = false }) => {
               <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan}</td>
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">{row.date}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.client}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">
+                  {row.client} {row.shortform && <span className="text-text-primary/50 font-medium ml-1">({row.shortform})</span>}
+                </td>
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-black text-brand-blue">₹{row.amount.toLocaleString()}</td>
                 <td className="px-3 py-1.5 border-x border-border-soft">
                   <div className="flex items-center justify-center gap-2.5">
