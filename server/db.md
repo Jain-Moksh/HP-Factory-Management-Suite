@@ -144,6 +144,33 @@ CREATE INDEX idx_jobber_items_item ON jobber_items(item_id);
 CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
 
+-- =========================
+-- GROUP SYSTEM TABLES
+-- =========================
+
+CREATE TYPE member_type_enum AS ENUM ('jobber', 'client');
+
+CREATE TABLE groups (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE group_members (
+    id SERIAL PRIMARY KEY,
+    group_id INT NOT NULL,
+    member_type member_type_enum NOT NULL,
+    member_id INT NOT NULL, -- Refers to jobbers.id or clients.id
+    UNIQUE(group_id, member_type, member_id),
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+);
+
+-- Note: polymorphic relationship on member_id is validated in backend.
+-- If member_type = 'jobber', member_id must exist in jobbers table.
+-- If member_type = 'client', member_id must exist in clients table.
+
 --- Time stamp addition ---
 
 ALTER TABLE billing ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;

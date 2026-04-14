@@ -178,6 +178,34 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
 
 ---
 
+### 5. Groups
+Manages groups of jobbers and clients.
+
+*   **GET `/groups`**
+    *   *Description*: List all groups with their resolved members (names and details).
+*   **GET `/groups/:id`**
+    *   *Description*: Fetch a single group with all its members (jobbers and clients).
+*   **POST `/groups`**
+    *   *Description*: Create a new group. Validates that all member IDs exist in their respective tables.
+    *   *Request Body*:
+        ```json
+        {
+          "name": "North Distributors",
+          "description": "Primary distributors in the north region",
+          "members": [
+            { "member_type": "jobber", "member_id": 1 },
+            { "member_type": "client", "member_id": 3 }
+          ]
+        }
+        ```
+*   **PUT `/groups/:id`**
+    *   *Description*: Update a group and its members. Old members are replaced by the new array.
+    *   *Request Body*: Same as POST.
+*   **DELETE `/groups/:id`**
+    *   *Description*: Delete a group. Members are automatically removed via cascade deletion.
+
+---
+
 ## 🛠️ UTILITIES
 
 *   **GET `/health`**
