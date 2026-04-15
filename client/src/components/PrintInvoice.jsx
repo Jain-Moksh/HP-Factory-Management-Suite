@@ -31,8 +31,7 @@ const amountInWords = (amount) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items }) => {
   // Configurable pagination
-  const ROWS_PER_PAGE = 22; 
-  
+  const ROWS_PER_PAGE = 18; // Reduced from 22 to fit footer at bottom of A5 portrait safely  
   // Conditionally show discount column
   const hasDiscount = items.some(item => parseFloat(item.dAmount) > 0);
 
@@ -50,11 +49,21 @@ const PrintInvoice = ({ data, items }) => {
   const totalPages = itemPages.length;
 
   const CSS = `
-    /* Page Configuration */
+    /* 1. Global Print Reset & Container */
+    .print-container * {
+      box-sizing: border-box;
+    }
+
+    .print-container {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #000;
+      width: 100%;
+    }
+
     @media print {
       @page {
-        size: A5 portrait;
-        margin: 5mm;
+        size: 148mm 210mm;
+        margin: 0;
       }
       body * { visibility: hidden; }
       .print-container, .print-container * { visibility: visible; }
@@ -62,33 +71,52 @@ const PrintInvoice = ({ data, items }) => {
         position: absolute;
         left: 0;
         top: 0;
-        width: 100%;
+        width: 148mm;
+        margin: 0;
+        padding: 0;
         background: white;
+      }
+      .bill-page {
+        margin: 0 !important;
+        box-shadow: none !important;
       }
     }
 
-    .print-container {
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: #000;
+    /* 2. Screen Preview Styling */
+    @media screen {
+      .print-container {
+        background: #dee2e6;
+        padding: 40px 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .bill-page {
+        box-shadow: 0 15px 45px rgba(0,0,0,0.2);
+        margin-bottom: 40px;
+      }
     }
 
+    /* 3. A5 Bill Page Layout */
     .bill-page {
       width: 148mm;
-      height: 148mm; /* Exactly as requested */
-      margin: 0 auto;
+      height: 210mm;
+      background: white;
       display: flex;
       flex-direction: column;
-      box-sizing: border-box;
+      padding: 6mm;
+      position: relative;
       page-break-after: always;
-      background: white;
-      border: none; /* No outer border */
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
 
     .bill-page:last-child {
       page-break-after: auto;
     }
 
-    /* 1. TOP SECTION */
+    /* 4. CONTENT SECTIONS */
     .section-top {
       border: 1px solid #000;
       margin-bottom: 2mm;
@@ -122,15 +150,16 @@ const PrintInvoice = ({ data, items }) => {
     }
     .info-val {
       font-weight: 500;
+      word-break: break-all;
     }
 
     /* 2. MIDDLE SECTION (Product Table) */
     .section-middle {
-      flex-grow: 1;
       border: 1px solid #000;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      /* flex-grow removed to allow footer margin-top: auto */
     }
     .bill-table {
       width: 100%;
@@ -152,8 +181,8 @@ const PrintInvoice = ({ data, items }) => {
     .bill-table td {
       border-right: 1px solid #000;
       padding: 0.8mm 1.5mm;
-      font-size: 10.5px;
-      height: 6mm; /* Fixed height helps visual consistency */
+      font-size: 10px;
+      height: 6mm;
       vertical-align: middle;
       box-sizing: border-box;
     }
