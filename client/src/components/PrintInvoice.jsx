@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v) => parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -31,11 +32,10 @@ const amountInWords = (amount) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items }) => {
   // Configurable pagination
-  const ROWS_PER_PAGE = 18; // Reduced from 22 to fit footer at bottom of A5 portrait safely  
+  const ROWS_PER_PAGE = 18; 
   // Conditionally show discount column
   const hasDiscount = items.some(item => parseFloat(item.dAmount) > 0);
 
-  // Fill functionality
   const paginate = (rawItems) => {
     const pages = [];
     const chunks = [];
@@ -49,40 +49,50 @@ const PrintInvoice = ({ data, items }) => {
   const totalPages = itemPages.length;
 
   const CSS = `
-    /* 1. Global Print Reset & Container */
-    .print-container * {
-      box-sizing: border-box;
-    }
-
-    .print-container {
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: #000;
-      width: 100%;
-    }
-
+    /* 1. Print Master Controls */
     @media print {
       @page {
         size: 148mm 210mm;
         margin: 0;
       }
-      body * { visibility: hidden; }
-      .print-container, .print-container * { visibility: visible; }
-      .print-container {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 148mm;
-        margin: 0;
-        padding: 0;
-        background: white;
+      
+      /* THE KEY: Hide the entire React App root to kill its height */
+      #root {
+        display: none !important;
       }
+
+      /* Show ONLY the portal content */
+      .print-container {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 148mm !important;
+        z-index: 99999 !important;
+        background: white !important;
+        visibility: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      .print-container * {
+        visibility: visible !important;
+      }
+
       .bill-page {
+        height: 210mm !important;
+        width: 148mm !important;
+        page-break-after: always !important;
         margin: 0 !important;
         box-shadow: none !important;
       }
+      
+      .bill-page:last-child {
+        page-break-after: avoid !important;
+      }
     }
 
-    /* 2. Screen Preview Styling */
+    /* 2. Screen Preview Styling (Paper Look) */
     @media screen {
       .print-container {
         background: #dee2e6;
@@ -91,29 +101,34 @@ const PrintInvoice = ({ data, items }) => {
         display: flex;
         flex-direction: column;
         align-items: center;
+        width: 100%;
       }
       .bill-page {
         box-shadow: 0 15px 45px rgba(0,0,0,0.2);
         margin-bottom: 40px;
+        background: white;
       }
     }
 
-    /* 3. A5 Bill Page Layout */
+    /* 3. Base Layout (Shared) */
+    .print-container {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #000;
+    }
+
     .bill-page {
       width: 148mm;
       height: 210mm;
-      background: white;
       display: flex;
       flex-direction: column;
       padding: 6mm;
       position: relative;
-      page-break-after: always;
       box-sizing: border-box;
       flex-shrink: 0;
     }
 
-    .bill-page:last-child {
-      page-break-after: auto;
+    .bill-page * {
+      box-sizing: border-box;
     }
 
     /* 4. CONTENT SECTIONS */
@@ -153,13 +168,11 @@ const PrintInvoice = ({ data, items }) => {
       word-break: break-all;
     }
 
-    /* 2. MIDDLE SECTION (Product Table) */
     .section-middle {
       border: 1px solid #000;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      /* flex-grow removed to allow footer margin-top: auto */
     }
     .bill-table {
       width: 100%;
@@ -184,7 +197,6 @@ const PrintInvoice = ({ data, items }) => {
       font-size: 10px;
       height: 6mm;
       vertical-align: middle;
-      box-sizing: border-box;
     }
     .bill-table td:last-child { border-right: none; }
 
@@ -198,7 +210,6 @@ const PrintInvoice = ({ data, items }) => {
     .c-disc  { width: 9%; text-align: right; }
     .c-total { width: 11%; text-align: right; font-weight: 700; }
 
-    /* 3. BOTTOM SECTION */
     .section-bottom {
       margin-top: auto;
       padding-top: 2mm;
@@ -273,7 +284,7 @@ const PrintInvoice = ({ data, items }) => {
     }
   `;
 
-  return (
+  const portalContent = (
     <div className="print-container">
       <style>{CSS}</style>
       
@@ -281,14 +292,10 @@ const PrintInvoice = ({ data, items }) => {
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === totalPages - 1;
         const serialOffset = pageIndex * ROWS_PER_PAGE;
-        
-        // Calculate empty rows to fill
         const emptyRows = Array.from({ length: Math.max(0, ROWS_PER_PAGE - chunk.length) });
 
         return (
           <div key={pageIndex} className="bill-page">
-            
-            {/* 1. TOP SECTION */}
             <div className="watermark">Tax Invoice</div>
             
             <div className="section-top">
@@ -324,7 +331,6 @@ const PrintInvoice = ({ data, items }) => {
               </div>
             </div>
 
-            {/* 2. MIDDLE SECTION (Table) */}
             <div className="section-middle">
               <table className="bill-table">
                 <thead>
@@ -355,7 +361,6 @@ const PrintInvoice = ({ data, items }) => {
                       </tr>
                     );
                   })}
-                  {/* Empty Rows Fill */}
                   {emptyRows.map((_, idx) => (
                     <tr key={`empty-${idx}`}>
                       <td className="c-no"></td>
@@ -372,7 +377,6 @@ const PrintInvoice = ({ data, items }) => {
               </table>
             </div>
 
-            {/* 3. BOTTOM SECTION */}
             <div className="section-bottom">
               {isLast && (
                 <>
@@ -434,12 +438,13 @@ const PrintInvoice = ({ data, items }) => {
                 </div>
               )}
             </div>
-
           </div>
         );
       })}
     </div>
   );
+
+  return createPortal(portalContent, document.body);
 };
 
 export default PrintInvoice;
