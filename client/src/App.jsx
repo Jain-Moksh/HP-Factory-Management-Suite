@@ -12,6 +12,8 @@ import CreatePurchase from './pages/CreatePurchase';
 import Payment from './pages/Payment';
 import CreatePayment from './pages/CreatePayment';
 
+import TransporterList from './pages/master/TransporterList';
+
 function App() {
   return (
     <BrowserRouter>
@@ -32,6 +34,7 @@ function App() {
         <Route path="/master/party-list" element={<PartyList />} />
         <Route path="/master/jobber" element={<JobberList />} />
         <Route path="/master/groups" element={<GroupList />} />
+        <Route path="/master/transporters" element={<TransporterList />} />
         
         {/* Add more routes as needed */}
       </Routes>

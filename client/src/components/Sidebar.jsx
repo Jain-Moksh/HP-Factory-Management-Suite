@@ -32,6 +32,7 @@ const Sidebar = () => {
     { name: 'Party List', path: '/master/party-list' },
     { name: 'Jobber List', path: '/master/jobber' },
     { name: 'Group List', path: '/master/groups' },
+    { name: 'Transporter List', path: '/master/transporters' },
   ];
 
   const navLinkClass = (isActive) => `
