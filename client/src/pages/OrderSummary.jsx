@@ -4,11 +4,17 @@ import PageHeader from '../components/PageHeader';
 import FilterBar from '../components/FilterBar';
 import BillingTable from '../components/BillingTable';
 import MonthFilterFooter from '../components/MonthFilterFooter';
+import PrintInvoice from '../components/PrintInvoice';
 import { API_BASE_URL } from '../config';
 
 const OrderSummary = () => {
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // --- Printing State ---
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printData, setPrintData] = useState(null);
+  const [printItems, setPrintItems] = useState([]);
   
   // --- Filter State ---
   const [searchChallan, setSearchChallan] = useState('');
@@ -60,6 +66,69 @@ const OrderSummary = () => {
     }
   };
 
+  const handlePrint = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/billing/${id}`);
+      const result = await response.json();
+      if (result.success) {
+        const bill = result.data;
+        
+        // Map backend data to PrintInvoice format
+        const summaryData = {
+          challanNo: bill.challan_no,
+          date: bill.date.split('T')[0],
+          clientName: bill.client_name,
+          clientRawName: bill.client_name,
+          client_shortform: bill.client_shortform,
+          address1: bill.address1 || '', // Assume backend provides these or handled in PrintInvoice
+          address2: bill.address2 || '',
+          transporterName: bill.transporter_name,
+          short_remark: bill.short_remark || '',
+          long_remark: bill.long_remark || '',
+          itemsSubtotal: parseFloat(bill.total_amount),
+          transport: bill.transport_charge || 0,
+          packing: bill.packing_charge || 0,
+          extraDiscountPercent: bill.discount_percent || 0,
+          extraDiscountAmount: bill.discount_amount || 0,
+          grandTotal: parseFloat(bill.grand_total)
+        };
+
+        // Standardized mapping similar to CreateInvoice
+        const subtotalBeforeRound = summaryData.itemsSubtotal + parseFloat(summaryData.transport) + parseFloat(summaryData.packing) - parseFloat(summaryData.extraDiscountAmount);
+        const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
+        summaryData.roundOffDisplay = calculatedRoundOff === 0 ? "0.00" : (calculatedRoundOff > 0 ? "+" : "-") + Math.abs(calculatedRoundOff).toFixed(2);
+
+        const mappedItems = bill.items.map(item => ({
+          item: item.item_name,
+          qty: item.quantity,
+          unit: item.unit,
+          rate: item.rate,
+          dAmount: item.discount_amount,
+          conversion: item.conversion,
+          total: item.total_amount
+        }));
+
+        setPrintData(summaryData);
+        setPrintItems(mappedItems);
+        setIsPrinting(true);
+      }
+    } catch (err) {
+      console.error("Error fetching print data:", err);
+      alert("Failed to fetch invoice details for printing");
+    }
+  };
+
+  // Print lifecycle: trigger window.print() after component mounts
+  useEffect(() => {
+    if (isPrinting) {
+      const timer = setTimeout(() => {
+        window.print();
+        setIsPrinting(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinting]);
+
   const filteredBills = useMemo(() => {
     return bills.filter(bill => {
       const matchesChallan = bill.challan_no.toString().includes(searchChallan);
@@ -97,8 +166,13 @@ const OrderSummary = () => {
             data={filteredBills} 
             isLoading={isLoading} 
             onDelete={handleDelete}
+            onPrint={handlePrint}
           />
         </div>
+
+        {isPrinting && printData && (
+          <PrintInvoice data={printData} items={printItems} />
+        )}
 
         <MonthFilterFooter 
           selectedMonth={selectedMonth}

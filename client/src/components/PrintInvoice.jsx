@@ -32,7 +32,7 @@ const amountInWords = (amount) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items }) => {
   // Configurable pagination
-  const ROWS_PER_PAGE = 18; 
+  const ROWS_PER_PAGE = 22; 
   // Conditionally show discount column
   const hasDiscount = items.some(item => parseFloat(item.dAmount) > 0);
 
@@ -201,9 +201,8 @@ const PrintInvoice = ({ data, items }) => {
     .bill-table td:last-child { border-right: none; }
 
     /* Column Widths */
-    .c-no    { width: 7%; text-align: center; }
     .c-bund  { width: 8%; text-align: center; }
-    .c-desc  { width: ${hasDiscount ? '37%' : '46%'}; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .c-desc  { width: ${hasDiscount ? '44%' : '53%'}; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .c-qty   { width: 9%; text-align: center; }
     .c-unit  { width: 8%; text-align: center; }
     .c-rate  { width: 11%; text-align: right; }
@@ -212,7 +211,7 @@ const PrintInvoice = ({ data, items }) => {
 
     .section-bottom {
       margin-top: auto;
-      padding-top: 2mm;
+      padding-top: 1mm;
       flex-shrink: 0;
     }
 
@@ -244,32 +243,8 @@ const PrintInvoice = ({ data, items }) => {
     }
 
     .footer-extra {
-      margin-top: 2mm;
-      font-size: 9px;
-    }
-    .words {
-      font-style: italic;
-      margin-bottom: 2mm;
-      border-bottom: 0.5px dashed #ccc;
-      padding-bottom: 1mm;
-    }
-    .sig-row {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 4mm;
-    }
-    .sig-box {
-      text-align: center;
-      width: 40mm;
-    }
-    .sig-line {
-      border-top: 1px solid #000;
-      margin-bottom: 1mm;
-    }
-    .sig-text {
+      margin-top: 1mm;
       font-size: 8px;
-      font-weight: 700;
-      text-transform: uppercase;
     }
     
     .watermark {
@@ -306,12 +281,6 @@ const PrintInvoice = ({ data, items }) => {
                     {[data.address1, data.address2].filter(Boolean).join(', ')}
                   </div>
                 </div>
-                {isFirst && (data.short_remark || data.long_remark) && (
-                  <div className="info-row" style={{ marginTop: '1.5mm' }}>
-                    <div className="info-label">Remarks:</div>
-                    <div className="info-val">{data.short_remark || data.long_remark}</div>
-                  </div>
-                )}
               </div>
               <div className="top-right">
                 <div className="info-row">
@@ -328,6 +297,12 @@ const PrintInvoice = ({ data, items }) => {
                     <div className="info-val">{data.transporterName}</div>
                   </div>
                 )}
+                {data.short_remark && (
+                  <div className="info-row">
+                    <div className="info-label">Parcel:</div>
+                    <div className="info-val">{data.short_remark}</div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -335,7 +310,6 @@ const PrintInvoice = ({ data, items }) => {
               <table className="bill-table">
                 <thead>
                   <tr>
-                    <th className="c-no">#</th>
                     <th className="c-bund">Bundle</th>
                     <th className="c-desc">Description</th>
                     <th className="c-qty">Qty</th>
@@ -350,7 +324,6 @@ const PrintInvoice = ({ data, items }) => {
                     const bundle = item.qty && item.conversion ? (Math.floor(parseFloat(item.qty) / parseFloat(item.conversion))) : '—';
                     return (
                       <tr key={idx}>
-                        <td className="c-no">{serialOffset + idx + 1}</td>
                         <td className="c-bund">{bundle}</td>
                         <td className="c-desc">{item.item}</td>
                         <td className="c-qty">{item.qty}</td>
@@ -363,7 +336,6 @@ const PrintInvoice = ({ data, items }) => {
                   })}
                   {emptyRows.map((_, idx) => (
                     <tr key={`empty-${idx}`}>
-                      <td className="c-no"></td>
                       <td className="c-bund"></td>
                       <td className="c-desc"></td>
                       <td className="c-qty"></td>
@@ -380,53 +352,50 @@ const PrintInvoice = ({ data, items }) => {
             <div className="section-bottom">
               {isLast && (
                 <>
-                  <div className="totals-box">
-                    <div className="t-row">
-                      <span className="t-label">Items Subtotal</span>
-                      <span className="t-val">₹{fmt(data.itemsSubtotal)}</span>
+                  <div style={{ display: 'flex', alignItems: 'stretch', gap: '4mm', marginTop: '2mm' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '1.5mm' }}>
+                      {data.long_remark ? (
+                        <div style={{ fontSize: '9px', fontStyle: 'italic', color: '#333' }}>
+                          <strong style={{ textTransform: 'uppercase', fontSize: '8px', color: '#000' }}>Invoice Remark:</strong> {data.long_remark}
+                        </div>
+                      ) : <div />}
+                      <div style={{ fontSize: '9px', fontStyle: 'italic', fontWeight: '500', borderBottom: '0.5px dashed #ccc', paddingBottom: '1mm' }}>
+                        <strong>Amount in words:</strong> {amountInWords(data.grandTotal)}
+                      </div>
                     </div>
-                    {parseFloat(data.transport) > 0 && (
+                    
+                    <div className="totals-box">
                       <div className="t-row">
-                        <span className="t-label">Transport</span>
-                        <span className="t-val">₹{fmt(data.transport)}</span>
+                        <span className="t-label">Items Subtotal</span>
+                        <span className="t-val">₹{fmt(data.itemsSubtotal)}</span>
                       </div>
-                    )}
-                    {parseFloat(data.packing) > 0 && (
-                      <div className="t-row">
-                        <span className="t-label">Packing</span>
-                        <span className="t-val">₹{fmt(data.packing)}</span>
-                      </div>
-                    )}
-                    {parseFloat(data.extraDiscountAmount) > 0 && (
-                      <div className="t-row">
-                        <span className="t-label">Discount ({data.extraDiscountPercent}%)</span>
-                        <span className="t-val">(-) ₹{fmt(data.extraDiscountAmount)}</span>
-                      </div>
-                    )}
-                    {data.roundOffDisplay !== '0.00' && (
-                      <div className="t-row">
-                        <span className="t-label">Round Off</span>
-                        <span className="t-val">{data.roundOffDisplay}</span>
-                      </div>
-                    )}
-                    <div className="t-row t-grand">
-                      <span>Grand Total</span>
-                      <span>₹{fmt(data.grandTotal)}</span>
-                    </div>
-                  </div>
-
-                  <div className="footer-extra">
-                    <div className="words">
-                      <strong>Amount in words:</strong> {amountInWords(data.grandTotal)}
-                    </div>
-                    <div className="sig-row">
-                      <div className="sig-box">
-                        <div className="sig-line"></div>
-                        <div className="sig-text">Receiver's Signature</div>
-                      </div>
-                      <div className="sig-box">
-                        <div className="sig-line"></div>
-                        <div className="sig-text">Authorised Signatory</div>
+                      {parseFloat(data.transport) > 0 && (
+                        <div className="t-row">
+                          <span className="t-label">Transport</span>
+                          <span className="t-val">₹{fmt(data.transport)}</span>
+                        </div>
+                      )}
+                      {parseFloat(data.packing) > 0 && (
+                        <div className="t-row">
+                          <span className="t-label">Packing</span>
+                          <span className="t-val">₹{fmt(data.packing)}</span>
+                        </div>
+                      )}
+                      {parseFloat(data.extraDiscountAmount) > 0 && (
+                        <div className="t-row">
+                          <span className="t-label">Discount ({data.extraDiscountPercent}%)</span>
+                          <span className="t-val">(-) ₹{fmt(data.extraDiscountAmount)}</span>
+                        </div>
+                      )}
+                      {data.roundOffDisplay !== '0.00' && (
+                        <div className="t-row">
+                          <span className="t-label">Round Off</span>
+                          <span className="t-val">{data.roundOffDisplay}</span>
+                        </div>
+                      )}
+                      <div className="t-row t-grand">
+                        <span>Grand Total</span>
+                        <span>₹{fmt(data.grandTotal)}</span>
                       </div>
                     </div>
                   </div>

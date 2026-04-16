@@ -57,7 +57,7 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
               {data.map((row) => (
                 <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan_no}</td>
-                  <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">
+                  <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-primary font-bold">
                     {new Date(row.date).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">{row.jobber_name}</td>

@@ -25,6 +25,8 @@ const billingQueries = {
             b.*,
             c.name as client_name,
             c.shortform as client_shortform,
+            c.street as address1,
+            c.city as address2,
             t.name as transporter_name
         FROM billing b
         JOIN clients c ON b.client_id = c.id
@@ -34,7 +36,8 @@ const billingQueries = {
     getBillItems: `
         SELECT 
             bi.*,
-            i.name as item_name
+            i.name as item_name,
+            i.conversion as conversion
         FROM billing_items bi
         JOIN items i ON bi.item_id = i.id
         WHERE bi.billing_id = $1

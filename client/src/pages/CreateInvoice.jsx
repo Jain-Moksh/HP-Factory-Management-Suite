@@ -200,6 +200,7 @@ const CreateInvoice = () => {
               rate: item.rate,
               dPercent: item.discount_percent,
               dAmount: item.discount_amount,
+              conversion: item.conversion,
               total: item.total_amount
             }));
             setAddedItems(mappedItems);
@@ -727,7 +728,7 @@ const CreateInvoice = () => {
               {/* Row 3: Remarks & Transporter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left relative">
-                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Remark</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Parcel</label>
                   <input 
                     type="text"
                     name="short_remark"

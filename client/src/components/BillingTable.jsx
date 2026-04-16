@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeleteModal from './UI/DeleteModal';
 
-const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
+const BillingTable = ({ data = [], isLoading = false, onDelete, onPrint }) => {
   const navigate = useNavigate();
   // --- Deletion State (Modals kept internal for UI cleanliness) ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -37,7 +37,7 @@ const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
                 <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Date</th>
                 <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Party Name</th>
                 <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider text-right">Amount</th>
-                <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Remarks</th>
+                <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider">Parcel</th>
                 <th className="px-3 py-1.5 text-[11px] font-semibold border-x border-white/5 uppercase tracking-wider text-center">Actions</th>
               </tr>
             </thead>
@@ -45,7 +45,7 @@ const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
               {data.map((row) => (
                 <tr key={row.id} className="hover:bg-[#F1F5F9] transition-colors duration-75">
                   <td className="px-3 py-1 border-x border-border-soft text-[12px] font-bold text-text-primary tracking-tight">{row.challan_no}</td>
-                  <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-secondary">
+                  <td className="px-3 py-1 border-x border-border-soft text-[12px] text-text-primary font-bold">
                     {new Date(row.date).toLocaleDateString('en-GB')}
                   </td>
                   <td className="px-3 py-1 border-x border-border-soft text-[12px] font-medium text-brand-blue">
@@ -66,7 +66,11 @@ const BillingTable = ({ data = [], isLoading = false, onDelete }) => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button className="text-brand-blue hover:scale-110 p-1 rounded transition" title="Print">
+                      <button 
+                        className="text-brand-blue hover:scale-110 p-1 rounded transition" 
+                        title="Print"
+                        onClick={() => onPrint(row.id)}
+                      >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>

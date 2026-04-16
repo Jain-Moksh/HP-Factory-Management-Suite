@@ -27,7 +27,7 @@ const PaymentTable = ({ data = [], loading = false }) => {
             {data.map((row) => (
               <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">{row.challan}</td>
-                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-secondary font-medium">{row.date}</td>
+                <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-primary font-bold">{row.date}</td>
                 <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">
                   {row.client} {row.shortform && <span className="text-text-primary/50 font-medium ml-1">({row.shortform})</span>}
                 </td>
