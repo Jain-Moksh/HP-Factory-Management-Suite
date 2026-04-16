@@ -16,6 +16,13 @@ import ItemStockDetails from './pages/ItemStockDetails';
 import StockSummary from './pages/StockSummary';
 import TransporterList from './pages/master/TransporterList';
 
+// Reports
+import ReportsDashboard from './pages/reports/ReportsDashboard';
+import PartyStockReport from './pages/reports/PartyStockReport';
+import PartySalesReport from './pages/reports/PartySalesReport';
+import GroupSalesReport from './pages/reports/GroupSalesReport';
+import JobWorkReport from './pages/reports/JobWorkReport';
+
 function App() {
   return (
     <BrowserRouter>
@@ -32,6 +39,13 @@ function App() {
         <Route path="/create-job-work/:id" element={<CreateJobWork />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/create-payment" element={<CreatePayment />} />
+        
+        {/* Reports Routes */}
+        <Route path="/reports" element={<ReportsDashboard />} />
+        <Route path="/reports/party-stock" element={<PartyStockReport />} />
+        <Route path="/reports/party-sales" element={<PartySalesReport />} />
+        <Route path="/reports/group-sales" element={<GroupSalesReport />} />
+        <Route path="/reports/job-work" element={<JobWorkReport />} />
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />

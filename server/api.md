@@ -239,3 +239,29 @@ Manages groups of jobbers and clients.
 *   **GET `/health`**
     *   *Description*: System health check.
     *   *Response*: `{"status": "OK", "timestamp": "..."}`
+
+---
+
+## 📊 REPORTS APIs
+
+All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query parameters.
+
+### 1. Party Wise Stock
+*   **GET `/reports/party-stock`**
+    *   *Description*: Returns real-time stock distribution across parties/jobbers based on master mapping (`jobber_items`).
+    *   *Response*: List of party names, item names, and current stock.
+
+### 2. Party Wise Sales
+*   **GET `/reports/party-sales`**
+    *   *Description*: Aggregated sales (billing) volume and revenue per client within a specific date range.
+    *   *Query Params*: `from`, `to` (optional).
+
+### 3. Group Sales
+*   **GET `/reports/group-sales`**
+    *   *Description*: Total sales revenue aggregated by group membership. Handles polymorphic mapping between clients and jobbers within groups.
+    *   *Query Params*: `from`, `to` (optional).
+
+### 4. Job Work Analysis
+*   **GET `/reports/job-work`**
+    *   *Description*: Accumulative production/purchase quantities from jobbers, broken down by item.
+    *   *Query Params*: `from`, `to` (optional).

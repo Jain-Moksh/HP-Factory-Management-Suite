@@ -190,8 +190,15 @@ ALTER TABLE purchase ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 -- `purchase_items` and `billing_items`.
 
 -- =============================================
--- DATA CLEANUP: UPPERCASE CONVERSION
+-- REPORTS MODULE LOGIC
 -- =============================================
+-- 1. PARTY WISE STOCK: Maps items to jobbers via `jobber_items` mapping.
+-- 2. PARTY WISE SALES: Aggregates client sales from `billing` and `billing_items` with date range support.
+-- 3. GROUP SALES REPORT:
+--    - Uses a polymorphic join on `group_members`.
+--    - If `member_type` = 'client', joins with `clients` and `billing` for volume/amount.
+--    - If `member_type` = 'jobber', currently only resolves name (sales strictly from clients).
+-- 4. JOB WORK REPORT: Aggregates inward production volume from `purchase` and `purchase_items`.
 
 -- Master Tables
 -- UPDATE items SET name = UPPER(name), unit = UPPER(unit);

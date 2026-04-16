@@ -1,0 +1,69 @@
+const reportQueries = {
+    // 1. Party Wise Stock Report
+    // Returns items linked to jobbers via jobber_items
+    getPartyStock: `
+        SELECT 
+            j.name as party_name, 
+            i.name as item_name, 
+            i.stock, 
+            i.unit 
+        FROM jobbers j 
+        JOIN jobber_items ji ON j.id = ji.jobber_id 
+        JOIN items i ON ji.item_id = i.id
+        ORDER BY j.name, i.name
+    `,
+
+    // 2. Party Wise Sales Report
+    // Aggregates sales (billing) by client and date range
+    getPartySales: `
+        SELECT 
+            c.name as client_name, 
+            COALESCE(SUM(bi.quantity), 0) as total_quantity, 
+            COALESCE(SUM(bi.total_amount), 0) as total_amount 
+        FROM clients c
+        LEFT JOIN billing b ON c.id = b.client_id AND (b.date BETWEEN $1 AND $2 OR $1 IS NULL)
+        LEFT JOIN billing_items bi ON b.id = bi.billing_id
+        GROUP BY c.id, c.name
+        ORDER BY total_amount DESC
+    `,
+
+    // 3. Group Party Wise Sales Report
+    // Aggregates sales based on group membership
+    getGroupSales: `
+        SELECT 
+            g.name as group_name, 
+            CASE 
+                WHEN gm.member_type = 'client' THEN c.name 
+                WHEN gm.member_type = 'jobber' THEN j.name 
+            END as member_name, 
+            gm.member_type, 
+            COALESCE(SUM(bi.total_amount), 0) as total_sales 
+        FROM groups g 
+        JOIN group_members gm ON g.id = gm.group_id 
+        LEFT JOIN clients c ON gm.member_id = c.id AND gm.member_type = 'client' 
+        LEFT JOIN jobbers j ON gm.member_id = j.id AND gm.member_type = 'jobber' 
+        LEFT JOIN billing b ON b.client_id = c.id AND gm.member_type = 'client' AND (b.date BETWEEN $1 AND $2 OR $1 IS NULL)
+        LEFT JOIN billing_items bi ON b.id = bi.billing_id 
+        GROUP BY g.id, g.name, gm.member_id, gm.member_type, c.name, j.name
+        ORDER BY g.name, member_name
+    `,
+
+    // 4. Job Work Report
+    // Aggregates purchase/job work by jobber and item
+    getJobWorkReport: `
+        SELECT 
+            j.name as jobber_name, 
+            i.name as item_name, 
+            COALESCE(SUM(pi.quantity), 0) as total_quantity 
+        FROM jobbers j
+        LEFT JOIN purchase p ON j.id = p.jobber_id AND (p.date BETWEEN $1 AND $2 OR $1 IS NULL)
+        LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
+        LEFT JOIN items i ON pi.item_id = i.id
+        GROUP BY j.id, j.name, i.id, i.name
+        HAVING i.name IS NOT NULL
+        ORDER BY j.name, total_quantity DESC
+    `
+};
+
+module.exports = reportQueries;
+
