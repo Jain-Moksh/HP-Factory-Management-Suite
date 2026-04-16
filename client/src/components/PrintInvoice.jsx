@@ -296,7 +296,7 @@ const PrintInvoice = ({ data, items }) => {
 
         return (
           <div key={pageIndex} className="bill-page">
-            <div className="watermark">Tax Invoice</div>
+            <div className="watermark">ORDER SUMMARY</div>
             
             <div className="section-top">
               <div className="top-left">

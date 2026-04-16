@@ -49,7 +49,7 @@ const getFormattedChallan = async (dateStr, type, dbOrClient) => {
   const sequence = count + 1;
   const prefix = type === 'purchase' ? 'P' : '';
 
-  return `${prefix}${sequence}/${monthName}/${fy}`;
+  return `${prefix}${sequence}/${monthName}/${fy}`.toUpperCase();
 };
 
 /**

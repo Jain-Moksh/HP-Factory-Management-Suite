@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const queries = require('../queries/billingQueries');
 const { generateChallanNo } = require('../utils/challanGenerator');
+const { toUpperCase } = require('../utils/dataSanitizer');
 
 const billingService = {
   create: async (billData) => {
@@ -20,8 +21,8 @@ const billingService = {
       // 2. Insert billing record
       const billRes = await client.query(queries.createBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, total_amount, short_remark,
-        long_remark, grand_total, challan_no
+        discount_percent, discount_amount, total_amount, toUpperCase(short_remark),
+        toUpperCase(long_remark), grand_total, challan_no
       ]);
       const bill = billRes.rows[0];
 
@@ -30,7 +31,7 @@ const billingService = {
       for (const item of items) {
         const itemRes = await client.query(queries.createBillItem, [
           bill.id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
-          item.unit, item.quantity, item.bundle, item.total_amount
+          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount
         ]);
         billingItems.push(itemRes.rows[0]);
 
@@ -101,8 +102,8 @@ const billingService = {
       // 4. Update the billing record
       const billRes = await client.query(queries.updateBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, total_amount, short_remark,
-        long_remark, grand_total, id
+        discount_percent, discount_amount, total_amount, toUpperCase(short_remark),
+        toUpperCase(long_remark), grand_total, id
       ]);
       const bill = billRes.rows[0];
 
@@ -111,7 +112,7 @@ const billingService = {
       for (const item of items) {
         const itemRes = await client.query(queries.createBillItem, [
           id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
-          item.unit, item.quantity, item.bundle, item.total_amount
+          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount
         ]);
         billingItems.push(itemRes.rows[0]);
 

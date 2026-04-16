@@ -917,7 +917,7 @@ const CreateInvoice = () => {
             </div>
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-8 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-9 gap-3">
                 <div className="flex flex-col gap-1 col-span-2 text-left relative" ref={itemRef}>
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Item Name</label>
                   <input 
@@ -961,7 +961,7 @@ const CreateInvoice = () => {
                     {currentItem.stock}
                   </div>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 col-span-2">
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Qty / Unit</label>
                   <div className="flex gap-1">
                     <input 
@@ -1032,7 +1032,7 @@ const CreateInvoice = () => {
               <div className="flex justify-between items-center pt-2 mt-1 border-t border-border-soft/50">
                 <button 
                   onClick={() => setShowItemModal(true)}
-                  className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-bold text-text-primary hover:bg-bg-main transition shadow-sm"
+                  className="flex items-center gap-2 px-3.5 h-8 bg-white border border-brand-navy rounded-lg text-[11.5px] font-bold text-text-primary hover:bg-bg-main transition shadow-sm"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -1040,10 +1040,10 @@ const CreateInvoice = () => {
                   New Item
                 </button>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-16">
                   <button 
                     onClick={handleRedoCurrent}
-                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary transition shadow-sm uppercase tracking-wider"
+                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-brand-navy rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary transition shadow-sm uppercase tracking-wider"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1162,7 +1162,7 @@ const CreateInvoice = () => {
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
                   <button 
                     onClick={handleRedoNewItem}
-                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-primary hover:text-text-primary transition-all uppercase tracking-widest"
+                    className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-primary hover:text-text-primary transition-all uppercase tracking-widest border border-brand-navy rounded-xl"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     REDO

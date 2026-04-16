@@ -502,7 +502,7 @@ const CreatePurchase = () => {
             </div>
             
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="flex flex-col gap-1 col-span-2 relative" ref={itemRef}>
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Item Name</label>
                   <div className="relative group">
@@ -542,7 +542,7 @@ const CreatePurchase = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 col-span-2">
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Quantity</label>
                   <input 
                     type="number" 
@@ -575,7 +575,7 @@ const CreatePurchase = () => {
               <div className="flex justify-between items-center pt-2 mt-2 border-t border-border-soft/50">
                 <button 
                   onClick={() => setShowItemModal(true)}
-                  className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-bold text-text-primary hover:bg-bg-main transition shadow-sm"
+                  className="flex items-center gap-2 px-3.5 h-8 bg-white border border-brand-navy rounded-lg text-[11.5px] font-bold text-text-primary hover:bg-bg-main transition shadow-sm"
                   title="Add New Master Item"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -584,10 +584,10 @@ const CreatePurchase = () => {
                   Create New Item
                 </button>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-16">
                   <button 
                     onClick={handleRedo}
-                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary hover:bg-bg-main transition shadow-sm uppercase tracking-wider"
+                    className="flex items-center gap-2 px-3.5 h-8 bg-white border border-brand-navy rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary hover:bg-bg-main transition shadow-sm uppercase tracking-wider"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

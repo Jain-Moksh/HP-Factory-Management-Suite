@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const groupQueries = require('../queries/groupQueries');
+const { toUpperCase } = require('../utils/dataSanitizer');
 
 const groupService = {
   getAllGroups: async () => {
@@ -18,7 +19,7 @@ const groupService = {
       await client.query('BEGIN');
 
       // 1. Create the Group
-      const groupRes = await client.query(groupQueries.createGroup, [name, description]);
+      const groupRes = await client.query(groupQueries.createGroup, [toUpperCase(name), toUpperCase(description)]);
       const group = groupRes.rows[0];
 
       // 2. Add Members
@@ -58,7 +59,7 @@ const groupService = {
       await client.query('BEGIN');
 
       // 1. Update Group Info
-      const groupRes = await client.query(groupQueries.updateGroup, [name, description, id]);
+      const groupRes = await client.query(groupQueries.updateGroup, [toUpperCase(name), toUpperCase(description), id]);
       if (groupRes.rows.length === 0) throw new Error(`Group with ID ${id} not found`);
       const group = groupRes.rows[0];
 

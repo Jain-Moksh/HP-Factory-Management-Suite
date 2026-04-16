@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/masterQueries');
+const { toUpperCase } = require('../utils/dataSanitizer');
 
 const masterService = {
   // Generic list/search helper
@@ -24,7 +25,9 @@ const masterService = {
     // Sanitize: convert empty strings to null
     const clean = {};
     Object.keys(data).forEach(key => {
-      clean[key] = data[key] === '' ? null : data[key];
+      let value = data[key] === '' ? null : data[key];
+      // Convert to uppercase if it's a string
+      clean[key] = typeof value === 'string' ? toUpperCase(value) : value;
     });
 
     let queryKey, params;
@@ -54,7 +57,9 @@ const masterService = {
     // Sanitize: convert empty strings to null
     const clean = {};
     Object.keys(data).forEach(key => {
-      clean[key] = data[key] === '' ? null : data[key];
+      let value = data[key] === '' ? null : data[key];
+      // Convert to uppercase if it's a string
+      clean[key] = typeof value === 'string' ? toUpperCase(value) : value;
     });
 
     let queryKey, params;

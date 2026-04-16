@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const queries = require('../queries/purchaseQueries');
 const { generateChallanNo } = require('../utils/challanGenerator');
+const { toUpperCase } = require('../utils/dataSanitizer');
 
 const purchaseService = {
   create: async (purchaseData) => {
@@ -14,14 +15,14 @@ const purchaseService = {
       const challan_no = await generateChallanNo(date, 'purchase', client);
 
       // 2. Insert purchase record
-      const purchaseRes = await client.query(queries.createPurchase, [jobber_id, date, remark, challan_no]);
+      const purchaseRes = await client.query(queries.createPurchase, [jobber_id, date, toUpperCase(remark), challan_no]);
       const purchase = purchaseRes.rows[0];
 
       // 2. Insert items and update stock
       const purchaseItems = [];
       for (const item of items) {
         const itemRes = await client.query(queries.createPurchaseItem, [
-          purchase.id, item.item_id, item.quantity, item.unit
+          purchase.id, item.item_id, item.quantity, toUpperCase(item.unit)
         ]);
         purchaseItems.push(itemRes.rows[0]);
 
@@ -111,14 +112,14 @@ const purchaseService = {
       await client.query(queries.deletePurchaseItems, [id]);
 
       // 4. Update the purchase record
-      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, remark, id]);
+      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, toUpperCase(remark), id]);
       const purchase = purchaseRes.rows[0];
 
       // 5. Insert new purchase items and update stock
       const purchaseItems = [];
       for (const item of items) {
         const itemRes = await client.query(queries.createPurchaseItem, [
-          id, item.item_id, item.quantity, item.unit
+          id, item.item_id, item.quantity, toUpperCase(item.unit)
         ]);
         purchaseItems.push(itemRes.rows[0]);
 
