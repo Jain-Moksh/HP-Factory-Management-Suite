@@ -73,9 +73,21 @@ const masterController = (table) => ({
   }
 });
 
+const getItemTransactions = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { from, to } = req.query;
+    const data = await masterService.getItemTransactions(id, from, to);
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   items: masterController('items'),
   clients: masterController('clients'),
   jobbers: masterController('jobbers'),
-  transporters: masterController('transporters')
+  transporters: masterController('transporters'),
+  getItemTransactions
 };

@@ -7,11 +7,13 @@ import ItemList from './pages/master/ItemList';
 import PartyList from './pages/master/PartyList';
 import JobberList from './pages/master/JobberList';
 import GroupList from './pages/master/GroupList';
-import Purchase from './pages/Purchase';
-import CreatePurchase from './pages/CreatePurchase';
+import JobWork from './pages/JobWork';
+import CreateJobWork from './pages/CreateJobWork';
 import Payment from './pages/Payment';
 import CreatePayment from './pages/CreatePayment';
 
+import ItemStockDetails from './pages/ItemStockDetails';
+import StockSummary from './pages/StockSummary';
 import TransporterList from './pages/master/TransporterList';
 
 function App() {
@@ -21,11 +23,13 @@ function App() {
         <Route path="/" element={<Navigate to="/order-summary" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/order-summary" element={<OrderSummary />} />
+        <Route path="/stock-summary" element={<StockSummary />} />
+        <Route path="/item-stock-details/:id" element={<ItemStockDetails />} />
         <Route path="/create-invoice" element={<CreateInvoice />} />
         <Route path="/create-invoice/:id" element={<CreateInvoice />} />
-        <Route path="/purchase" element={<Purchase />} />
-        <Route path="/create-purchase" element={<CreatePurchase />} />
-        <Route path="/create-purchase/:id" element={<CreatePurchase />} />
+        <Route path="/job-work" element={<JobWork />} />
+        <Route path="/create-job-work" element={<CreateJobWork />} />
+        <Route path="/create-job-work/:id" element={<CreateJobWork />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/create-payment" element={<CreatePayment />} />
         

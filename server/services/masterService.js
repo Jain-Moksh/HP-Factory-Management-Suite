@@ -83,6 +83,26 @@ const masterService = {
     }
     const result = await db.query(queries[queryKey], params);
     return result.rows[0];
+  },
+
+  getItemTransactions: async (itemId, startDate, endDate) => {
+    let query = queries.getItemTransactions;
+    let params = [itemId];
+
+    const result = await db.query(query, params);
+    let transactions = result.rows;
+
+    // Filter by date if provided
+    if (startDate || endDate) {
+      transactions = transactions.filter(t => {
+        const date = t.date.toISOString().split('T')[0];
+        const matchesStart = !startDate || date >= startDate;
+        const matchesEnd = !endDate || date <= endDate;
+        return matchesStart && matchesEnd;
+      });
+    }
+
+    return transactions;
   }
 };
 

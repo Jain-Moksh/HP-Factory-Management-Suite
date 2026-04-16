@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import FilterBar from '../components/FilterBar';
-import PurchaseTable from '../components/PurchaseTable';
+import JobWorkTable from '../components/JobWorkTable';
 import DeleteModal from '../components/UI/DeleteModal';
 import MonthFilterFooter from '../components/MonthFilterFooter';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
-const Purchase = () => {
+const JobWork = () => {
   const navigate = useNavigate();
-  const [purchases, setPurchases] = useState([]);
+  const [jobWorks, setJobWorks] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // --- Filter State ---
@@ -23,19 +23,19 @@ const Purchase = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    fetchPurchases();
+    fetchJobWorks();
   }, []);
 
-  const fetchPurchases = async () => {
+  const fetchJobWorks = async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/purchase`);
       const result = await response.json();
       if (result.success) {
-        setPurchases(result.data);
+        setJobWorks(result.data);
       }
     } catch (err) {
-      console.error("Error fetching purchases:", err);
+      console.error("Error fetching job works:", err);
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ const Purchase = () => {
       });
       const result = await response.json();
       if (result.success) {
-        fetchPurchases();
+        fetchJobWorks();
         return true;
       } else {
         alert(result.message || 'Deletion failed');
@@ -62,8 +62,8 @@ const Purchase = () => {
     }
   };
 
-  const filteredPurchases = useMemo(() => {
-    return purchases.filter(p => {
+  const filteredJobWorks = useMemo(() => {
+    return jobWorks.filter(p => {
       const matchesChallan = (p.challan_no?.toString() || '').includes(searchChallan);
       const matchesJobber = (p.jobber_name?.toLowerCase() || '').includes(searchJobber.toLowerCase());
       
@@ -79,12 +79,12 @@ const Purchase = () => {
 
       return matchesChallan && matchesJobber && matchesStart && matchesEnd && matchesMonth && matchesYear;
     });
-  }, [purchases, searchChallan, searchJobber, startDate, endDate, selectedMonth, selectedYear]);
+  }, [jobWorks, searchChallan, searchJobber, startDate, endDate, selectedMonth, selectedYear]);
 
-  const purchaseActions = [
+  const jobWorkActions = [
     {
-      label: 'Create Purchase',
-      onClick: () => navigate('/create-purchase'),
+      label: 'Create Job Work',
+      onClick: () => navigate('/create-job-work'),
       icon: (
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -97,9 +97,9 @@ const Purchase = () => {
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
-          title="Purchase" 
-          subtitle="MANAGE AND TRACK ALL PURCHASE CONTRACTS & JOB REQUISITIONS" 
-          actions={purchaseActions}
+          title="Job Work" 
+          subtitle="MANAGE AND TRACK ALL JOB WORK CONTRACTS & JOB REQUISITIONS" 
+          actions={jobWorkActions}
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
@@ -110,8 +110,8 @@ const Purchase = () => {
             onStartDate={setStartDate}
             onEndDate={setEndDate}
           />
-          <PurchaseTable 
-            data={filteredPurchases} 
+          <JobWorkTable 
+            data={filteredJobWorks} 
             loading={loading}
             onDelete={handleDeleteRow}
           />
@@ -122,11 +122,11 @@ const Purchase = () => {
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
-          recordCount={filteredPurchases.length}
+          recordCount={filteredJobWorks.length}
         />
       </div>
     </Layout>
   );
 };
 
-export default Purchase;
+export default JobWork;

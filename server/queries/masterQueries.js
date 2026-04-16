@@ -59,7 +59,37 @@ const masterQueries = {
 
     deleteItem: 'DELETE FROM items WHERE id = $1 RETURNING *',
     deleteClient: 'DELETE FROM clients WHERE id = $1 RETURNING *',
-    deleteJobber: 'DELETE FROM jobbers WHERE id = $1 RETURNING *'
+    deleteJobber: 'DELETE FROM jobbers WHERE id = $1 RETURNING *',
+
+    // Item Transaction History (Movement Ledger)
+    getItemTransactions: `
+        (
+            SELECT 
+                b.challan_no, 
+                b.date, 
+                0 as inward, 
+                bi.quantity as outward, 
+                'billing' as type,
+                b.created_at
+            FROM billing_items bi
+            JOIN billing b ON bi.billing_id = b.id
+            WHERE bi.item_id = $1
+        )
+        UNION ALL
+        (
+            SELECT 
+                p.challan_no, 
+                p.date, 
+                pi.quantity as inward, 
+                0 as outward, 
+                'purchase' as type,
+                p.created_at
+            FROM purchase_items pi
+            JOIN purchase p ON pi.purchase_id = p.id
+            WHERE pi.item_id = $1
+        )
+        ORDER BY date DESC, created_at DESC
+    `
 };
 
 module.exports = masterQueries;

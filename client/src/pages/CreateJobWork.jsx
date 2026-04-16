@@ -10,7 +10,7 @@ import WarningModal from '../components/UI/WarningModal';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
-const CreatePurchase = () => {
+const CreateJobWork = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
@@ -142,10 +142,10 @@ const CreatePurchase = () => {
     }
   }, [formData.date, isEditMode]);
 
-  // --- Fetch Purchase Data for Edit Mode ---
+  // --- Fetch Job Work Data for Edit Mode ---
   useEffect(() => {
     if (isEditMode) {
-      const fetchPurchaseData = async () => {
+      const fetchJobWorkData = async () => {
         try {
           const response = await fetch(`${API_BASE_URL}/purchase/${id}`);
           const result = await response.json();
@@ -178,10 +178,10 @@ const CreatePurchase = () => {
             setAddedItems(mappedItems);
           }
         } catch (err) {
-          console.error("Error fetching purchase data:", err);
+          console.error("Error fetching job work data:", err);
         }
       };
-      fetchPurchaseData();
+      fetchJobWorkData();
     }
   }, [isEditMode, id]);
 
@@ -401,12 +401,12 @@ const CreatePurchase = () => {
           }
         }
 
-        navigate('/purchase');
+        navigate('/job-work');
       } else {
-        alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} purchase record`);
+        alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} job work record`);
       }
     } catch (err) {
-      console.error(`Error ${isEditMode ? 'updating' : 'saving'} purchase:`, err);
+      console.error(`Error ${isEditMode ? 'updating' : 'saving'} job work:`, err);
       alert(`Network error occurred while ${isEditMode ? 'updating' : 'saving'}.`);
     }
   };
@@ -415,8 +415,9 @@ const CreatePurchase = () => {
     <Layout>
       <div className="flex flex-col min-h-screen pb-16">
         <PageHeader 
-          title={isEditMode ? "Edit Purchase" : "Create Purchase"} 
-          subtitle={isEditMode ? "MODIFY EXISTING PURCHASE CONTRACT AND JOBBER DETAILS" : "ADD NEW PURCHASE CONTRACT AND ASSIGN JOBBER DETAILS"} 
+          title={isEditMode ? "Edit Job Work" : "Create Job Work"} 
+          subtitle={isEditMode ? "MODIFY EXISTING JOB WORK CONTRACT AND JOBBER DETAILS" : "ADD NEW JOB WORK CONTRACT AND ASSIGN JOBBER DETAILS"} 
+          actions={[]}
         />
 
         <div className="px-6 flex flex-col gap-5 w-full">
@@ -828,7 +829,7 @@ const CreatePurchase = () => {
               <div className="flex justify-between items-center px-1">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-4 bg-brand-blue rounded-full"></div>
-                  <h3 className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">Purchase Summary</h3>
+                  <h3 className="text-[11px] font-bold text-brand-blue uppercase tracking-widest">Job Work Summary</h3>
                 </div>
                 <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest bg-bg-main px-2 py-0.5 rounded border border-border-soft">
                   {addedItems.length} {addedItems.length === 1 ? 'Item' : 'Items'} Added
@@ -884,11 +885,11 @@ const CreatePurchase = () => {
               {/* Footer Section - Perfectly Aligned Actions with Label */}
               <div className="flex flex-col gap-2 mt-4 pb-12 animate-in fade-in duration-500">
                 <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Purchase Remarks</label>
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Job Work Remarks</label>
                   
                   <div className="flex items-center gap-3">
                     <button 
-                      onClick={() => navigate('/purchase')}
+                      onClick={() => navigate('/job-work')}
                       className="flex items-center justify-center px-5 h-8 bg-white border border-border-soft rounded-lg text-[11.5px] font-extrabold text-text-primary hover:text-red-500 hover:bg-bg-main transition uppercase tracking-widest shadow-sm"
                     >
                       Cancel
@@ -900,7 +901,7 @@ const CreatePurchase = () => {
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                       </svg>
-                      {isEditMode ? "Update Purchase" : "Save Purchase"}
+                      {isEditMode ? "Update Job Work" : "Save Job Work"}
                     </button>
                   </div>
                 </div>
@@ -928,4 +929,4 @@ const CreatePurchase = () => {
   );
 };
 
-export default CreatePurchase;
+export default CreateJobWork;

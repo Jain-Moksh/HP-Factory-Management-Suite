@@ -42,6 +42,34 @@ Manages the inventory of items.
           "password": "your_del_pass_here"
         }
         ```
+*   **GET `/items/:id/transactions`**
+    *   *Description*: Fetch movement history (inward/outward) for a specific item.
+    *   *Query Params*: `from` (YYYY-MM-DD), `to` (YYYY-MM-DD)
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            {
+              "challan_no": "103/apr/26-27",
+              "date": "2026-04-16T00:00:00.000Z",
+              "inward": 0,
+              "outward": 10,
+              "type": "billing",
+              "created_at": "2026-04-16T17:23:17.000Z"
+            },
+            {
+              "challan_no": "P101/apr/26-27",
+              "date": "2026-04-16T00:00:00.000Z",
+              "inward": 50,
+              "outward": 0,
+              "type": "purchase",
+              "created_at": "2026-04-16T17:20:10.000Z"
+            }
+          ]
+        }
+        ```
 
 ### 2. Clients
 Manages customer/client records.

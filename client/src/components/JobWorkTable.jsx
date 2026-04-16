@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeleteModal from './UI/DeleteModal';
 
-const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
+const JobWorkTable = ({ data = [], loading = false, onDelete }) => {
   const navigate = useNavigate();
   // --- Deletion State ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -35,7 +35,7 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
   if (loading) {
     return (
       <div className="bg-white border border-border-soft rounded-xl shadow-sm p-12 text-center text-text-light font-medium italic animate-pulse">
-        Loading purchase records...
+        Loading job work records...
       </div>
     );
   }
@@ -64,9 +64,9 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
                   <td className="px-3 py-1.5 border-x border-border-soft">
                     <div className="flex items-center justify-center gap-2.5">
                       <button 
-                        onClick={() => navigate(`/create-purchase/${row.id}`)}
+                        onClick={() => navigate(`/create-job-work/${row.id}`)}
                         className="text-brand-blue hover:scale-110 p-1.5 rounded transition" 
-                        title="Edit Purchase"
+                        title="Edit Job Work"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -74,7 +74,7 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
                       </button>
                       <button 
                         className="text-red-500 hover:scale-110 p-1.5 rounded transition" 
-                        title="Delete Purchase"
+                        title="Delete Job Work"
                         onClick={() => openDeleteModal(row.id)}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +88,7 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
               {data.length === 0 && (
                 <tr>
                   <td colSpan="4" className="px-6 py-12 text-center text-text-light italic text-[13px]">
-                    No purchase records found.
+                    No job work records found.
                   </td>
                 </tr>
               )}
@@ -104,10 +104,10 @@ const PurchaseTable = ({ data = [], loading = false, onDelete }) => {
         password={deletePassword}
         setPassword={setDeletePassword}
         error={deleteError}
-        message="You are about to delete a purchase record. This will also adjust your stock levels by reversing the entry."
+        message="You are about to delete a job work record. This will also adjust your stock levels by reversing the entry."
       />
     </>
   );
 };
 
-export default PurchaseTable;
+export default JobWorkTable;
