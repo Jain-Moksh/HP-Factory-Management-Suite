@@ -4,6 +4,17 @@ import { createPortal } from 'react-dom';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v) => parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const day = date.getDate();
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 const numToWords = (n) => {
   n = Math.round(n);
   if (n === 0) return 'Zero';
@@ -134,9 +145,10 @@ const PrintInvoice = ({ data, items }) => {
     /* 4. CONTENT SECTIONS */
     .section-top {
       border: 1px solid #000;
-      margin-bottom: 2mm;
+      margin: 0 auto 2mm auto;
       display: flex;
       flex-shrink: 0;
+      width: 98%;
     }
     .top-left {
       flex: 1.5;
@@ -173,6 +185,8 @@ const PrintInvoice = ({ data, items }) => {
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      width: 98%;
+      margin: 0 auto;
     }
     .bill-table {
       width: 100%;
@@ -203,8 +217,7 @@ const PrintInvoice = ({ data, items }) => {
     /* Column Widths */
     .c-bund  { width: 8%; text-align: center; }
     .c-desc  { width: ${hasDiscount ? '44%' : '53%'}; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .c-qty   { width: 9%; text-align: center; }
-    .c-unit  { width: 8%; text-align: center; }
+    .c-qty   { width: 17%; text-align: center; }
     .c-rate  { width: 11%; text-align: right; }
     .c-disc  { width: 9%; text-align: right; }
     .c-total { width: 11%; text-align: right; font-weight: 700; }
@@ -216,7 +229,7 @@ const PrintInvoice = ({ data, items }) => {
     }
 
     .totals-box {
-      width: 55%;
+      width: 50%;
       margin-left: auto;
       border: 1px solid #000;
       padding: 1.5mm;
@@ -284,12 +297,12 @@ const PrintInvoice = ({ data, items }) => {
               </div>
               <div className="top-right">
                 <div className="info-row">
-                  <div className="info-label">Inv No:</div>
+                  <div className="info-label">No :</div>
                   <div className="info-val" style={{ fontWeight: 800 }}>#{data.challanNo}</div>
                 </div>
                 <div className="info-row">
                   <div className="info-label">Date:</div>
-                  <div className="info-val">{data.date}</div>
+                  <div className="info-val">{formatDate(data.date)}</div>
                 </div>
                 {data.transporterName && (
                   <div className="info-row">
@@ -313,7 +326,6 @@ const PrintInvoice = ({ data, items }) => {
                     <th className="c-bund">Bundle</th>
                     <th className="c-desc">Description</th>
                     <th className="c-qty">Qty</th>
-                    <th className="c-unit">Unit</th>
                     <th className="c-rate">Rate</th>
                     {hasDiscount && <th className="c-disc">Disc</th>}
                     <th className="c-total">Amount</th>
@@ -321,13 +333,12 @@ const PrintInvoice = ({ data, items }) => {
                 </thead>
                 <tbody>
                   {chunk.map((item, idx) => {
-                    const bundle = item.qty && item.conversion ? (Math.floor(parseFloat(item.qty) / parseFloat(item.conversion))) : '—';
+                    const bundle = item.qty && item.conversion ? (parseFloat(item.qty) / parseFloat(item.conversion)).toFixed(2) : '—';
                     return (
                       <tr key={idx}>
                         <td className="c-bund">{bundle}</td>
                         <td className="c-desc">{item.item}</td>
-                        <td className="c-qty">{item.qty}</td>
-                        <td className="c-unit">{item.unit}</td>
+                        <td className="c-qty">{item.qty} {item.unit}</td>
                         <td className="c-rate">{fmt(item.rate)}</td>
                         {hasDiscount && <td className="c-disc">{fmt(item.dAmount)}</td>}
                         <td className="c-total">{fmt(item.total)}</td>
@@ -339,7 +350,6 @@ const PrintInvoice = ({ data, items }) => {
                       <td className="c-bund"></td>
                       <td className="c-desc"></td>
                       <td className="c-qty"></td>
-                      <td className="c-unit"></td>
                       <td className="c-rate"></td>
                       {hasDiscount && <td className="c-disc"></td>}
                       <td className="c-total"></td>
