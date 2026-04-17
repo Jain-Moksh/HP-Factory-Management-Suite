@@ -8,6 +8,7 @@ const PageHeader = ({ title, subtitle, actions }) => {
     location.pathname === '/create-invoice' || 
     location.pathname === '/create-job-work' || 
     location.pathname === '/create-payment' || 
+    location.pathname.startsWith('/reports') ||
     location.pathname.startsWith('/master');
 
   return (

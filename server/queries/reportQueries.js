@@ -62,6 +62,37 @@ const reportQueries = {
         GROUP BY j.id, j.name, i.id, i.name
         HAVING i.name IS NOT NULL
         ORDER BY j.name, total_quantity DESC
+    `,
+
+    // 5. Party Wise Stock Summary (Items sold to client)
+    getPartyStockSummary: `
+        SELECT DISTINCT ON (i.id)
+            i.id as item_id,
+            i.name as item_name,
+            i.stock,
+            i.unit
+        FROM billing b
+        JOIN billing_items bi ON b.id = bi.billing_id
+        JOIN items i ON bi.item_id = i.id
+        WHERE b.client_id = $1
+          AND ($2::DATE IS NULL OR b.date >= $2)
+          AND ($3::DATE IS NULL OR b.date <= $3)
+        ORDER BY i.id, i.name
+    `,
+
+    // 6. Party Wise Stock Detail (Ledger for client-item)
+    getPartyStockDetail: `
+        SELECT 
+            b.challan_no,
+            b.date,
+            bi.quantity
+        FROM billing b
+        JOIN billing_items bi ON b.id = bi.billing_id
+        WHERE b.client_id = $1
+          AND bi.item_id = $2
+          AND ($3::DATE IS NULL OR b.date >= $3)
+          AND ($4::DATE IS NULL OR b.date <= $4)
+        ORDER BY b.date ASC
     `
 };
 

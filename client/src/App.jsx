@@ -22,6 +22,7 @@ import PartyStockReport from './pages/reports/PartyStockReport';
 import PartySalesReport from './pages/reports/PartySalesReport';
 import GroupSalesReport from './pages/reports/GroupSalesReport';
 import JobWorkReport from './pages/reports/JobWorkReport';
+import PartyStockDetail from './pages/reports/PartyStockDetail';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         {/* Reports Routes */}
         <Route path="/reports" element={<ReportsDashboard />} />
         <Route path="/reports/party-stock" element={<PartyStockReport />} />
+        <Route path="/reports/party-stock-detail/:clientId/:itemId" element={<PartyStockDetail />} />
         <Route path="/reports/party-sales" element={<PartySalesReport />} />
         <Route path="/reports/group-sales" element={<GroupSalesReport />} />
         <Route path="/reports/job-work" element={<JobWorkReport />} />

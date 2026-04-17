@@ -247,9 +247,12 @@ Manages groups of jobbers and clients.
 All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query parameters.
 
 ### 1. Party Wise Stock
-*   **GET `/reports/party-stock`**
-    *   *Description*: Returns real-time stock distribution across parties/jobbers based on master mapping (`jobber_items`).
-    *   *Response*: List of party names, item names, and current stock.
+*   **GET `/reports/party-stock-summary`**
+    *   *Description*: Returns unique items sold to a client with their current master stock levels.
+    *   *Query Params*: `client_id` (required), `from`, `to` (optional).
+*   **GET `/reports/party-stock-detail`**
+    *   *Description*: Full transaction ledger for a specific client and item.
+    *   *Query Params*: `client_id`, `item_id` (required), `from`, `to` (optional).
 
 ### 2. Party Wise Sales
 *   **GET `/reports/party-sales`**

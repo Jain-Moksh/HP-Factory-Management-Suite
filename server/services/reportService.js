@@ -20,6 +20,16 @@ const reportService = {
   getJobWork: async (fromDate, toDate) => {
     const result = await db.query(queries.getJobWorkReport, [fromDate || null, toDate || null]);
     return result.rows;
+  },
+
+  getPartyStockSummary: async (clientId, fromDate, toDate) => {
+    const result = await db.query(queries.getPartyStockSummary, [clientId, fromDate || null, toDate || null]);
+    return result.rows;
+  },
+
+  getPartyStockDetail: async (clientId, itemId, fromDate, toDate) => {
+    const result = await db.query(queries.getPartyStockDetail, [clientId, itemId, fromDate || null, toDate || null]);
+    return result.rows;
   }
 };
 

@@ -106,10 +106,10 @@ const JobWorkReport = () => {
              <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-table-header text-white text-[10.5px] uppercase font-bold tracking-wider">
-                        <th className="px-6 py-3 text-left border-r border-white/10 uppercase">Jobber Name</th>
-                        <th className="px-6 py-3 text-left border-r border-white/10 uppercase">Item Processed</th>
-                        <th className="px-6 py-3 text-right uppercase px-10 w-64">Total Received Quantity</th>
+                      <tr className="bg-table-header text-white">
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Jobber Name</th>
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Item Processed</th>
+                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider uppercase px-10 w-64">Total Received Quantity</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-soft">
@@ -130,22 +130,22 @@ const JobWorkReport = () => {
                               return (
                                 <React.Fragment key={idx}>
                                    <tr className={`hover:bg-bg-main/30 transition-colors ${isFirstForJobber ? 'bg-bg-main/10' : ''}`}>
-                                      <td className={`px-6 py-3 text-[13px] font-black text-brand-navy uppercase tracking-tight ${!isFirstForJobber ? 'opacity-0' : ''}`}>
+                                      <td className={`px-5 py-1.5 text-[12.5px] font-black text-brand-navy uppercase tracking-tight border-r border-border-soft ${!isFirstForJobber ? 'opacity-0' : ''}`}>
                                          {row.jobber_name}
                                       </td>
-                                      <td className="px-6 py-3 text-[13px] font-bold text-text-primary uppercase border-l border-border-soft/50">
+                                      <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary uppercase border-r border-border-soft">
                                          {row.item_name}
                                       </td>
-                                      <td className="px-6 py-3 text-right text-[15px] font-black text-brand-blue px-10 border-l border-border-soft/50">
+                                      <td className="px-5 py-1.5 text-right text-[13.5px] font-bold text-brand-blue px-10 border-r border-border-soft">
                                          {parseFloat(row.total_quantity).toLocaleString()}
                                       </td>
                                    </tr>
                                    {isLastForJobber && (
                                      <tr className="bg-brand-blue/[0.03] border-b border-brand-blue/10">
-                                        <td colSpan="2" className="px-6 py-2 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-60">
+                                        <td colSpan="2" className="px-5 py-2 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-60 border-r border-border-soft">
                                            Jobber Accumulative Total:
                                         </td>
-                                        <td className="px-6 py-2 text-right text-[13px] font-black text-brand-blue px-10 underline decoration-slate-300 underline-offset-4">
+                                        <td className="px-5 py-2 text-right text-[13.5px] font-black text-brand-blue px-10 underline decoration-slate-300 underline-offset-4">
                                            {jobberTotals[row.jobber_name].toLocaleString()}
                                         </td>
                                      </tr>

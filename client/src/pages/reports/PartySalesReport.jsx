@@ -103,15 +103,14 @@ const PartySalesReport = () => {
             </div>
           </div>
 
-          {/* Table */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-table-header text-white text-[10.5px] uppercase font-bold tracking-wider">
-                    <th className="px-6 py-3 text-left border-r border-white/10 uppercase">Client Name</th>
-                    <th className="px-6 py-3 text-center border-r border-white/10 w-48 uppercase">Total Quantity</th>
-                    <th className="px-6 py-3 text-right w-64 uppercase tracking-widest px-10">Sales Amount</th>
+                  <tr className="bg-table-header text-white">
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Client Name</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase w-48">Total Quantity</th>
+                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider uppercase px-10">Sales Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
@@ -127,9 +126,9 @@ const PartySalesReport = () => {
                   ) : filteredData.length > 0 ? (
                     filteredData.map((row, idx) => (
                       <tr key={idx} className="hover:bg-bg-main/30 transition-colors">
-                        <td className="px-6 py-3 text-[13.5px] font-bold text-text-primary uppercase tracking-tight">{row.client_name}</td>
-                        <td className="px-6 py-3 text-center text-[14px] font-bold text-text-secondary">{parseFloat(row.total_quantity).toLocaleString()}</td>
-                        <td className="px-6 py-3 text-right text-[15px] font-black text-brand-blue px-10">
+                        <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">{row.client_name}</td>
+                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-secondary border-r border-border-soft">{parseFloat(row.total_quantity).toLocaleString()}</td>
+                        <td className="px-5 py-1.5 text-right text-[14px] font-bold text-brand-blue px-10">
                            ₹{parseFloat(row.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
                         </td>
                       </tr>

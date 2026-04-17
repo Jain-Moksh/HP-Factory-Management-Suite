@@ -106,11 +106,11 @@ const GroupSalesReport = () => {
              <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-table-header text-white text-[10.5px] uppercase font-bold tracking-wider">
-                        <th className="px-6 py-3 text-left border-r border-white/10 uppercase">Group Name</th>
-                        <th className="px-6 py-3 text-left border-r border-white/10 uppercase">Member Name</th>
-                        <th className="px-6 py-3 text-center border-r border-white/10 uppercase w-32">Type</th>
-                        <th className="px-6 py-3 text-right uppercase px-10 w-64">Total Sales</th>
+                      <tr className="bg-table-header text-white">
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Group Name</th>
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Member Name</th>
+                        <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase w-32">Type</th>
+                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider uppercase px-10 w-64">Total Sales</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-soft">
@@ -131,29 +131,29 @@ const GroupSalesReport = () => {
                               return (
                                 <React.Fragment key={idx}>
                                    <tr className={`hover:bg-bg-main/30 transition-colors ${isFirstInGroup ? 'border-t-2 border-brand-blue/10' : ''}`}>
-                                      <td className={`px-6 py-3 text-[13px] font-black text-brand-blue uppercase tracking-tight ${!isFirstInGroup ? 'opacity-0' : ''}`}>
+                                      <td className={`px-5 py-1.5 text-[12.5px] font-black text-brand-blue uppercase tracking-tight border-r border-border-soft ${!isFirstInGroup ? 'opacity-0' : ''}`}>
                                          {row.group_name}
                                       </td>
-                                      <td className="px-6 py-3 text-[13px] font-bold text-text-primary uppercase border-l border-border-soft/50">
+                                      <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary uppercase border-r border-border-soft">
                                          {row.member_name}
                                       </td>
-                                      <td className="px-6 py-3 text-center border-l border-border-soft/50">
+                                      <td className="px-5 py-1.5 text-center border-r border-border-soft">
                                          <span className={`text-[9.5px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${
                                             row.member_type === 'client' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'
                                          }`}>
                                             {row.member_type}
                                          </span>
                                       </td>
-                                      <td className="px-6 py-3 text-right text-[14px] font-bold text-text-primary px-10 border-l border-border-soft/50">
+                                      <td className="px-5 py-1.5 text-right text-[13px] font-bold text-text-primary px-10">
                                          ₹{parseFloat(row.total_sales).toLocaleString(undefined, {minimumFractionDigits: 2})}
                                       </td>
                                    </tr>
                                    {isLastInGroup && (
                                      <tr className="bg-bg-main/40 border-b border-border-soft/80">
-                                        <td colSpan="3" className="px-6 py-2 text-right text-[10px] font-black uppercase text-text-light tracking-widest">
+                                        <td colSpan="3" className="px-5 py-2 text-right text-[10px] font-black uppercase text-text-light tracking-widest border-r border-border-soft">
                                            {row.group_name} Total Summary:
                                         </td>
-                                        <td className="px-6 py-2 text-right text-[13px] font-black text-brand-blue px-10">
+                                        <td className="px-5 py-2 text-right text-[13.5px] font-black text-brand-blue px-10">
                                            ₹{groupTotals[row.group_name].toLocaleString(undefined, {minimumFractionDigits: 2})}
                                         </td>
                                      </tr>

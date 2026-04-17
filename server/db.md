@@ -144,6 +144,10 @@ CREATE INDEX idx_jobber_items_item ON jobber_items(item_id);
 CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
 
+-- Reporting Performance Indexes
+CREATE INDEX idx_billing_client_date ON billing(client_id, date);
+CREATE INDEX idx_billing_items_item_billing ON billing_items(item_id, billing_id);
+
 -- =========================
 -- GROUP SYSTEM TABLES
 -- =========================
