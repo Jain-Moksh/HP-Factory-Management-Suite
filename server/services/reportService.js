@@ -7,8 +7,8 @@ const reportService = {
     return result.rows;
   },
 
-  getPartySales: async (fromDate, toDate) => {
-    const result = await db.query(queries.getPartySales, [fromDate || null, toDate || null]);
+  getPartySales: async (fromDate, toDate, clientId) => {
+    const result = await db.query(queries.getPartySales, [fromDate || null, toDate || null, clientId || null]);
     return result.rows;
   },
 

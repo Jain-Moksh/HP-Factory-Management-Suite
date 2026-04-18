@@ -48,42 +48,52 @@ const PartyBillingDetail = () => {
         />
 
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Party Header & Filters */}
-          <div className="bg-white border border-border-soft rounded-lg p-4 shadow-sm flex flex-wrap justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-brand-blue/10 rounded flex items-center justify-center text-brand-blue font-bold text-sm">
+          {/* Standardized Filter Bar */}
+          <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-4 group">
+            <div className="flex items-center gap-4 shrink-0 border-r border-border-soft pr-4">
+              <div className="w-8 h-8 bg-brand-blue/10 rounded flex items-center justify-center text-brand-blue font-bold text-[10px]">
                 {data?.client_name ? data.client_name.substring(0, 2).toUpperCase() : '??'}
               </div>
-              <div>
-                <h2 className="text-[16px] font-black text-text-primary uppercase tracking-tight leading-tight">
-                  {data?.client_name || 'Loading Party...'}
-                </h2>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[9px] font-bold text-white bg-brand-navy px-1.5 py-0.5 rounded uppercase tracking-wider">Client</span>
-                  <span className="text-[12px] font-bold text-brand-blue uppercase">Sales History</span>
-                </div>
+              <div className="flex flex-col">
+                <span className="text-[12px] font-black text-text-primary uppercase tracking-tight leading-none mb-0.5">
+                  {data?.client_name || 'Loading...'}
+                </span>
+                <span className="text-[9px] font-bold text-brand-blue uppercase tracking-widest opacity-70">Client Ledger</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">From:</span>
-                <input 
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-bg-main/50 border border-border-soft rounded-lg px-3 py-1.5 text-[11px] font-bold text-text-primary outline-none focus:border-brand-blue/50 focus:bg-white transition-all"
-                />
+            <div className="flex-1 flex items-center gap-6">
+              <div className="flex items-center gap-2 bg-bg-main/30 px-3 py-1 rounded-lg border border-divider-soft/50">
+                <svg className="w-3 h-3 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
+                  />
+                  <span className="text-[10px] text-text-light opacity-40 font-bold uppercase">to</span>
+                  <input 
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">To:</span>
-                <input 
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-bg-main/50 border border-border-soft rounded-lg px-3 py-1.5 text-[11px] font-bold text-text-primary outline-none focus:border-brand-blue/50 focus:bg-white transition-all"
-                />
-              </div>
+
+              <button 
+                onClick={fetchData}
+                disabled={isLoading}
+                className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition shadow-lg shadow-brand-blue/20 flex items-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                {isLoading ? 'Updating...' : 'Set Filter'}
+              </button>
             </div>
           </div>
 

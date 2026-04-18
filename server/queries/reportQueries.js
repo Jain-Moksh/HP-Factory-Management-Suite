@@ -17,12 +17,14 @@ const reportQueries = {
     // Aggregates sales (billing) by client and date range
     getPartySales: `
         SELECT 
+            c.id as client_id,
             c.name as client_name, 
             COALESCE(SUM(bi.quantity), 0) as total_quantity, 
             COALESCE(SUM(bi.total_amount), 0) as total_amount 
         FROM clients c
         LEFT JOIN billing b ON c.id = b.client_id AND (b.date BETWEEN $1 AND $2 OR $1 IS NULL)
         LEFT JOIN billing_items bi ON b.id = bi.billing_id
+        WHERE ($3::INT IS NULL OR c.id = $3)
         GROUP BY c.id, c.name
         ORDER BY total_amount DESC
     `,

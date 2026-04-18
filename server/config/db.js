@@ -1,5 +1,8 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 require('dotenv').config();
+
+// Fix for DATE shifted by timezone (treat DATE OID 1082 as string)
+types.setTypeParser(1082, (val) => val);
 
 const pool = new Pool({
   user: process.env.DB_USER,

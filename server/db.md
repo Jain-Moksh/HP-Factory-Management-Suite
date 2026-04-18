@@ -144,9 +144,10 @@ CREATE INDEX idx_jobber_items_item ON jobber_items(item_id);
 CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
 
--- Reporting Performance Indexes
-CREATE INDEX idx_billing_client_date ON billing(client_id, date);
-CREATE INDEX idx_billing_items_item_billing ON billing_items(item_id, billing_id);
+CREATE INDEX idx_group_members_group ON group_members(group_id);
+
+CREATE INDEX idx_purchase_jobber_date ON purchase(jobber_id, date);
+CREATE INDEX idx_purchase_items_item ON purchase_items(item_id);
 
 -- =========================
 -- GROUP SYSTEM TABLES
@@ -201,8 +202,8 @@ ALTER TABLE purchase ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 -- 3. GROUP SALES REPORT:
 --    - Uses a polymorphic join on `group_members`.
 --    - If `member_type` = 'client', joins with `clients` and `billing` for volume/amount.
---    - If `member_type` = 'jobber', currently only resolves name (sales strictly from clients).
--- 4. JOB WORK REPORT: Aggregates inward production volume from `purchase` and `purchase_items`.
+--    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
+-- 4. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
 
 -- Master Tables
 -- UPDATE items SET name = UPPER(name), unit = UPPER(unit);

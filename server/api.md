@@ -256,8 +256,8 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
 
 ### 2. Party Wise Sales
 *   **GET `/reports/party-sales`**
-    *   *Description*: Aggregated sales (billing) volume and revenue per client within a specific date range.
-    *   *Query Params*: `from`, `to` (optional).
+    *   *Description*: Aggregated sales (billing) volume and revenue per client within a specific date range. Supports filtering by a specific client.
+    *   *Query Params*: `client_id` (optional), `from`, `to` (optional).
 
 ### 3. Group Sales
 *   **GET `/reports/group-sales`**
@@ -296,6 +296,31 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
         ```
 
 ### 5. Job Work Analysis
-*   **GET `/reports/job-work`**
-    *   *Description*: Accumulative production/purchase quantities from jobbers, broken down by item.
-    *   *Query Params*: `from`, `to` (optional).
+*   **GET `/reports/job-work-summary`**
+    *   *Description*: Aggregates total quantities purchased from a jobber, grouped by item, within a date range.
+    *   *Query Params*: `jobber_id` (required), `from`, `to` (optional).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "data": [
+            { "item_id": 1, "item_name": "RED PEN", "total_quantity": 500, "unit": "PCS" }
+          ]
+        }
+        ```
+*   **GET `/reports/job-work-detail`**
+    *   *Description*: Individual transaction ledger (ledger style) for a specific jobber and item.
+    *   *Query Params*: `jobber_id`, `item_id` (required), `from`, `to` (optional).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "data": {
+            "item_name": "RED PEN",
+            "transactions": [
+              { "challan_no": "P101/APR/26-27", "date": "2026-04-10", "quantity": 100 }
+            ],
+            "total_quantity": 100
+          }
+        }
+        ```
