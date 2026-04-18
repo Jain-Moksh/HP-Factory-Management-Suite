@@ -46,6 +46,22 @@ const reportService = {
       transactions: detail.rows,
       total_amount: detail.rows.reduce((sum, t) => sum + parseFloat(t.amount), 0)
     };
+  },
+
+  getJobWorkSummary: async (jobberId, fromDate, toDate) => {
+    const result = await db.query(queries.getJobWorkSummary, [jobberId, fromDate || null, toDate || null]);
+    return result.rows;
+  },
+
+  getJobWorkDetail: async (jobberId, itemId, fromDate, toDate) => {
+    const detail = await db.query(queries.getJobWorkDetail, [jobberId, itemId, fromDate || null, toDate || null]);
+    const item = await db.query('SELECT name FROM items WHERE id = $1', [itemId]);
+    
+    return {
+      item_name: item.rows[0]?.name || 'Unknown',
+      transactions: detail.rows,
+      total_quantity: detail.rows.reduce((sum, t) => sum + parseFloat(t.quantity), 0)
+    };
   }
 };
 

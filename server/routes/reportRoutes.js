@@ -10,5 +10,7 @@ router.get('/party-stock-summary', reportController.getPartyStockSummary);
 router.get('/party-stock-detail', reportController.getPartyStockDetail);
 router.get('/group-sales-summary', reportController.getGroupSalesSummary);
 router.get('/party-billing-detail', reportController.getPartyBillingDetail);
+router.get('/job-work-summary', reportController.getJobWorkSummary);
+router.get('/job-work-detail', reportController.getJobWorkDetail);
 
 module.exports = router;

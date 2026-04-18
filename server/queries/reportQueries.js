@@ -124,6 +124,38 @@ const reportQueries = {
           AND ($2::DATE IS NULL OR date >= $2)
           AND ($3::DATE IS NULL OR date <= $3)
         ORDER BY date ASC
+    `,
+
+    // 9. Job Work Summary (Aggregate by item for a jobber)
+    getJobWorkSummary: `
+        SELECT 
+            i.id as item_id,
+            i.name as item_name,
+            SUM(pi.quantity) as total_quantity,
+            i.unit
+        FROM purchase p
+        JOIN purchase_items pi ON p.id = pi.purchase_id
+        JOIN items i ON pi.item_id = i.id
+        WHERE p.jobber_id = $1
+          AND ($2::DATE IS NULL OR p.date >= $2)
+          AND ($3::DATE IS NULL OR p.date <= $3)
+        GROUP BY i.id, i.name, i.unit
+        ORDER BY i.name ASC
+    `,
+
+    // 10. Job Work Detail (Ledger for jobber-item)
+    getJobWorkDetail: `
+        SELECT 
+            p.challan_no,
+            p.date,
+            pi.quantity
+        FROM purchase p
+        JOIN purchase_items pi ON p.id = pi.purchase_id
+        WHERE p.jobber_id = $1
+          AND pi.item_id = $2
+          AND ($3::DATE IS NULL OR p.date >= $3)
+          AND ($4::DATE IS NULL OR p.date <= $4)
+        ORDER BY p.date ASC
     `
 };
 

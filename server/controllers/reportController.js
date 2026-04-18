@@ -88,6 +88,28 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getJobWorkSummary: async (req, res, next) => {
+    try {
+      const { jobber_id, from, to } = req.query;
+      if (!jobber_id) return res.status(400).json({ success: false, message: "jobber_id is required" });
+      const data = await reportService.getJobWorkSummary(jobber_id, from, to);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getJobWorkDetail: async (req, res, next) => {
+    try {
+      const { jobber_id, item_id, from, to } = req.query;
+      if (!jobber_id || !item_id) return res.status(400).json({ success: false, message: "jobber_id and item_id are required" });
+      const data = await reportService.getJobWorkDetail(jobber_id, item_id, from, to);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 
