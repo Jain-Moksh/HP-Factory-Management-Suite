@@ -30,6 +30,22 @@ const reportService = {
   getPartyStockDetail: async (clientId, itemId, fromDate, toDate) => {
     const result = await db.query(queries.getPartyStockDetail, [clientId, itemId, fromDate || null, toDate || null]);
     return result.rows;
+  },
+
+  getGroupSalesSummary: async (groupId, fromDate, toDate) => {
+    const result = await db.query(queries.getGroupSalesSummary, [groupId, fromDate || null, toDate || null]);
+    return result.rows;
+  },
+
+  getPartyBillingDetail: async (clientId, fromDate, toDate) => {
+    const detail = await db.query(queries.getPartyBillingDetail, [clientId, fromDate || null, toDate || null]);
+    const client = await db.query('SELECT name FROM clients WHERE id = $1', [clientId]);
+    
+    return {
+      client_name: client.rows[0]?.name || 'Unknown',
+      transactions: detail.rows,
+      total_amount: detail.rows.reduce((sum, t) => sum + parseFloat(t.amount), 0)
+    };
   }
 };
 

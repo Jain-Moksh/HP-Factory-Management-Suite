@@ -68,9 +68,9 @@ const StockSummary = () => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-table-header text-white text-[10.5px] uppercase font-bold tracking-wider">
-                    <th className="px-6 py-3 text-left border-r border-white/10">Item Name</th>
-                    <th className="px-6 py-3 text-right w-64">Current Stock</th>
+                  <tr className="bg-table-header text-white">
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
+                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider w-64">Current Stock</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
@@ -90,21 +90,21 @@ const StockSummary = () => {
                         onClick={() => navigate(`/item-stock-details/${item.id}`)}
                         className="hover:bg-brand-blue/[0.02] cursor-pointer transition-colors group"
                       >
-                        <td className="px-6 py-3">
+                        <td className="px-5 py-1.5 border-r border-border-soft">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-bg-main flex items-center justify-center text-text-light group-hover:bg-brand-blue/10 group-hover:text-brand-blue transition-colors font-bold text-[10px]">
+                            <div className="w-7 h-7 rounded-lg bg-bg-main flex items-center justify-center text-text-light group-hover:bg-brand-blue/10 group-hover:text-brand-blue transition-colors font-bold text-[9px]">
                               {item.name.substring(0, 2).toUpperCase()}
                             </div>
-                            <span className="text-[13.5px] font-bold text-text-primary uppercase tracking-tight">{item.name}</span>
+                            <span className="text-[12.5px] font-bold text-text-primary uppercase tracking-tight">{item.name}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="flex flex-col items-end">
-                            <span className={`text-[15px] font-black ${parseFloat(item.stock) <= parseFloat(item.min_stock || 0) ? 'text-red-500' : 'text-brand-blue'} tracking-tight`}>
-                              {item.stock} <span className="text-[10px] uppercase font-bold ml-0.5 opacity-60">{item.unit}</span>
+                        <td className="px-5 py-1.5 text-right">
+                          <div className="flex flex-col items-end leading-tight">
+                            <span className={`text-[13.5px] font-black ${parseFloat(item.stock) <= parseFloat(item.min_stock || 0) ? 'text-red-500' : 'text-brand-blue'} tracking-tight`}>
+                              {item.stock} <span className="text-[9px] uppercase font-bold ml-0.5 opacity-60">{item.unit}</span>
                             </span>
                             {parseFloat(item.stock) <= parseFloat(item.min_stock || 0) && (
-                              <span className="text-[9px] font-bold text-red-400 uppercase tracking-tighter mt-0.5 animate-pulse">Low Stock</span>
+                              <span className="text-[8.5px] font-bold text-red-400 uppercase tracking-tighter animate-pulse">Low Stock</span>
                             )}
                           </div>
                         </td>

@@ -263,8 +263,39 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
 *   **GET `/reports/group-sales`**
     *   *Description*: Total sales revenue aggregated by group membership. Handles polymorphic mapping between clients and jobbers within groups.
     *   *Query Params*: `from`, `to` (optional).
+*   **GET `/reports/group-sales-summary`**
+    *   *Description*: Fetches summary of sales for all clients belonging to a specific group.
+    *   *Query Params*: `group_id` (required), `from`, `to` (optional).
+    *   *Response*: 
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            { "client_id": 1, "client_name": "ACME CORP", "total_amount": 15000.00 }
+          ]
+        }
+        ```
 
-### 4. Job Work Analysis
+### 4. Party Billing detail
+*   **GET `/reports/party-billing-detail`**
+    *   *Description*: Full transaction details (challans) for a specific client within a date range.
+    *   *Query Params*: `client_id` (required), `from`, `to` (optional).
+    *   *Response*: 
+        ```json
+        {
+          "success": true,
+          "data": {
+            "client_name": "ACME CORP",
+            "transactions": [
+               { "challan_no": "101/apr/26-27", "date": "2026-04-10", "amount": 5000.00 }
+            ],
+            "total_amount": 5000.00
+          }
+        }
+        ```
+
+### 5. Job Work Analysis
 *   **GET `/reports/job-work`**
     *   *Description*: Accumulative production/purchase quantities from jobbers, broken down by item.
     *   *Query Params*: `from`, `to` (optional).

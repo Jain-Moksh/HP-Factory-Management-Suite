@@ -93,6 +93,35 @@ const reportQueries = {
           AND ($3::DATE IS NULL OR b.date >= $3)
           AND ($4::DATE IS NULL OR b.date <= $4)
         ORDER BY b.date ASC
+    `,
+
+    // 7. Group Sales Summary (Revenue from clients in a group)
+    getGroupSalesSummary: `
+        SELECT 
+            c.id as client_id,
+            c.name as client_name,
+            COALESCE(SUM(b.grand_total), 0) as total_amount
+        FROM group_members gm
+        JOIN clients c ON gm.member_id = c.id AND gm.member_type = 'client'
+        LEFT JOIN billing b ON b.client_id = c.id 
+            AND ($2::DATE IS NULL OR b.date >= $2)
+            AND ($3::DATE IS NULL OR b.date <= $3)
+        WHERE gm.group_id = $1
+        GROUP BY c.id, c.name
+        ORDER BY total_amount DESC
+    `,
+
+    // 8. Party Billing Detail (Ledger for client)
+    getPartyBillingDetail: `
+        SELECT 
+            challan_no,
+            date,
+            grand_total as amount
+        FROM billing
+        WHERE client_id = $1
+          AND ($2::DATE IS NULL OR date >= $2)
+          AND ($3::DATE IS NULL OR date <= $3)
+        ORDER BY date ASC
     `
 };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
+import SearchableSelect from '../../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../../config';
 
 const PartyStockReport = () => {
@@ -68,40 +69,38 @@ const PartyStockReport = () => {
             </div>
 
             <div className="flex-1 flex items-center gap-4">
-              <div className="relative flex-1 max-w-[320px]">
-                <select 
-                  value={selectedClient}
-                  onChange={(e) => setSelectedClient(e.target.value)}
-                  className="w-full h-8 px-3 bg-bg-main/50 border border-border-soft rounded text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
-                >
-                  <option value="">-- SELECT PARTY --</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} {c.shortform ? `(${c.shortform})` : ''}</option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect 
+                options={clients}
+                value={selectedClient}
+                onChange={setSelectedClient}
+                placeholder="Select a Party..."
+                className="flex-1 max-w-[320px]"
+              />
 
               <div className="flex items-center gap-2">
                 <input 
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="h-8 px-2 bg-bg-main/50 border border-border-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
                 <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
                 <input 
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="h-8 px-2 bg-bg-main/50 border border-border-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
               </div>
 
               <button 
                 onClick={fetchData}
                 disabled={!selectedClient || isLoading}
-                className="px-6 h-8 bg-brand-navy text-white rounded text-[10px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 disabled:opacity-50 disable:hover:bg-brand-blue active:scale-95"
               >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
                 {isLoading ? 'Wait...' : 'Set Filter'}
               </button>
             </div>

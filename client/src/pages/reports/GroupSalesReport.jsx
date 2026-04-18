@@ -2,23 +2,39 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
-import MonthFilterFooter from '../../components/MonthFilterFooter';
+import SearchableSelect from '../../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../../config';
 
 const GroupSalesReport = () => {
+  const [groups, setGroups] = useState([]);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const navigate = useNavigate();
 
+  // Fetch groups on mount
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/groups`);
+        const result = await response.json();
+        if (result.success) {
+          setGroups(result.data);
+        }
+      } catch (err) {
+        console.error("Error fetching groups:", err);
+      }
+    };
+    fetchGroups();
+  }, []);
+
   const fetchData = async () => {
+    if (!selectedGroupId) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/group-sales?from=${startDate}&to=${endDate}`);
+      const response = await fetch(`${API_BASE_URL}/reports/group-sales-summary?group_id=${selectedGroupId}&from=${startDate}&to=${endDate}`);
       const result = await response.json();
       if (result.success) {
         setData(result.data);
@@ -30,157 +46,147 @@ const GroupSalesReport = () => {
     }
   };
 
+  // Fetch data when group or dates change
   useEffect(() => {
-    fetchData();
-  }, [startDate, endDate]);
+    if (selectedGroupId) {
+      fetchData();
+    }
+  }, [selectedGroupId, startDate, endDate]);
 
-  const filteredData = useMemo(() => {
-    return data.filter(row => 
-      row.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.member_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [data, searchTerm]);
+  const groupTotal = useMemo(() => {
+    return data.reduce((sum, row) => sum + parseFloat(row.total_amount), 0);
+  }, [data]);
 
-  const groupTotals = useMemo(() => {
-    const totals = {};
-    filteredData.forEach(row => {
-        if (!totals[row.group_name]) totals[row.group_name] = 0;
-        totals[row.group_name] += parseFloat(row.total_sales);
-    });
-    return totals;
-  }, [filteredData]);
-
-  const grandTotal = Object.values(groupTotals).reduce((sum, val) => sum + val, 0);
+  const handleRowClick = (clientId) => {
+    navigate(`/reports/party-billing-detail/${clientId}?from=${startDate}&to=${endDate}`);
+  };
 
   return (
     <Layout>
-      <div className="flex flex-col min-h-screen relative pb-20">
+      <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
           title="Group Party Wise Sales" 
-          subtitle="AGGREGATED SALES REVENUE BY GROUPS AND MEMBERS" 
+          subtitle="AGGREGATED SALES REVENUE PER GROUP MEMBER" 
           backAction={() => navigate('/reports')}
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Filters */}
-          <div className="bg-white border border-border-soft rounded-xl shadow-sm p-4 flex flex-wrap items-center gap-6">
-            <div className="flex-1 relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-light opacity-50">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </span>
-                <input 
-                  type="text" 
-                  placeholder="Search Group or Member..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-9 bg-bg-main/50 border border-border-soft rounded-lg pl-10 pr-4 text-[13px] font-medium outline-none focus:border-brand-blue/50 focus:bg-white transition-all"
-                />
+          {/* Standardized Filter Bar */}
+          <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-4 group">
+            <div className="flex items-center gap-2 shrink-0 border-r border-border-soft pr-4">
+              <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span className="text-[11px] font-bold text-text-primary uppercase tracking-tight whitespace-nowrap">Filter Report</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-4">
+              <SearchableSelect 
+                options={groups}
+                value={selectedGroupId}
+                onChange={setSelectedGroupId}
+                placeholder="Select a Group..."
+                className="flex-1 max-w-[320px]"
+              />
+
+              <div className="flex items-center gap-2">
                 <input 
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-bg-main/50 border border-border-soft rounded-lg px-3 py-1.5 text-[11px] font-bold text-text-primary outline-none focus:border-brand-blue/50 transition-all font-bold"
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
-                <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">to</span>
+                <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
                 <input 
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-bg-main/50 border border-border-soft rounded-lg px-3 py-1.5 text-[11px] font-bold text-text-primary outline-none focus:border-brand-blue/50 transition-all font-bold"
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
-            </div>
+              </div>
 
-            <div className="px-4 py-2 bg-brand-navy rounded-lg border border-white/10 text-white shadow-lg">
-                <span className="block text-[8px] font-black uppercase opacity-60 tracking-widest">Grand Total Sales</span>
-                <span className="text-sm font-black tracking-tight">₹{grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+              <button 
+                onClick={fetchData}
+                disabled={!selectedGroupId || isLoading}
+                className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 disabled:opacity-50 disable:hover:bg-brand-blue active:scale-95"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                {isLoading ? 'Wait...' : 'Set Filter'}
+              </button>
             </div>
           </div>
 
-          {/* Table */}
+          {/* Table Implementation */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
              <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-table-header text-white">
-                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Group Name</th>
-                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase">Member Name</th>
-                        <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider uppercase w-32">Type</th>
-                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider uppercase px-10 w-64">Total Sales</th>
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Party Name</th>
+                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10 w-64">Total Sales Amount</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-soft">
                         {isLoading ? (
                           <tr>
-                            <td colSpan="4" className="px-6 py-20 text-center">
+                            <td colSpan="2" className="px-6 py-20 text-center">
                                 <div className="flex flex-col items-center gap-3">
                                   <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
-                                  <span className="text-[13px] font-medium text-text-light">Processing group analytics...</span>
+                                  <span className="text-[13px] font-medium text-text-light">Calculating group performance...</span>
                                 </div>
                             </td>
                           </tr>
-                        ) : filteredData.length > 0 ? (
-                           filteredData.map((row, idx) => {
-                              const isFirstInGroup = idx === 0 || row.group_name !== filteredData[idx-1].group_name;
-                              const isLastInGroup = idx === filteredData.length - 1 || row.group_name !== filteredData[idx+1].group_name;
-                              
-                              return (
-                                <React.Fragment key={idx}>
-                                   <tr className={`hover:bg-bg-main/30 transition-colors ${isFirstInGroup ? 'border-t-2 border-brand-blue/10' : ''}`}>
-                                      <td className={`px-5 py-1.5 text-[12.5px] font-black text-brand-blue uppercase tracking-tight border-r border-border-soft ${!isFirstInGroup ? 'opacity-0' : ''}`}>
-                                         {row.group_name}
-                                      </td>
-                                      <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary uppercase border-r border-border-soft">
-                                         {row.member_name}
-                                      </td>
-                                      <td className="px-5 py-1.5 text-center border-r border-border-soft">
-                                         <span className={`text-[9.5px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${
-                                            row.member_type === 'client' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'
-                                         }`}>
-                                            {row.member_type}
-                                         </span>
-                                      </td>
-                                      <td className="px-5 py-1.5 text-right text-[13px] font-bold text-text-primary px-10">
-                                         ₹{parseFloat(row.total_sales).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                      </td>
-                                   </tr>
-                                   {isLastInGroup && (
-                                     <tr className="bg-bg-main/40 border-b border-border-soft/80">
-                                        <td colSpan="3" className="px-5 py-2 text-right text-[10px] font-black uppercase text-text-light tracking-widest border-r border-border-soft">
-                                           {row.group_name} Total Summary:
-                                        </td>
-                                        <td className="px-5 py-2 text-right text-[13.5px] font-black text-brand-blue px-10">
-                                           ₹{groupTotals[row.group_name].toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                        </td>
-                                     </tr>
-                                   )}
-                                </React.Fragment>
-                              );
-                           })
+                        ) : data.length > 0 ? (
+                           data.map((row) => (
+                             <tr 
+                               key={row.client_id} 
+                               onClick={() => handleRowClick(row.client_id)}
+                               className="hover:bg-bg-main/30 cursor-pointer transition-colors"
+                             >
+                                <td className="px-5 py-1.5 text-[13px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight">
+                                   {row.client_name}
+                                </td>
+                                <td className="px-5 py-1.5 text-right text-[14px] font-bold text-brand-blue px-10">
+                                   ₹{parseFloat(row.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                </td>
+                             </tr>
+                           ))
                         ) : (
                            <tr>
-                              <td colSpan="4" className="px-6 py-20 text-center italic text-text-light">
-                                 No group data available.
+                              <td colSpan="2" className="px-6 py-12 text-center italic text-text-light text-[12px] opacity-60">
+                                 Please select a group from the filters above to generate the report.
                               </td>
                            </tr>
                         )}
                     </tbody>
+                    {data.length > 0 && (
+                      <tfoot>
+                        <tr className="bg-bg-main/50 border-t-2 border-border-soft">
+                          <td className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70">
+                             Total Group Sales:
+                          </td>
+                          <td className="px-5 py-3 text-right text-[16px] font-black text-brand-blue px-10">
+                             ₹{groupTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
                 </table>
              </div>
           </div>
-        </div>
 
-        <MonthFilterFooter 
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          recordCount={filteredData.length}
-        />
+          <div className="bg-bg-main/30 border border-border-soft rounded-lg p-3 flex items-start gap-3">
+            <svg className="w-4 h-4 text-brand-blue mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-[11px] text-text-light leading-snug font-medium italic">
+              This report aggregates total billing amounts for all clients belonging to the selected group. 
+              Click on any row to view individual challan details for that party.
+            </p>
+          </div>
+        </div>
       </div>
     </Layout>
   );
