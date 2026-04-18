@@ -110,6 +110,17 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getDayBook: async (req, res, next) => {
+    try {
+      const { date } = req.query;
+      if (!date) return res.status(400).json({ success: false, message: "date is required" });
+      const data = await reportService.getDayBook(date);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

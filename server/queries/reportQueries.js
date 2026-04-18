@@ -156,6 +156,32 @@ const reportQueries = {
           AND ($3::DATE IS NULL OR p.date >= $3)
           AND ($4::DATE IS NULL OR p.date <= $4)
         ORDER BY p.date ASC
+    `,
+
+    // 11. Day Book (Combined Billing & Purchase for a date)
+    getDayBook: `
+        (SELECT 
+            b.id, 
+            'billing' as type, 
+            b.challan_no, 
+            c.name as name, 
+            b.grand_total as amount, 
+            b.created_at
+        FROM billing b
+        JOIN clients c ON b.client_id = c.id
+        WHERE b.date = $1)
+        UNION ALL
+        (SELECT 
+            p.id, 
+            'purchase' as type, 
+            p.challan_no, 
+            j.name as name, 
+            NULL as amount, 
+            p.created_at
+        FROM purchase p
+        JOIN jobbers j ON p.jobber_id = j.id
+        WHERE p.date = $1)
+        ORDER BY created_at DESC
     `
 };
 

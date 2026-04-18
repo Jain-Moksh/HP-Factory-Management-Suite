@@ -324,3 +324,19 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           }
         }
         ```
+
+### 6. Day Book
+*   **GET `/reports/day-book`**
+    *   *Description*: Combined daily ledger of all Billing and Purchase transactions for a specific date.
+    *   *Query Params*: `date` (required, format: YYYY-MM-DD).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            { "id": 1, "type": "billing", "challan_no": "101", "name": "ACME CORP", "amount": 5000.00 },
+            { "id": 5, "type": "purchase", "challan_no": "P-55", "name": "JAIN PRINTERS", "amount": null }
+          ]
+        }
+        ```

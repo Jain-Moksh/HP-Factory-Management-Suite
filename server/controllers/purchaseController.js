@@ -43,6 +43,10 @@ const purchaseController = {
 
   delete: async (req, res, next) => {
     try {
+      const { password } = req.body;
+      if (password !== process.env.del_pass) {
+        return res.status(401).json({ success: false, message: 'Fail to delete' });
+      }
       await purchaseService.delete(req.params.id);
       res.json({ success: true, message: 'Purchase record deleted successfully' });
     } catch (err) {

@@ -62,6 +62,11 @@ const reportService = {
       transactions: detail.rows,
       total_quantity: detail.rows.reduce((sum, t) => sum + parseFloat(t.quantity), 0)
     };
+  },
+
+  getDayBook: async (date) => {
+    const result = await db.query(queries.getDayBook, [date]);
+    return result.rows;
   }
 };
 

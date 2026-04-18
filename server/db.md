@@ -204,6 +204,7 @@ ALTER TABLE purchase ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 --    - If `member_type` = 'client', joins with `clients` and `billing` for volume/amount.
 --    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
 -- 4. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
+-- 5. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
 
 -- Master Tables
 -- UPDATE items SET name = UPPER(name), unit = UPPER(unit);
