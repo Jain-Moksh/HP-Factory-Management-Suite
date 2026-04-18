@@ -7,6 +7,7 @@ CREATE TABLE items (
     name TEXT NOT NULL UNIQUE,
     rate NUMERIC,
     stock NUMERIC,
+    open_stock NUMERIC DEFAULT 0,
     conversion NUMERIC,
     unit TEXT,
     min_stock NUMERIC DEFAULT 0
@@ -148,6 +149,7 @@ CREATE INDEX idx_group_members_group ON group_members(group_id);
 
 CREATE INDEX idx_purchase_jobber_date ON purchase(jobber_id, date);
 CREATE INDEX idx_purchase_items_item ON purchase_items(item_id);
+CREATE INDEX idx_items_low_stock ON items(stock, min_stock);
 
 -- =========================
 -- GROUP SYSTEM TABLES
@@ -180,6 +182,7 @@ CREATE TABLE group_members (
 
 ALTER TABLE billing ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE purchase ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 
 -- =============================================
 -- STOCK MAINTENANCE LOGIC

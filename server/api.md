@@ -26,6 +26,7 @@ Manages the inventory of items.
           "name": "Red Pen",
           "rate": 10.50,
           "stock": 100,
+          "open_stock": 0,
           "conversion": 1,
           "unit": "Pcs",
           "min_stock": 20

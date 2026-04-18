@@ -14,7 +14,7 @@ const ItemList = () => {
     rate: '',
     unit: 'DOZ',
     conversion: '1',
-    stock: '',
+    open_stock: '',
     min_stock: ''
   });
 
@@ -80,13 +80,15 @@ const ItemList = () => {
     
     setIsLoading(true);
     try {
+      const openingStockVal = parseFloat(formData.open_stock) || 0;
       const response = await fetch(`${API_BASE_URL}/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           rate: parseFloat(formData.rate) || 0,
-          stock: parseFloat(formData.stock) || 0,
+          stock: openingStockVal, // Use opening stock as initial live stock
+          open_stock: openingStockVal,
           conversion: parseFloat(formData.conversion) || 1,
           unit: formData.unit,
           min_stock: parseFloat(formData.min_stock) || 0
@@ -113,7 +115,7 @@ const ItemList = () => {
       rate: '',
       unit: 'DOZ',
       conversion: '1',
-      stock: '',
+      open_stock: '',
       min_stock: ''
     });
   };
@@ -127,6 +129,7 @@ const ItemList = () => {
       unit: item.unit,
       conversion: item.conversion,
       stock: item.stock,
+      open_stock: item.open_stock,
       min_stock: item.min_stock
     });
   };
@@ -150,6 +153,7 @@ const ItemList = () => {
           name: editFormData.name,
           rate: parseFloat(editFormData.rate) || 0,
           stock: parseFloat(editFormData.stock) || 0,
+          open_stock: parseFloat(editFormData.open_stock) || 0,
           conversion: parseFloat(editFormData.conversion) || 1,
           unit: editFormData.unit,
           min_stock: parseFloat(editFormData.min_stock) || 0
@@ -232,13 +236,13 @@ const ItemList = () => {
             <div className="p-0">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-primary">
+                  <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-primary text-center">
                     <th className="px-4 py-2 text-left border-r border-border-soft">Item Name</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32">Rate</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32">Unit</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32">Conversion</th>
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-32 leading-tight">Opening <br /> Stock</th>
-                    <th className="px-4 py-2 text-left w-32 leading-tight">Min <br /> Stock</th>
+                    <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Rate</th>
+                    <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Unit</th>
+                    <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Conv.</th>
+                    <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight leading-tight">Opening <br /> Stock</th>
+                    <th className="px-4 py-2 w-32 text-center uppercase tracking-tight leading-tight">Min <br /> Stock</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -259,16 +263,16 @@ const ItemList = () => {
                         name="rate"
                         value={formData.rate}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-bold text-brand-blue"
+                        className="w-full h-10 px-2 bg-transparent outline-none text-[13px] font-bold text-brand-blue text-center"
                         placeholder="0.00"
                       />
                     </td>
-                    <td className="p-0 border-r border-border-soft">
+                    <td className="p-0 border-r border-border-soft text-center">
                       <select 
                         name="unit"
                         value={formData.unit}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-3 bg-transparent outline-none text-[12px] font-bold text-text-primary cursor-pointer"
+                        className="w-full h-10 px-2 bg-transparent outline-none text-[11px] font-bold text-text-primary cursor-pointer text-center"
                       >
                         <option value="GMS">GMS</option>
                         <option value="BUNDLE">BUNDLE</option>
@@ -284,17 +288,18 @@ const ItemList = () => {
                         name="conversion"
                         value={formData.conversion}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
+                        className="w-full h-10 px-2 bg-transparent outline-none text-[13px] font-medium text-center"
                         placeholder="1"
                       />
                     </td>
+                    {/* Opening Stock */}
                     <td className="p-0 border-r border-border-soft">
                       <input 
                         type="number"
-                        name="stock"
-                        value={formData.stock}
+                        name="open_stock"
+                        value={formData.open_stock}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
+                        className="w-full h-10 px-2 bg-transparent outline-none text-[13px] font-medium text-center italic"
                         placeholder="0"
                       />
                     </td>
@@ -304,7 +309,7 @@ const ItemList = () => {
                         name="min_stock"
                         value={formData.min_stock}
                         onChange={handleInputChange}
-                        className="w-full h-10 px-4 bg-transparent outline-none text-[13px] font-medium"
+                        className="w-full h-10 px-2 bg-transparent outline-none text-[13px] font-medium text-center"
                         placeholder="0"
                       />
                     </td>
@@ -349,22 +354,23 @@ const ItemList = () => {
                 <thead>
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Rate</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Unit</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider">Conversion</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Opening <br /> Stock</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 w-32 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Min <br /> Stock</th>
-                    <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider">Rate</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-20 text-[10.5px] uppercase font-bold tracking-wider">Unit</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Conv.</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Live <br /> Stock</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Opening <br /> Stock</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Min <br /> Stock</th>
+                    <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-20">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft">
+                <tbody className="divide-y divide-border-soft text-text-primary">
                    {items.map((item) => (
                     <tr 
                       key={item.id} 
                       ref={editingId === item.id ? editRowRef : null}
                       className={`transition-colors ${editingId === item.id ? 'bg-brand-blue/[0.04] relative z-10' : 'hover:bg-bg-main/30'}`}
                     >
-                      <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
+                      <td className="px-5 py-1.5 font-bold text-[12.5px] border-r border-border-soft uppercase tracking-tight">
                         {editingId === item.id ? (
                           <input 
                             name="name"
@@ -388,14 +394,14 @@ const ItemList = () => {
                           />
                         ) : `₹${parseFloat(item.rate).toFixed(2)}`}
                       </td>
-                      <td className="px-5 py-1.5 text-center text-[11.5px] font-bold text-text-primary border-r border-border-soft uppercase">
+                      <td className="px-5 py-1.5 text-center text-[11px] font-bold border-r border-border-soft uppercase">
                         {editingId === item.id ? (
                           <select 
                             name="unit"
                             value={editFormData.unit}
                             onChange={handleEditChange}
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="bg-white border border-brand-blue/30 rounded px-1 py-1 outline-none focus:border-brand-blue"
+                            className="bg-white border border-brand-blue/30 rounded px-1 py-1 outline-none focus:border-brand-blue text-[11px] font-bold"
                           >
                             <option value="GMS">GMS</option>
                             <option value="BUNDLE">BUNDLE</option>
@@ -406,7 +412,7 @@ const ItemList = () => {
                           </select>
                         ) : item.unit}
                       </td>
-                      <td className="px-5 py-1.5 text-center text-[12.5px] font-medium text-text-primary border-r border-border-soft">
+                      <td className="px-5 py-1.5 text-center text-[12px] font-medium border-r border-border-soft">
                         {editingId === item.id ? (
                           <input 
                             type="number"
@@ -418,7 +424,8 @@ const ItemList = () => {
                           />
                         ) : item.conversion}
                       </td>
-                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue border-r border-border-soft">
+                      {/* Live Stock Cell */}
+                      <td className={`px-5 py-1.5 text-center text-[13px] font-black border-r border-border-soft ${parseFloat(item.stock) <= parseFloat(item.min_stock) ? 'text-red-500' : 'text-brand-blue'}`}>
                         {editingId === item.id ? (
                           <input 
                             type="number"
@@ -426,11 +433,24 @@ const ItemList = () => {
                             value={editFormData.stock}
                             onChange={handleEditChange}
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-black"
                           />
                         ) : (item.stock || 0)}
                       </td>
-                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-red-500 border-r border-border-soft">
+                       {/* Opening Stock Cell */}
+                       <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary/60 italic border-r border-border-soft">
+                        {editingId === item.id ? (
+                          <input 
+                            type="number"
+                            name="open_stock"
+                            value={editFormData.open_stock}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, item.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
+                          />
+                        ) : (item.open_stock || 0)}
+                      </td>
+                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary border-r border-border-soft">
                         {editingId === item.id ? (
                           <input 
                             type="number"
@@ -489,14 +509,14 @@ const ItemList = () => {
                   ))}
                   {items.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
+                      <td colSpan="8" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
                         No items found in master. Add a new item to get started.
                       </td>
                     </tr>
                   )}
                   {isLoading && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                      <td colSpan="8" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
                         Loading master data...
                       </td>
                     </tr>
