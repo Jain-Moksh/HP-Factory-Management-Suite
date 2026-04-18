@@ -341,3 +341,27 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           ]
         }
         ```
+
+---
+
+## 📈 DASHBOARD APIs
+
+### 1. Low Stock Alerts
+*   **GET `/dashboard/low-stock`**
+    *   *Description*: Returns all items where current stock is less than minimum stock.
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 1,
+          "data": [
+            {
+              "item_id": 1,
+              "item_name": "Sugar",
+              "stock": 20,
+              "unit": "kg",
+              "min_stock": 50
+            }
+          ]
+        }
+        ```
