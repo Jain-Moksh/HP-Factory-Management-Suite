@@ -12,57 +12,65 @@
  * Core logic to count records and format the challan number.
  * Can be used for both creation (inside transaction) and preview.
  */
-const getFormattedChallan = async (dateStr, type, dbOrClient) => {
+const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) => {
   const dateObj = new Date(dateStr);
-  const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthsShort = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   const monthName = monthsShort[dateObj.getMonth()];
   const monthNum = dateObj.getMonth() + 1;
   const calendarYear = dateObj.getFullYear();
 
   // Financial Year Logic (April to March)
-  let fy;
+  let fyRange;
+  let fyStart, fyEnd;
   if (monthNum >= 4) {
-    const currentYear = calendarYear.toString().slice(-2);
-    const nextYear = (calendarYear + 1).toString().slice(-2);
-    fy = `${currentYear}-${nextYear}`;
+    const startYear = calendarYear;
+    const endYear = calendarYear + 1;
+    fyRange = `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
+    fyStart = `${startYear}-04-01`;
+    fyEnd = `${endYear}-03-31`;
   } else {
-    const prevYear = (calendarYear - 1).toString().slice(-2);
-    const currentYear = calendarYear.toString().slice(-2);
-    fy = `${prevYear}-${currentYear}`;
+    const startYear = calendarYear - 1;
+    const endYear = calendarYear;
+    fyRange = `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
+    fyStart = `${startYear}-04-01`;
+    fyEnd = `${endYear}-03-31`;
   }
 
   const tableName = type === 'billing' ? 'billing' : 'purchase';
   
   // MANDATORY SQL LOGIC: Count existing records for SAME MONTH and SAME FINANCIAL YEAR
-  const countRes = await dbOrClient.query(
-    `SELECT COUNT(*) FROM ${tableName}
-     WHERE EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM $1::DATE)
-     AND (
-       (EXTRACT(MONTH FROM $1::DATE) >= 4 AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM $1::DATE))
-       OR
-       (EXTRACT(MONTH FROM $1::DATE) < 4 AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM $1::DATE))
-     )`,
-    [dateStr]
-  );
+  const queryParams = [monthNum, fyStart, fyEnd];
+  let queryStr = `
+    SELECT COUNT(*) FROM ${tableName}
+    WHERE EXTRACT(MONTH FROM date) = $1
+    AND date BETWEEN $2 AND $3
+  `;
+
+  if (excludeId) {
+    queryStr += ` AND id != $4`;
+    queryParams.push(excludeId);
+  }
+
+  const countRes = await dbOrClient.query(queryStr, queryParams);
   
   const count = parseInt(countRes.rows[0].count);
   const sequence = count + 1;
   const prefix = type === 'purchase' ? 'P' : '';
 
-  return `${prefix}${sequence}/${monthName}/${fy}`.toUpperCase();
+  return `${prefix}${sequence}/${monthName}/${fyRange}`;
 };
 
 /**
  * Generates a custom challan number based on date and type.
  * Uses LOCK TABLE for concurrency safety during creation.
  */
-const generateChallanNo = async (dateStr, type, client) => {
+const generateChallanNo = async (dateStr, type, client, excludeId = null) => {
   const tableName = type === 'billing' ? 'billing' : 'purchase';
   
   // CRITICAL: Concurrency safety
   await client.query(`LOCK TABLE ${tableName} IN SHARE ROW EXCLUSIVE MODE`);
 
-  return await getFormattedChallan(dateStr, type, client);
+  return await getFormattedChallan(dateStr, type, client, excludeId);
 };
 
 module.exports = { generateChallanNo, getFormattedChallan };

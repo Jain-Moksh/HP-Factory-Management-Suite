@@ -50,8 +50,8 @@ const purchaseQueries = {
     `,
     updatePurchase: `
         UPDATE purchase SET 
-            jobber_id = $1, date = $2, remark = $3
-        WHERE id = $4
+            jobber_id = $1, date = $2, remark = $3, challan_no = $4
+        WHERE id = $5
         RETURNING *
     `
 };

@@ -49,9 +49,19 @@ const billingController = {
 
   getNextId: async (req, res, next) => {
     try {
-      const { date } = req.query;
-      const nextId = await billingService.getNextId(date);
+      const { date, billing_id } = req.query;
+      const nextId = await billingService.getNextId(date, billing_id);
       res.json({ success: true, nextId });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getNextChallan: async (req, res, next) => {
+    try {
+      const { date, billing_id } = req.query;
+      const challan_no = await billingService.getNextChallan(date, billing_id);
+      res.json({ success: true, challan_no });
     } catch (err) {
       next(err);
     }

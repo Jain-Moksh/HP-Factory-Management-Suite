@@ -59,8 +59,9 @@ const billingQueries = {
             transport_charge = $4, packing_charge = $5, 
             discount_percent = $6, discount_amount = $7, 
             total_amount = $8, short_remark = $9, 
-            long_remark = $10, grand_total = $11
-        WHERE id = $12
+            long_remark = $10, grand_total = $11, 
+            challan_no = $12
+        WHERE id = $13
         RETURNING *
     `,
     deleteBillItems: 'DELETE FROM billing_items WHERE billing_id = $1'

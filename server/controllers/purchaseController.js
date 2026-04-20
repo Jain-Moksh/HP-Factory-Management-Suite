@@ -33,9 +33,19 @@ const purchaseController = {
 
   getNextId: async (req, res, next) => {
     try {
-      const { date } = req.query;
-      const data = await purchaseService.getNextId(date);
+      const { date, purchase_id } = req.query;
+      const data = await purchaseService.getNextId(date, purchase_id);
       res.json({ success: true, nextId: data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getNextChallan: async (req, res, next) => {
+    try {
+      const { date, purchase_id } = req.query;
+      const challan_no = await purchaseService.getNextChallan(date, purchase_id);
+      res.json({ success: true, challan_no });
     } catch (err) {
       next(err);
     }

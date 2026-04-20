@@ -217,19 +217,20 @@ const CreateInvoice = () => {
   useEffect(() => {
     const fetchNextChallan = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/billing/next-id?date=${formData.date}`);
+        const url = `${API_BASE_URL}/billing/next-challan?date=${formData.date}${isEditMode ? `&billing_id=${id}` : ''}`;
+        const res = await fetch(url);
         const data = await res.json();
         if (data.success) {
-          setFormData(prev => ({ ...prev, challanNo: data.nextId }));
+          setFormData(prev => ({ ...prev, challanNo: data.challan_no }));
         }
       } catch (err) {
         console.error("Error fetching next challan:", err);
       }
     };
-    if (formData.date && !isEditMode) {
+    if (formData.date) {
       fetchNextChallan();
     }
-  }, [formData.date, isEditMode]);
+  }, [formData.date, isEditMode, id]);
 
   // --- Handlers ---
   const handleFormChange = (e) => {
@@ -558,6 +559,7 @@ const CreateInvoice = () => {
       short_remark: formData.short_remark,
       long_remark: formData.long_remark,
       grand_total: grandTotal,
+      challan_no: formData.challanNo,
       items: addedItems.map(item => ({
         item_id: item.item_id,
         rate: parseFloat(item.rate),

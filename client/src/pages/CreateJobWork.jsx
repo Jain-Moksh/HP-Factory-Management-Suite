@@ -126,21 +126,22 @@ const CreateJobWork = () => {
   }, []);
   const fetchNextChallan = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase/next-id?date=${formData.date}`);
+      const url = `${API_BASE_URL}/purchase/next-challan?date=${formData.date}${isEditMode ? `&purchase_id=${id}` : ''}`;
+      const response = await fetch(url);
       const data = await response.json();
       if (data.success) {
-        setFormData(prev => ({ ...prev, challanNo: data.nextId }));
+        setFormData(prev => ({ ...prev, challanNo: data.challan_no }));
       }
     } catch (err) {
-      console.error("Error fetching next ID:", err);
+      console.error("Error fetching next challan:", err);
     }
   };
 
   useEffect(() => {
-    if (formData.date && !isEditMode) {
+    if (formData.date) {
       fetchNextChallan();
     }
-  }, [formData.date, isEditMode]);
+  }, [formData.date, isEditMode, id]);
 
   // --- Fetch Job Work Data for Edit Mode ---
   useEffect(() => {
@@ -364,6 +365,7 @@ const CreateJobWork = () => {
       jobber_id: formData.jobber_id,
       date: formData.date,
       remark: formData.remarks,
+      challan_no: formData.challanNo,
       items: addedItems.map(i => ({
         item_id: i.item_id,
         quantity: i.qty,

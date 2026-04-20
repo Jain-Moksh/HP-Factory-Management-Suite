@@ -67,13 +67,18 @@ const billingService = {
     return result.rows[0];
   },
 
-  getNextId: async (date) => {
+  getNextId: async (date, billing_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
     if (date) {
-      return await getFormattedChallan(date, 'billing', db);
+      return await getFormattedChallan(date, 'billing', db, billing_id);
     }
     const result = await db.query(queries.getNextBillId);
     return result.rows[0].next_id;
+  },
+
+  getNextChallan: async (date, billing_id = null) => {
+    const { getFormattedChallan } = require('../utils/challanGenerator');
+    return await getFormattedChallan(date, 'billing', db, billing_id);
   },
 
   update: async (id, billData) => {
@@ -84,7 +89,7 @@ const billingService = {
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, total_amount, short_remark,
-        long_remark, grand_total, items
+        long_remark, grand_total, items, challan_no
       } = billData;
 
       // 1. Get old items to reverse stock
@@ -103,7 +108,7 @@ const billingService = {
       const billRes = await client.query(queries.updateBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, total_amount, toUpperCase(short_remark),
-        toUpperCase(long_remark), grand_total, id
+        toUpperCase(long_remark), grand_total, challan_no, id
       ]);
       const bill = billRes.rows[0];
 

@@ -53,13 +53,18 @@ const purchaseService = {
     return res.rows;
   },
 
-  getNextId: async (date) => {
+  getNextId: async (date, purchase_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
     if (date) {
-      return await getFormattedChallan(date, 'purchase', db);
+      return await getFormattedChallan(date, 'purchase', db, purchase_id);
     }
     const res = await db.query(queries.getNextPurchaseId);
     return res.rows[0].next_id;
+  },
+
+  getNextChallan: async (date, purchase_id = null) => {
+    const { getFormattedChallan } = require('../utils/challanGenerator');
+    return await getFormattedChallan(date, 'purchase', db, purchase_id);
   },
 
   delete: async (id) => {
@@ -97,7 +102,7 @@ const purchaseService = {
     try {
       await client.query('BEGIN');
 
-      const { jobber_id, date, remark, items } = purchaseData;
+      const { jobber_id, date, remark, items, challan_no } = purchaseData;
 
       // 1. Get old items to reverse stock
       const oldItemsRes = await client.query(queries.getPurchaseItems, [id]);
@@ -112,7 +117,7 @@ const purchaseService = {
       await client.query(queries.deletePurchaseItems, [id]);
 
       // 4. Update the purchase record
-      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, toUpperCase(remark), id]);
+      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, toUpperCase(remark), challan_no, id]);
       const purchase = purchaseRes.rows[0];
 
       // 5. Insert new purchase items and update stock

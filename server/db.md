@@ -209,6 +209,12 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
 -- 4. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
 -- 5. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
+-- 6. CHALLAN NUMBER LOGIC:
+--    - Format: <sequence>/<MONTH>/<FY> (e.g., 6/APR/26-27).
+--    - Financial Year: Starts April 1st, ends March 31st.
+--    - Sequence: Resets every month. The sequence number is calculated by counting the existing bills for the same month and financial year (excluding the current record in case of edits).
+--    - Dynamic Generation: Triggered automatically in frontend whenever the date is changed.
+
 
 -- Master Tables
 -- UPDATE items SET name = UPPER(name), unit = UPPER(unit);

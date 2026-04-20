@@ -165,6 +165,16 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
     *   *Description*: List all billing records with client names.
 *   **GET `/billing/next-id`**
     *   *Description*: Fetch the dynamic next numeric ID for internal tracking (Note: This is NOT the formatted Challan Number).
+*   **GET `/billing/next-challan`**
+    *   *Description*: Fetch the dynamically generated Challan Number for a specific date. Supports both Create and Edit modes.
+    *   *Query Params*: `date` (required, YYYY-MM-DD), `billing_id` (optional, for edit mode to exclude the current record from sequence counting).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "challan_no": "6/APR/26-27"
+        }
+        ```
 *   **PUT `/billing/:id`**
     *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes based on the updated items.
     *   *Request Body*: Same as POST.
