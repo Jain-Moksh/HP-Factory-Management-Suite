@@ -144,6 +144,7 @@ CREATE INDEX idx_jobber_items_item ON jobber_items(item_id);
 
 CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
+CREATE INDEX idx_billing_client_date ON billing(client_id, date);
 
 CREATE INDEX idx_group_members_group ON group_members(group_id);
 
@@ -200,7 +201,7 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 -- =============================================
 -- REPORTS MODULE LOGIC
 -- =============================================
--- 1. PARTY WISE STOCK: Maps items to jobbers via `jobber_items` mapping.
+-- 1. PARTY WISE STOCK: Computes total quantity billed to a party using SUM(billing_items.quantity) grouped by item. Does NOT use items.stock.
 -- 2. PARTY WISE SALES: Aggregates client sales from `billing` and `billing_items` with date range support.
 -- 3. GROUP SALES REPORT:
 --    - Uses a polymorphic join on `group_members`.

@@ -66,12 +66,12 @@ const reportQueries = {
         ORDER BY j.name, total_quantity DESC
     `,
 
-    // 5. Party Wise Stock Summary (Items sold to client)
+    // 5. Party Wise Stock Summary (Total quantity billed to client)
     getPartyStockSummary: `
-        SELECT DISTINCT ON (i.id)
-            i.id as item_id,
-            i.name as item_name,
-            i.stock,
+        SELECT 
+            bi.item_id,
+            i.name AS item_name,
+            SUM(bi.quantity) AS total_quantity,
             i.unit
         FROM billing b
         JOIN billing_items bi ON b.id = bi.billing_id
@@ -79,7 +79,8 @@ const reportQueries = {
         WHERE b.client_id = $1
           AND ($2::DATE IS NULL OR b.date >= $2)
           AND ($3::DATE IS NULL OR b.date <= $3)
-        ORDER BY i.id, i.name
+        GROUP BY bi.item_id, i.name, i.unit
+        ORDER BY i.name
     `,
 
     // 6. Party Wise Stock Detail (Ledger for client-item)

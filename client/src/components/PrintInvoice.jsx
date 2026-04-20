@@ -223,9 +223,29 @@ const PrintInvoice = ({ data, items }) => {
     .c-total { width: 11%; text-align: right; font-weight: 700; }
 
     .section-bottom {
-      margin-top: auto;
       padding-top: 1mm;
       flex-shrink: 0;
+    }
+
+
+    .page-total-container {
+      display: flex;
+      justify-content: flex-end;
+      width: 98%;
+      margin: 0 auto;
+      padding: 2mm 0;
+    }
+
+    .page-total {
+      border: 1px solid #000;
+      padding: 1.5mm 3mm;
+      font-size: 12px;
+      font-weight: 800;
+      background: #f9f9f9;
+      min-width: 50%;
+      text-align: right;
+      display: flex;
+      justify-content: space-between;
     }
 
     .totals-box {
@@ -234,6 +254,7 @@ const PrintInvoice = ({ data, items }) => {
       border: 1px solid #000;
       padding: 1.5mm;
     }
+
     .t-row {
       display: flex;
       justify-content: space-between;
@@ -279,45 +300,50 @@ const PrintInvoice = ({ data, items }) => {
       {itemPages.map((chunk, pageIndex) => {
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === totalPages - 1;
+        const chunkTotal = chunk.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
         const serialOffset = pageIndex * ROWS_PER_PAGE;
         const emptyRows = Array.from({ length: Math.max(0, ROWS_PER_PAGE - chunk.length) });
+
 
         return (
           <div key={pageIndex} className="bill-page">
             <div className="watermark">ORDER SUMMARY</div>
             
-            <div className="section-top">
-              <div className="top-left">
-                <div className="party-title">{data.clientRawName || data.clientName}</div>
-                <div className="info-row">
-                  <div className="info-val">
-                    {[data.address1, data.address2].filter(Boolean).join(', ')}
+            {isFirst && (
+              <div className="section-top">
+                <div className="top-left">
+                  <div className="party-title">{data.clientRawName || data.clientName}</div>
+                  <div className="info-row">
+                    <div className="info-val">
+                      {[data.address1, data.address2].filter(Boolean).join(', ')}
+                    </div>
                   </div>
+                </div>
+                <div className="top-right">
+                  <div className="info-row">
+                    <div className="info-label">No :</div>
+                    <div className="info-val" style={{ fontWeight: 800 }}>#{data.challanNo}</div>
+                  </div>
+                  <div className="info-row">
+                    <div className="info-label">Date:</div>
+                    <div className="info-val">{formatDate(data.date)}</div>
+                  </div>
+                  {data.transporterName && (
+                    <div className="info-row">
+                      <div className="info-label">Transport:</div>
+                      <div className="info-val">{data.transporterName}</div>
+                    </div>
+                  )}
+                  {data.short_remark && (
+                    <div className="info-row">
+                      <div className="info-label">Parcel:</div>
+                      <div className="info-val">{data.short_remark}</div>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="top-right">
-                <div className="info-row">
-                  <div className="info-label">No :</div>
-                  <div className="info-val" style={{ fontWeight: 800 }}>#{data.challanNo}</div>
-                </div>
-                <div className="info-row">
-                  <div className="info-label">Date:</div>
-                  <div className="info-val">{formatDate(data.date)}</div>
-                </div>
-                {data.transporterName && (
-                  <div className="info-row">
-                    <div className="info-label">Transport:</div>
-                    <div className="info-val">{data.transporterName}</div>
-                  </div>
-                )}
-                {data.short_remark && (
-                  <div className="info-row">
-                    <div className="info-label">Parcel:</div>
-                    <div className="info-val">{data.short_remark}</div>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
+
 
             <div className="section-middle">
               <table className="bill-table">
@@ -360,62 +386,63 @@ const PrintInvoice = ({ data, items }) => {
             </div>
 
             <div className="section-bottom">
-              {isLast && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'stretch', gap: '4mm', marginTop: '2mm' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '1.5mm' }}>
-                      {data.long_remark ? (
-                        <div style={{ fontSize: '9px', fontStyle: 'italic', color: '#333' }}>
-                          <strong style={{ textTransform: 'uppercase', fontSize: '8px', color: '#000' }}>Invoice Remark:</strong> {data.long_remark}
-                        </div>
-                      ) : <div />}
-                      <div style={{ fontSize: '9px', fontStyle: 'italic', fontWeight: '500', borderBottom: '0.5px dashed #ccc', paddingBottom: '1mm' }}>
-                        <strong>Amount in words:</strong> {amountInWords(data.grandTotal)}
+              {isLast ? (
+                <div style={{ display: 'flex', alignItems: 'stretch', gap: '4mm', marginTop: '2mm' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '1.5mm' }}>
+                    {data.long_remark ? (
+                      <div style={{ fontSize: '9px', fontStyle: 'italic', color: '#333' }}>
+                        <strong style={{ textTransform: 'uppercase', fontSize: '8px', color: '#000' }}>Invoice Remark:</strong> {data.long_remark}
                       </div>
+                    ) : <div />}
+                  </div>
+
+                  
+                  <div className="totals-box">
+                    <div className="t-row">
+                      <span className="t-label">Items Subtotal</span>
+                      <span className="t-val">₹{fmt(data.itemsSubtotal)}</span>
                     </div>
-                    
-                    <div className="totals-box">
+                    {parseFloat(data.transport) > 0 && (
                       <div className="t-row">
-                        <span className="t-label">Items Subtotal</span>
-                        <span className="t-val">₹{fmt(data.itemsSubtotal)}</span>
+                        <span className="t-label">Transport</span>
+                        <span className="t-val">₹{fmt(data.transport)}</span>
                       </div>
-                      {parseFloat(data.transport) > 0 && (
-                        <div className="t-row">
-                          <span className="t-label">Transport</span>
-                          <span className="t-val">₹{fmt(data.transport)}</span>
-                        </div>
-                      )}
-                      {parseFloat(data.packing) > 0 && (
-                        <div className="t-row">
-                          <span className="t-label">Packing</span>
-                          <span className="t-val">₹{fmt(data.packing)}</span>
-                        </div>
-                      )}
-                      {parseFloat(data.extraDiscountAmount) > 0 && (
-                        <div className="t-row">
-                          <span className="t-label">Discount ({data.extraDiscountPercent}%)</span>
-                          <span className="t-val">(-) ₹{fmt(data.extraDiscountAmount)}</span>
-                        </div>
-                      )}
-                      {data.roundOffDisplay !== '0.00' && (
-                        <div className="t-row">
-                          <span className="t-label">Round Off</span>
-                          <span className="t-val">{data.roundOffDisplay}</span>
-                        </div>
-                      )}
-                      <div className="t-row t-grand">
-                        <span>Grand Total</span>
-                        <span>₹{fmt(data.grandTotal)}</span>
+                    )}
+                    {parseFloat(data.packing) > 0 && (
+                      <div className="t-row">
+                        <span className="t-label">Packing</span>
+                        <span className="t-val">₹{fmt(data.packing)}</span>
                       </div>
+                    )}
+                    {parseFloat(data.extraDiscountAmount) > 0 && (
+                      <div className="t-row">
+                        <span className="t-label">Discount ({data.extraDiscountPercent}%)</span>
+                        <span className="t-val">(-) ₹{fmt(data.extraDiscountAmount)}</span>
+                      </div>
+                    )}
+                    {data.roundOffDisplay !== '0.00' && (
+                      <div className="t-row">
+                        <span className="t-label">Round Off</span>
+                        <span className="t-val">{data.roundOffDisplay}</span>
+                      </div>
+                    )}
+                    <div className="t-row t-grand">
+                      <span>Grand Total</span>
+                      <span>₹{fmt(data.grandTotal)}</span>
                     </div>
                   </div>
-                </>
-              )}
-              {!isLast && (
-                <div style={{ textAlign: 'right', fontSize: '10px', fontStyle: 'italic', fontWeight: 700 }}>
-                  Continued on next page...
                 </div>
+              ) : (
+                totalPages > 1 && (
+                  <div className="page-total-container">
+                    <div className="page-total">
+                      <span>Page Total:</span>
+                      <span>₹{fmt(chunkTotal)}</span>
+                    </div>
+                  </div>
+                )
               )}
+
             </div>
           </div>
         );

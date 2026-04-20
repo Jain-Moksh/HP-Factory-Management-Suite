@@ -249,8 +249,18 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
 
 ### 1. Party Wise Stock
 *   **GET `/reports/party-stock-summary`**
-    *   *Description*: Returns unique items sold to a client with their current master stock levels.
+    *   *Description*: Returns total quantity of each item billed to a client, aggregated using `SUM` over `billing_items`.
     *   *Query Params*: `client_id` (required), `from`, `to` (optional).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            { "item_id": 1, "item_name": "RED PEN", "total_quantity": 200, "unit": "DOZ" }
+          ]
+        }
+        ```
 *   **GET `/reports/party-stock-detail`**
     *   *Description*: Full transaction ledger for a specific client and item.
     *   *Query Params*: `client_id`, `item_id` (required), `from`, `to` (optional).

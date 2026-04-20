@@ -54,7 +54,7 @@ const PartyStockReport = () => {
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
           title="Party Wise Stock Report" 
-          subtitle="ITEMS SOLD TO SELECTED PARTY AND THEIR CURRENT STOCK" 
+          subtitle="TOTAL QUANTITY OF EACH ITEM BILLED TO SELECTED PARTY" 
           backAction={() => navigate('/reports')}
         />
         
@@ -133,7 +133,7 @@ const PartyStockReport = () => {
                 <thead>
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
-                    <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider">Current Stock</th>
+                    <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider">Total Quantity</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
@@ -166,7 +166,7 @@ const PartyStockReport = () => {
                            </div>
                         </td>
                         <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue">
-                          {row.stock} <span className="text-[10px] font-bold text-text-light uppercase ml-0.5 opacity-60">{row.unit}</span>
+                          {row.total_quantity} <span className="text-[10px] font-bold text-text-light uppercase ml-0.5 opacity-60">{row.unit}</span>
                         </td>
                       </tr>
                     ))
