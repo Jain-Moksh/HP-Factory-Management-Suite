@@ -421,7 +421,7 @@ const PrintInvoice = ({ data, items }) => {
                 <div className="bottom-wrapper">
                   <div className="remark-box">
                     <div className="remark-title">Invoice Remark:</div>
-                    <div className="remark-content">{data.long_remark || ''}</div>
+                    <div className="remark-content">{data.long_remark?.trim() || ''}</div>
                   </div>
 
                   <div className="totals-box">
