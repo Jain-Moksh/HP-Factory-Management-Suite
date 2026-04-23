@@ -248,8 +248,39 @@ const PrintInvoice = ({ data, items }) => {
       justify-content: space-between;
     }
 
+    .bottom-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      gap: 10px;
+      width: 98%;
+      margin: 2mm auto 0 auto;
+    }
+
+    .remark-box {
+      width: 60%;
+      border: 1px solid black;
+      padding: 5px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .remark-title {
+      font-size: 11px;
+      margin-bottom: 3px;
+      font-weight: 700;
+    }
+
+    .remark-content {
+      font-size: 10px;
+      font-style: italic;
+      color: #333;
+      white-space: pre-wrap;
+    }
+
     .totals-box {
-      width: 50%;
+      width: 38%;
       margin-left: auto;
       border: 1px solid #000;
       padding: 1.5mm;
@@ -387,16 +418,12 @@ const PrintInvoice = ({ data, items }) => {
 
             <div className="section-bottom">
               {isLast ? (
-                <div style={{ display: 'flex', alignItems: 'stretch', gap: '4mm', marginTop: '2mm' }}>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '1.5mm' }}>
-                    {data.long_remark ? (
-                      <div style={{ fontSize: '9px', fontStyle: 'italic', color: '#333' }}>
-                        <strong style={{ textTransform: 'uppercase', fontSize: '8px', color: '#000' }}>Invoice Remark:</strong> {data.long_remark}
-                      </div>
-                    ) : <div />}
+                <div className="bottom-wrapper">
+                  <div className="remark-box">
+                    <div className="remark-title">Invoice Remark:</div>
+                    <div className="remark-content">{data.long_remark || ''}</div>
                   </div>
 
-                  
                   <div className="totals-box">
                     <div className="t-row">
                       <span className="t-label">Items Subtotal</span>
