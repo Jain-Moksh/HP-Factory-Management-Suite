@@ -6,72 +6,75 @@
  * @param {string} dateStr - ISO Date string
  * @param {string} type - 'billing' or 'purchase'
  * @param {object} client - DB client for query
+ * @param {boolean} increment - Whether to increment the sequence (true for creation)
  * @returns {Promise<string>} - Generated challan number
  */
-/**
- * Core logic to count records and format the challan number.
- * Can be used for both creation (inside transaction) and preview.
- */
-const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) => {
+
+const getMonthName = (dateStr) => {
   const dateObj = new Date(dateStr);
   const monthsShort = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const monthName = monthsShort[dateObj.getMonth()];
+  return monthsShort[dateObj.getMonth()];
+};
+
+/**
+ * Core logic to get sequence number from challan_sequences table.
+ * Uses atomic INSERT ... ON CONFLICT for concurrency safety.
+ */
+const getSequenceData = async (dateStr, type, dbOrClient, increment = false) => {
+  const dateObj = new Date(dateStr);
   const monthNum = dateObj.getMonth() + 1;
   const calendarYear = dateObj.getFullYear();
 
   // Financial Year Logic (April to March)
   let fyRange;
-  let fyStart, fyEnd;
   if (monthNum >= 4) {
-    const startYear = calendarYear;
-    const endYear = calendarYear + 1;
-    fyRange = `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
-    fyStart = `${startYear}-04-01`;
-    fyEnd = `${endYear}-03-31`;
+    fyRange = `${calendarYear.toString().slice(-2)}-${(calendarYear + 1).toString().slice(-2)}`;
   } else {
-    const startYear = calendarYear - 1;
-    const endYear = calendarYear;
-    fyRange = `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
-    fyStart = `${startYear}-04-01`;
-    fyEnd = `${endYear}-03-31`;
+    fyRange = `${(calendarYear - 1).toString().slice(-2)}-${calendarYear.toString().slice(-2)}`;
   }
 
-  const tableName = type === 'billing' ? 'billing' : 'purchase';
-  
-  // MANDATORY SQL LOGIC: Count existing records for SAME MONTH and SAME FINANCIAL YEAR
-  const queryParams = [monthNum, fyStart, fyEnd];
-  let queryStr = `
-    SELECT COUNT(*) FROM ${tableName}
-    WHERE EXTRACT(MONTH FROM date) = $1
-    AND date BETWEEN $2 AND $3
-  `;
-
-  if (excludeId) {
-    queryStr += ` AND id != $4`;
-    queryParams.push(excludeId);
+  if (increment) {
+    // ATOMIC INCREMENT: Insert if not exists, else increment and return
+    const res = await dbOrClient.query(
+      `INSERT INTO challan_sequences (type, month, financial_year, last_number)
+       VALUES ($1, $2, $3, 1)
+       ON CONFLICT (type, month, financial_year) 
+       DO UPDATE SET last_number = challan_sequences.last_number + 1
+       RETURNING last_number`,
+      [type, monthNum, fyRange]
+    );
+    return { sequence: res.rows[0].last_number, fyRange };
+  } else {
+    // PREVIEW MODE: Just fetch last number without incrementing
+    const res = await dbOrClient.query(
+      `SELECT last_number FROM challan_sequences 
+       WHERE type = $1 AND month = $2 AND financial_year = $3`,
+      [type, monthNum, fyRange]
+    );
+    const lastNumber = res.rows.length > 0 ? parseInt(res.rows[0].last_number) : 0;
+    return { sequence: lastNumber + 1, fyRange };
   }
+};
 
-  const countRes = await dbOrClient.query(queryStr, queryParams);
-  
-  const count = parseInt(countRes.rows[0].count);
-  const sequence = count + 1;
+/**
+ * Returns a formatted challan string without incrementing (for preview).
+ */
+const getFormattedChallan = async (dateStr, type, dbOrClient) => {
+  const monthName = getMonthName(dateStr);
+  const { sequence, fyRange } = await getSequenceData(dateStr, type, dbOrClient, false);
   const prefix = type === 'purchase' ? 'P' : '';
-
   return `${prefix}${sequence}/${monthName}/${fyRange}`;
 };
 
 /**
- * Generates a custom challan number based on date and type.
- * Uses LOCK TABLE for concurrency safety during creation.
+ * Generates and increments a custom challan number (for creation).
+ * MUST be called within a transaction.
  */
-const generateChallanNo = async (dateStr, type, client, excludeId = null) => {
-  const tableName = type === 'billing' ? 'billing' : 'purchase';
-  
-  // CRITICAL: Concurrency safety
-  await client.query(`LOCK TABLE ${tableName} IN SHARE ROW EXCLUSIVE MODE`);
-
-  return await getFormattedChallan(dateStr, type, client, excludeId);
+const generateChallanNo = async (dateStr, type, client) => {
+  const monthName = getMonthName(dateStr);
+  const { sequence, fyRange } = await getSequenceData(dateStr, type, client, true);
+  const prefix = type === 'purchase' ? 'P' : '';
+  return `${prefix}${sequence}/${monthName}/${fyRange}`;
 };
 
 module.exports = { generateChallanNo, getFormattedChallan };
-

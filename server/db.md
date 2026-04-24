@@ -178,6 +178,18 @@ CREATE TABLE group_members (
 -- Note: polymorphic relationship on member_id is validated in backend.
 -- If member_type = 'jobber', member_id must exist in jobbers table.
 -- If member_type = 'client', member_id must exist in clients table.
+-- =========================
+-- SEQUENCES TABLE
+-- =========================
+
+CREATE TABLE challan_sequences (
+    id SERIAL PRIMARY KEY,
+    type TEXT NOT NULL, -- 'billing' or 'purchase'
+    month INT NOT NULL,
+    financial_year TEXT NOT NULL,
+    last_number INT NOT NULL DEFAULT 0,
+    UNIQUE(type, month, financial_year)
+);
 
 --- Time stamp addition ---
 
@@ -212,8 +224,9 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 -- 6. CHALLAN NUMBER LOGIC:
 --    - Format: <sequence>/<MONTH>/<FY> (e.g., 6/APR/26-27).
 --    - Financial Year: Starts April 1st, ends March 31st.
---    - Sequence: Resets every month. The sequence number is calculated by counting the existing bills for the same month and financial year (excluding the current record in case of edits).
---    - Dynamic Generation: Triggered automatically in frontend whenever the date is changed.
+--    - Sequence: Resets every month. The sequence number is maintained in `challan_sequences` table.
+--    - Consistency: Once a challan number is generated, it is NEVER reused, even if the record is deleted.
+--    - Generation: Sequence is incremented atomically during creation using `INSERT ... ON CONFLICT DO UPDATE`.
 
 
 -- Master Tables

@@ -56,7 +56,7 @@ const purchaseService = {
   getNextId: async (date, purchase_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
     if (date) {
-      return await getFormattedChallan(date, 'purchase', db, purchase_id);
+      return await getFormattedChallan(date, 'purchase', db);
     }
     const res = await db.query(queries.getNextPurchaseId);
     return res.rows[0].next_id;
@@ -64,7 +64,7 @@ const purchaseService = {
 
   getNextChallan: async (date, purchase_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
-    return await getFormattedChallan(date, 'purchase', db, purchase_id);
+    return await getFormattedChallan(date, 'purchase', db);
   },
 
   delete: async (id) => {
