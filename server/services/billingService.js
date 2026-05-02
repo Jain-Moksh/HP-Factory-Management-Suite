@@ -63,8 +63,33 @@ const billingService = {
   },
 
   delete: async (id) => {
-    const result = await db.query(queries.deleteBill, [id]);
-    return result.rows[0];
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Get items to reverse stock
+      const itemsRes = await client.query(queries.getBillItems, [id]);
+      const items = itemsRes.rows;
+
+      // 2. Reverse stock updates (Add back original quantities)
+      for (const item of items) {
+        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      }
+
+      // 3. Delete billing items
+      await client.query(queries.deleteBillItems, [id]);
+
+      // 4. Delete billing record
+      const result = await client.query(queries.deleteBill, [id]);
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   getNextId: async (date, billing_id = null) => {
