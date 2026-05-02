@@ -56,7 +56,7 @@ const PrintInvoice = ({ data, items }) => {
     return chunks;
   };
 
-  const itemPages = paginate(items);
+  const itemPages = React.useMemo(() => paginate(items), [items]);
   const totalPages = itemPages.length;
 
   const CSS = `

@@ -174,7 +174,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
         }
         ```
 *   **PUT `/billing/:id`**
-    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes based on the updated items.
+    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes based on the updated items. The API returns the latest items list. Printing uses this updated data.
     *   *Request Body*: Same as POST.
 *   **DELETE `/billing/:id`**
     *   *Description*: Securely delete an invoice. On deletion of invoice, associated item quantities are restored back to stock. Operation is transactional to ensure stock consistency.
