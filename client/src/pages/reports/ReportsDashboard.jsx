@@ -8,6 +8,17 @@ const ReportsDashboard = () => {
 
   const reports = [
     {
+      title: 'Stock Summary',
+      description: 'Comprehensive overview of current inventory levels, quantities, and stock availability.',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m14 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m14 0H4" />
+        </svg>
+      ),
+      path: '/stock-summary',
+      color: 'bg-emerald-500'
+    },
+    {
       title: 'Party Wise Stock',
       description: 'View stock distribution and inventory levels across all jobbers and parties.',
       icon: (

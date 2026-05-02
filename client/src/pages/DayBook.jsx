@@ -47,9 +47,9 @@ const DayBook = () => {
 
   const handleEdit = (item) => {
     if (item.type === 'billing') {
-      navigate(`/billing/edit/${item.id}`);
+      navigate(`/create-invoice/${item.id}`);
     } else {
-      navigate(`/job-work/edit/${item.id}`);
+      navigate(`/create-job-work/${item.id}`);
     }
   };
 
