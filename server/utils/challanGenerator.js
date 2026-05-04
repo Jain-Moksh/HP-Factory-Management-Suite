@@ -16,22 +16,26 @@ const getMonthName = (dateStr) => {
   return monthsShort[dateObj.getMonth()];
 };
 
-/**
- * Core logic to get sequence number from challan_sequences table.
- * Uses atomic INSERT ... ON CONFLICT for concurrency safety.
- */
-const getSequenceData = async (dateStr, type, dbOrClient, increment = false) => {
+const getMonthAndFY = (dateStr) => {
   const dateObj = new Date(dateStr);
   const monthNum = dateObj.getMonth() + 1;
   const calendarYear = dateObj.getFullYear();
 
-  // Financial Year Logic (April to March)
   let fyRange;
   if (monthNum >= 4) {
     fyRange = `${calendarYear.toString().slice(-2)}-${(calendarYear + 1).toString().slice(-2)}`;
   } else {
     fyRange = `${(calendarYear - 1).toString().slice(-2)}-${calendarYear.toString().slice(-2)}`;
   }
+  return { monthNum, fyRange };
+};
+
+/**
+ * Core logic to get sequence number from challan_sequences table.
+ * Uses atomic INSERT ... ON CONFLICT for concurrency safety.
+ */
+const getSequenceData = async (dateStr, type, dbOrClient, increment = false) => {
+  const { monthNum, fyRange } = getMonthAndFY(dateStr);
 
   if (increment) {
     // ATOMIC INCREMENT: Insert if not exists, else increment and return
@@ -77,4 +81,4 @@ const generateChallanNo = async (dateStr, type, client) => {
   return `${prefix}${sequence}/${monthName}/${fyRange}`;
 };
 
-module.exports = { generateChallanNo, getFormattedChallan };
+module.exports = { generateChallanNo, getFormattedChallan, getMonthAndFY };
