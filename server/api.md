@@ -44,7 +44,7 @@ Manages the inventory of items.
         }
         ```
 *   **GET `/items/:id/transactions`**
-    *   *Description*: Fetch movement history (inward/outward) for a specific item.
+    *   *Description*: Fetch movement history (inward/outward) for a specific item. The response includes a standardized `name` field corresponding to the client name (for billing) or jobber name (for purchase).
     *   *Query Params*: `from` (YYYY-MM-DD), `to` (YYYY-MM-DD)
     *   *Response*:
         ```json
@@ -58,6 +58,7 @@ Manages the inventory of items.
               "inward": 0,
               "outward": 10,
               "type": "billing",
+              "name": "Acme Corp"
               "created_at": "2026-04-16T17:23:17.000Z"
             },
             {
