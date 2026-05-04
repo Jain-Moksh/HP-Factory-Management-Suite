@@ -228,26 +228,6 @@ const PrintInvoice = ({ data, items }) => {
     }
 
 
-    .page-total-container {
-      display: flex;
-      justify-content: flex-end;
-      width: 98%;
-      margin: 0 auto;
-      padding: 2mm 0;
-    }
-
-    .page-total {
-      border: 1px solid #000;
-      padding: 1.5mm 3mm;
-      font-size: 12px;
-      font-weight: 800;
-      background: #f9f9f9;
-      min-width: 50%;
-      text-align: right;
-      display: flex;
-      justify-content: space-between;
-    }
-
     .bottom-wrapper {
       display: flex;
       justify-content: space-between;
@@ -459,16 +439,7 @@ const PrintInvoice = ({ data, items }) => {
                     </div>
                   </div>
                 </div>
-              ) : (
-                totalPages > 1 && (
-                  <div className="page-total-container">
-                    <div className="page-total">
-                      <span>Page Total:</span>
-                      <span>₹{fmt(chunkTotal)}</span>
-                    </div>
-                  </div>
-                )
-              )}
+              ) : null}
 
             </div>
           </div>
