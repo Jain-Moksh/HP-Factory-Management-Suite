@@ -28,10 +28,11 @@ const billingService = {
 
       // 2. Insert billing items and update stock
       const billingItems = [];
+      let orderIndexCounter = 0;
       for (const item of items) {
         const itemRes = await client.query(queries.createBillItem, [
           bill.id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
-          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount
+          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount, orderIndexCounter++
         ]);
         billingItems.push(itemRes.rows[0]);
 
@@ -132,13 +133,15 @@ const billingService = {
       const oldItemsRes = await client.query(queries.getBillItems, [id]);
       const oldItems = oldItemsRes.rows;
 
-      // 2. Reverse stock updates (Add back original quantities)
-      for (const item of oldItems) {
-        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      // 2. Identify items to delete, update, and insert
+      const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined);
+      const itemsToDelete = oldItems.filter(old => !newIds.includes(old.id));
+      
+      // Delete old items that are no longer present and reverse their stock
+      for (const oldItem of itemsToDelete) {
+        await client.query(queries.reverseStockUpdate, [oldItem.quantity, oldItem.item_id]);
+        await client.query(queries.deleteSingleBillItem, [oldItem.id]);
       }
-
-      // 3. Delete old billing items
-      await client.query(queries.deleteBillItems, [id]);
 
       // 4. Update the billing record
       const billRes = await client.query(queries.updateBill, [
@@ -148,17 +151,37 @@ const billingService = {
       ]);
       const bill = billRes.rows[0];
 
-      // 5. Insert new billing items and update stock
+      // 5. Update/Insert billing items and update stock differentially
+      let maxOrderIndex = Math.max(...oldItems.map(i => i.order_index), -1);
       const billingItems = [];
-      for (const item of items) {
-        const itemRes = await client.query(queries.createBillItem, [
-          id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
-          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount
-        ]);
-        billingItems.push(itemRes.rows[0]);
 
-        // Stock Update (Decrement)
-        await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
+      for (const item of items) {
+        if (item.id) {
+          const oldItem = oldItems.find(i => i.id === item.id);
+          if (oldItem) {
+            // Calculate stock difference
+            const qtyDiff = parseFloat(item.quantity) - parseFloat(oldItem.quantity);
+            if (qtyDiff > 0) {
+              await client.query(queries.updateItemStock, [qtyDiff, item.item_id]); // Deduct more stock
+            } else if (qtyDiff < 0) {
+              await client.query(queries.reverseStockUpdate, [Math.abs(qtyDiff), item.item_id]); // Add back stock
+            }
+
+            const itemRes = await client.query(queries.updateBillItem, [
+              item.item_id, item.rate, item.discount_percent, item.discount_amount,
+              toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount, oldItem.order_index, item.id
+            ]);
+            billingItems.push(itemRes.rows[0]);
+          }
+        } else {
+          maxOrderIndex++;
+          const itemRes = await client.query(queries.createBillItem, [
+            id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
+            toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount, maxOrderIndex
+          ]);
+          await client.query(queries.updateItemStock, [item.quantity, item.item_id]); // Deduct stock
+          billingItems.push(itemRes.rows[0]);
+        }
       }
 
       await client.query('COMMIT');

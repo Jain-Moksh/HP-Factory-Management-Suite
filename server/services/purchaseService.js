@@ -20,9 +20,10 @@ const purchaseService = {
 
       // 2. Insert items and update stock
       const purchaseItems = [];
+      let orderIndexCounter = 0;
       for (const item of items) {
         const itemRes = await client.query(queries.createPurchaseItem, [
-          purchase.id, item.item_id, item.quantity, toUpperCase(item.unit)
+          purchase.id, item.item_id, item.quantity, toUpperCase(item.unit), orderIndexCounter++
         ]);
         purchaseItems.push(itemRes.rows[0]);
 
@@ -119,28 +120,49 @@ const purchaseService = {
       const oldItemsRes = await client.query(queries.getPurchaseItems, [id]);
       const oldItems = oldItemsRes.rows;
 
-      // 2. Reverse stock updates (Subtract back original quantities added during purchase)
-      for (const item of oldItems) {
-        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      // 2. Identify items to delete, update, and insert
+      const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined);
+      const itemsToDelete = oldItems.filter(old => !newIds.includes(old.id));
+      
+      // Delete old items that are no longer present and reverse their stock
+      for (const oldItem of itemsToDelete) {
+        await client.query(queries.reverseStockUpdate, [oldItem.quantity, oldItem.item_id]);
+        await client.query(queries.deleteSinglePurchaseItem, [oldItem.id]);
       }
-
-      // 3. Delete old purchase items
-      await client.query(queries.deletePurchaseItems, [id]);
 
       // 4. Update the purchase record
       const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, toUpperCase(remark), final_challan_no, id]);
       const purchase = purchaseRes.rows[0];
 
-      // 5. Insert new purchase items and update stock
+      // 5. Update/Insert purchase items and update stock differentially
+      let maxOrderIndex = Math.max(...oldItems.map(i => i.order_index), -1);
       const purchaseItems = [];
-      for (const item of items) {
-        const itemRes = await client.query(queries.createPurchaseItem, [
-          id, item.item_id, item.quantity, toUpperCase(item.unit)
-        ]);
-        purchaseItems.push(itemRes.rows[0]);
 
-        // Stock Update (Increment)
-        await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
+      for (const item of items) {
+        if (item.id) {
+          const oldItem = oldItems.find(i => i.id === item.id);
+          if (oldItem) {
+            // Calculate stock difference
+            const qtyDiff = parseFloat(item.quantity) - parseFloat(oldItem.quantity);
+            if (qtyDiff > 0) {
+              await client.query(queries.updateItemStock, [qtyDiff, item.item_id]); // Add more stock
+            } else if (qtyDiff < 0) {
+              await client.query(queries.reverseStockUpdate, [Math.abs(qtyDiff), item.item_id]); // Revert stock
+            }
+
+            const itemRes = await client.query(queries.updatePurchaseItem, [
+              item.item_id, item.quantity, toUpperCase(item.unit), oldItem.order_index, item.id
+            ]);
+            purchaseItems.push(itemRes.rows[0]);
+          }
+        } else {
+          maxOrderIndex++;
+          const itemRes = await client.query(queries.createPurchaseItem, [
+            id, item.item_id, item.quantity, toUpperCase(item.unit), maxOrderIndex
+          ]);
+          await client.query(queries.updateItemStock, [item.quantity, item.item_id]); // Add stock
+          purchaseItems.push(itemRes.rows[0]);
+        }
       }
 
       await client.query('COMMIT');

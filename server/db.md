@@ -84,6 +84,7 @@ CREATE TABLE billing_items (
     quantity NUMERIC,
     bundle NUMERIC,
     total_amount NUMERIC,
+    order_index INT NOT NULL DEFAULT 0,
 
     FOREIGN KEY (billing_id) REFERENCES billing(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id)
@@ -112,6 +113,7 @@ CREATE TABLE purchase_items (
     
     quantity NUMERIC,
     unit TEXT,
+    order_index INT NOT NULL DEFAULT 0,
 
     FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id)
@@ -230,6 +232,11 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    - Consistency: Once a challan number is generated, it is NEVER reused, even if the record is deleted.
 --    - Generation (Create): Sequence is incremented atomically during creation using `INSERT ... ON CONFLICT DO UPDATE`.
 --    - Generation (Edit): The backend strictly evaluates date changes. If the month/FY changes, a new sequence is atomically generated. If it does not change, the original sequence is retained. Frontend inputs for challan_no are ignored.
+
+-- 5. Stable Item Ordering:
+--    - To prevent item shuffling during edits, both `billing_items` and `purchase_items` include an `order_index` column.
+--    - The backend uses an UPSERT logic to edit items in place by their DB `id` while preserving their `order_index`. New items are appended with an incremented `order_index`.
+--    - Queries fetch items `ORDER BY order_index ASC`.
 
 
 -- Master Tables
