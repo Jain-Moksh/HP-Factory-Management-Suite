@@ -367,6 +367,7 @@ const CreateJobWork = () => {
       remark: formData.remarks,
       challan_no: formData.challanNo,
       items: addedItems.map(i => ({
+        id: i.id && i.id.toString().length < 13 ? i.id : null,
         item_id: i.item_id,
         quantity: i.qty,
         unit: i.unit

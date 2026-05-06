@@ -84,6 +84,7 @@ CREATE TABLE billing_items (
     quantity NUMERIC,
     bundle NUMERIC,
     total_amount NUMERIC,
+    order_index INT NOT NULL DEFAULT 0,
 
     FOREIGN KEY (billing_id) REFERENCES billing(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id)
@@ -112,6 +113,7 @@ CREATE TABLE purchase_items (
     
     quantity NUMERIC,
     unit TEXT,
+    order_index INT NOT NULL DEFAULT 0,
 
     FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id)
