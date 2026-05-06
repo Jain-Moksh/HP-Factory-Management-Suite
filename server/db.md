@@ -64,7 +64,7 @@ CREATE TABLE billing (
     short_remark TEXT,
     long_remark TEXT,
     grand_total NUMERIC,
-    challan_no TEXT,
+    challan_no TEXT UNIQUE,
 
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (transporter_id) REFERENCES transporters(id)
@@ -99,7 +99,7 @@ CREATE TABLE purchase (
     jobber_id INT NOT NULL,
     date DATE,
     remark TEXT,
-    challan_no TEXT,
+    challan_no TEXT UNIQUE,
 
     FOREIGN KEY (jobber_id) REFERENCES jobbers(id)
 );
@@ -216,7 +216,8 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    - Financial Year: Starts April 1st, ends March 31st.
 --    - Sequence: Resets every month. The sequence number is maintained in `challan_sequences` table.
 --    - Consistency: Once a challan number is generated, it is NEVER reused, even if the record is deleted.
---    - Generation: Sequence is incremented atomically during creation using `INSERT ... ON CONFLICT DO UPDATE`.
+--    - Generation (Create): Sequence is incremented atomically during creation using `INSERT ... ON CONFLICT DO UPDATE`.
+--    - Generation (Edit): The backend strictly evaluates date changes. If the month/FY changes, a new sequence is atomically generated. If it does not change, the original sequence is retained. Frontend inputs for challan_no are ignored.
 
 -- 5. Stable Item Ordering:
 --    - To prevent item shuffling during edits, both `billing_items` and `purchase_items` include an `order_index` column.

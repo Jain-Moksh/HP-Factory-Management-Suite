@@ -18,17 +18,12 @@ const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) 
   return monthsShort[dateObj.getMonth()];
 };
 
-/**
- * Core logic to get sequence number from challan_sequences table.
- * Uses atomic INSERT ... ON CONFLICT for concurrency safety.
- */
-const getSequenceData = async (dateStr, type, dbOrClient, increment = false) => {
+const getMonthAndFY = (dateStr) => {
   const dateObj = new Date(dateStr);
   const monthName = monthsShort[dateObj.getMonth()];
   const monthNum = dateObj.getMonth() + 1;
   const calendarYear = dateObj.getFullYear();
 
-  // Financial Year Logic (April to March)
   let fyRange;
   let fyStart, fyEnd;
   if (monthNum >= 4) {
@@ -44,6 +39,15 @@ const getSequenceData = async (dateStr, type, dbOrClient, increment = false) => 
     fyStart = `${startYear}-04-01`;
     fyEnd = `${endYear}-03-31`;
   }
+  return { monthNum, fyRange };
+};
+
+/**
+ * Core logic to get sequence number from challan_sequences table.
+ * Uses atomic INSERT ... ON CONFLICT for concurrency safety.
+ */
+const getSequenceData = async (dateStr, type, dbOrClient, increment = false) => {
+  const { monthNum, fyRange } = getMonthAndFY(dateStr);
 
   const tableName = type === 'billing' ? 'billing' : 'purchase';
   
@@ -82,8 +86,14 @@ const generateChallanNo = async (dateStr, type, client, excludeId = null) => {
   return await getFormattedChallan(dateStr, type, client, excludeId);
 };
 
+<<<<<<< HEAD
 module.exports = {
   generateChallanNo,
   getFormattedChallan,
   // getMonthAndFY  ← include only if you define it
 };
+=======
+module.exports = { generateChallanNo, getFormattedChallan, getMonthAndFY };
+module.exports = { generateChallanNo, getFormattedChallan };
+
+>>>>>>> parent of 5925bfd (Revert "numbering solved")

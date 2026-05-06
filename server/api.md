@@ -164,9 +164,9 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
     *   *Description*: Returns bill details, client name, transporter name, and item list with item names.
 *   **GET `/billing`**
     *   *Description*: List all billing records with client names.
-*   **GET `/billing/next-id`**
     *   *Description*: Fetch the dynamic next numeric ID for internal tracking (Note: This is NOT the formatted Challan Number).
-    *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date.
+*   **GET `/billing/next-challan`**
+    *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**. Does not reserve the number.
     *   *Query Params*: `date` (required, YYYY-MM-DD).
     *   *Description*: Fetch the dynamically generated Challan Number for a specific date. Supports both Create and Edit modes.
     *   *Query Params*: `date` (required, YYYY-MM-DD), `billing_id` (optional, for edit mode to exclude the current record from sequence counting).
@@ -178,7 +178,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
         }
         ```
 *   **PUT `/billing/:id`**
-    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes based on the updated items. The API returns the latest items list. Printing uses this updated data.
+    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes. **Challan generation rules:** The frontend `challan_no` is ignored. If the month/FY changes, the backend automatically generates a new sequence number. Otherwise, the original sequence is retained.
     *   *Request Body*: Same as POST.
 *   **DELETE `/billing/:id`**
     *   *Description*: Securely delete an invoice. On deletion of invoice, associated item quantities are restored back to stock. Operation is transactional to ensure stock consistency.
@@ -212,7 +212,7 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
 *   **GET `/purchase/next-id`**
     *   *Description*: Fetch the next internal numeric sequence ID.
 *   **PUT `/purchase/:id`**
-    *   *Description*: Update an existing purchase and its items. This operation **reverts** the stock changes of the old purchase and **applies** new stock changes.
+    *   *Description*: Update an existing purchase and its items. This operation **reverts** the stock changes of the old purchase and **applies** new stock changes. **Challan generation rules:** The frontend `challan_no` is ignored. If the month/FY changes, the backend automatically generates a new sequence number. Otherwise, the original sequence is retained.
     *   *Request Body*: Same as POST.
 *   **DELETE `/purchase/:id`**
     *   *Description*: Securely delete a purchase and revert stock.

@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/billingQueries');
-const { generateChallanNo } = require('../utils/challanGenerator');
+const { generateChallanNo, getMonthAndFY } = require('../utils/challanGenerator');
 const { toUpperCase } = require('../utils/dataSanitizer');
 
 const billingService = {
@@ -114,10 +114,21 @@ const billingService = {
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, total_amount, short_remark,
-        long_remark, grand_total, items, challan_no
-      } = billData;
+        long_remark, grand_total, items
+      } = billData; // Ignored challan_no from frontend
 
-      // 1. Get old items to reverse stock
+      // 1. Get old bill to check date and get items for stock reversal
+      const oldBillRes = await client.query('SELECT date, challan_no FROM billing WHERE id = $1', [id]);
+      const oldBill = oldBillRes.rows[0];
+
+      let final_challan_no = oldBill.challan_no;
+      const oldDateData = getMonthAndFY(oldBill.date);
+      const newDateData = getMonthAndFY(date);
+
+      if (oldDateData.monthNum !== newDateData.monthNum || oldDateData.fyRange !== newDateData.fyRange) {
+          final_challan_no = await generateChallanNo(date, 'billing', client);
+      }
+
       const oldItemsRes = await client.query(queries.getBillItems, [id]);
       const oldItems = oldItemsRes.rows;
 
@@ -133,7 +144,7 @@ const billingService = {
       const billRes = await client.query(queries.updateBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, total_amount, toUpperCase(short_remark),
-        toUpperCase(long_remark), grand_total, challan_no, id
+        toUpperCase(long_remark), grand_total, final_challan_no, id
       ]);
       const bill = billRes.rows[0];
 
