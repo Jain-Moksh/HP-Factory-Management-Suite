@@ -274,7 +274,7 @@ const ItemList = () => {
                         onChange={handleInputChange}
                         className="w-full h-10 px-2 bg-transparent outline-none text-[11px] font-bold text-text-primary cursor-pointer text-center"
                       >
-                        <option value="GMS">GMS</option>
+                        <option value="POUCH">POUCH</option>
                         <option value="BUNDLE">BUNDLE</option>
                         <option value="GROSS">GROSS</option>
                         <option value="SET">SET</option>
@@ -403,7 +403,7 @@ const ItemList = () => {
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
                             className="bg-white border border-brand-blue/30 rounded px-1 py-1 outline-none focus:border-brand-blue text-[11px] font-bold"
                           >
-                            <option value="GMS">GMS</option>
+                            <option value="POUCH">POUCH</option>
                             <option value="BUNDLE">BUNDLE</option>
                             <option value="GROSS">GROSS</option>
                             <option value="SET">SET</option>

@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -22,6 +23,16 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
+});
+
+
+// Serve frontend build
+const frontendPath = path.resolve(__dirname, '../client/dist');
+
+app.use(express.static(frontendPath));
+
+app.use((req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Global Error Handler

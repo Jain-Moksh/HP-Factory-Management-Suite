@@ -129,8 +129,9 @@ Manages transport service records.
 ### 1. Billing (Invoices)
 Used for sales/billing. Creating a bill automatically **decrements** item stock.
 
-    *   *Description*: Create a new bill with multiple items (Transaction-safe). **Challan Number is automatically generated on the server** using a dedicated sequence table.
-    *   *Challan Format*: `<sequence>/<month>/<fy>` (e.g., `103/jan/25-26`). Sequence resets monthly and is **never reused** even if the bill is deleted.
+*   **POST `/billing`**
+    *   *Description*: Create a new bill with multiple items (Transaction-safe). **Challan Number is automatically generated on the server** based on selected date and financial year.
+    *   *Challan Format*: `<sequence>/<month>/<fy>` (e.g., `103/jan/25-26`). Sequence resets monthly.
     *   *Request Body*:
         ```json
         {
@@ -167,6 +168,8 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 *   **GET `/billing/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**. Does not reserve the number.
     *   *Query Params*: `date` (required, YYYY-MM-DD).
+    *   *Description*: Fetch the dynamically generated Challan Number for a specific date. Supports both Create and Edit modes.
+    *   *Query Params*: `date` (required, YYYY-MM-DD), `billing_id` (optional, for edit mode to exclude the current record from sequence counting).
     *   *Response*:
         ```json
         {
@@ -184,8 +187,9 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 ### 2. Purchase
 Used for receiving stock from jobbers. Creating a purchase automatically **increments** item stock.
 
+*   **POST `/purchase`**
     *   *Description*: Create a new purchase record. **Challan Number is automatically generated on the server.**
-    *   *Challan Format*: `P<sequence>/<month>/<fy>` (e.g., `P103/jan/25-26`). Sequence resets monthly and is **never reused**.
+    *   *Challan Format*: `P<sequence>/<month>/<fy>` (e.g., `P103/jan/25-26`). Sequence resets monthly.
     *   *Request Body*:
         ```json
         {

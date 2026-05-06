@@ -984,7 +984,7 @@ const CreateInvoice = () => {
                       onChange={handleEntryChange}
                       className="w-20 h-9 px-2 bg-white border border-border-soft rounded-lg text-[11px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer shadow-sm appearance-none"
                     >
-                      <option value="GMS">GMS</option>
+                      <option value="POUCH">POUCH</option>
                       <option value="BUNDLE">BUNDLE</option>
                       <option value="GROSS">GROSS</option>
                       <option value="SET">SET</option>
@@ -1121,7 +1121,7 @@ const CreateInvoice = () => {
                         onChange={handleNewItemFormChange}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer appearance-none shadow-sm"
                       >
-                        <option value="GMS">GMS</option>
+                        <option value="POUCH">POUCH</option>
                         <option value="BUNDLE">BUNDLE</option>
                         <option value="GROSS">GROSS</option>
                         <option value="SET">SET</option>
@@ -1248,7 +1248,7 @@ const CreateInvoice = () => {
                               onChange={(e) => handleSummaryRowChange(item.id, 'unit', e.target.value)}
                               className="bg-white border border-brand-blue/20 rounded px-1 py-0.5 text-[11px] font-bold text-text-primary outline-none"
                             >
-                              <option value="GMS">GMS</option>
+                              <option value="POUCH">POUCH</option>
                               <option value="BUNDLE">BUNDLE</option>
                               <option value="GROSS">GROSS</option>
                               <option value="SET">SET</option>

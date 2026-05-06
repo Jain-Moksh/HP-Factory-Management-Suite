@@ -180,18 +180,6 @@ CREATE TABLE group_members (
 -- Note: polymorphic relationship on member_id is validated in backend.
 -- If member_type = 'jobber', member_id must exist in jobbers table.
 -- If member_type = 'client', member_id must exist in clients table.
--- =========================
--- SEQUENCES TABLE
--- =========================
-
-CREATE TABLE challan_sequences (
-    id SERIAL PRIMARY KEY,
-    type TEXT NOT NULL, -- 'billing' or 'purchase'
-    month INT NOT NULL,
-    financial_year TEXT NOT NULL,
-    last_number INT NOT NULL DEFAULT 0,
-    UNIQUE(type, month, financial_year)
-);
 
 --- Time stamp addition ---
 
@@ -237,6 +225,8 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    - To prevent item shuffling during edits, both `billing_items` and `purchase_items` include an `order_index` column.
 --    - The backend uses an UPSERT logic to edit items in place by their DB `id` while preserving their `order_index`. New items are appended with an incremented `order_index`.
 --    - Queries fetch items `ORDER BY order_index ASC`.
+--    - Sequence: Resets every month. The sequence number is calculated by counting the existing bills for the same month and financial year (excluding the current record in case of edits).
+--    - Dynamic Generation: Triggered automatically in frontend whenever the date is changed.
 
 
 -- Master Tables

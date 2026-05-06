@@ -96,7 +96,7 @@ const billingService = {
   getNextId: async (date, billing_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
     if (date) {
-      return await getFormattedChallan(date, 'billing', db);
+      return await getFormattedChallan(date, 'billing', db, billing_id);
     }
     const result = await db.query(queries.getNextBillId);
     return result.rows[0].next_id;
@@ -104,7 +104,7 @@ const billingService = {
 
   getNextChallan: async (date, billing_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
-    return await getFormattedChallan(date, 'billing', db);
+    return await getFormattedChallan(date, 'billing', db, billing_id);
   },
 
   update: async (id, billData) => {

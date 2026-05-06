@@ -8,7 +8,7 @@ import Button from '../components/UI/Button';
 import DeleteModal from '../components/UI/DeleteModal';
 import WarningModal from '../components/UI/WarningModal';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const CreateJobWork = () => {
   const navigate = useNavigate();
@@ -565,7 +565,7 @@ const CreateJobWork = () => {
                     onChange={handleEntryChange}
                     className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 cursor-pointer shadow-sm appearance-none"
                   >
-                    <option value="GMS">GMS</option>
+                    <option value="POUCH">POUCH</option>
                     <option value="BUNDLE">BUNDLE</option>
                     <option value="GROSS">GROSS</option>
                     <option value="SET">SET</option>
@@ -769,7 +769,7 @@ const CreateJobWork = () => {
                         onChange={(e) => setNewItemFormData(prev => ({ ...prev, unit: e.target.value }))}
                         className="w-full h-11 px-4 bg-bg-main border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue cursor-pointer appearance-none shadow-sm"
                       >
-                        <option value="GMS">GMS</option>
+                        <option value="POUCH">POUCH</option>
                         <option value="BUNDLE">BUNDLE</option>
                         <option value="GROSS">GROSS</option>
                         <option value="SET">SET</option>
