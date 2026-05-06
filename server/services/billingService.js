@@ -127,7 +127,7 @@ const billingService = {
       const newDateData = getMonthAndFY(date);
 
       if (oldDateData.monthNum !== newDateData.monthNum || oldDateData.fyRange !== newDateData.fyRange) {
-          final_challan_no = await generateChallanNo(date, 'billing', client);
+        final_challan_no = await generateChallanNo(date, 'billing', client);
       }
 
       const oldItemsRes = await client.query(queries.getBillItems, [id]);
@@ -136,7 +136,7 @@ const billingService = {
       // 2. Identify items to delete, update, and insert
       const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined);
       const itemsToDelete = oldItems.filter(old => !newIds.includes(old.id));
-      
+
       // Delete old items that are no longer present and reverse their stock
       for (const oldItem of itemsToDelete) {
         await client.query(queries.reverseStockUpdate, [oldItem.quantity, oldItem.item_id]);
