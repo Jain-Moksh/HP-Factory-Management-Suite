@@ -67,7 +67,8 @@ const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) 
 
   const queryParams = [monthNum, fyStart, fyEnd];
   let queryStr = `
-    SELECT COUNT(*) FROM ${tableName}
+    SELECT MAX(CAST(NULLIF(regexp_replace(split_part(challan_no, '/', 1), '[^0-9]', '', 'g'), '') AS INTEGER)) as max_seq
+    FROM ${tableName}
     WHERE EXTRACT(MONTH FROM date) = $1
     AND date BETWEEN $2 AND $3
   `;
@@ -77,9 +78,9 @@ const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) 
     queryParams.push(excludeId);
   }
 
-  const countRes = await dbOrClient.query(queryStr, queryParams);
-  const count = parseInt(countRes.rows[0].count);
-  const sequence = count + 1;
+  const res = await dbOrClient.query(queryStr, queryParams);
+  const maxSeq = parseInt(res.rows[0].max_seq) || 0;
+  const sequence = maxSeq + 1;
   const prefix = type === 'purchase' ? 'P' : '';
 
   return `${prefix}${sequence}/${monthName}/${fyRange}`;
