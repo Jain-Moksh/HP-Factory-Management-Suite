@@ -7,9 +7,9 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import DeleteModal from '../components/UI/DeleteModal';
 import WarningModal from '../components/UI/WarningModal';
-import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import { API_BASE_URL } from '../config';
 import PrintInvoice from '../components/PrintInvoice';
+
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
@@ -124,8 +124,6 @@ const CreateInvoice = () => {
 
   // --- Print State ---
   const [isPrinting, setIsPrinting] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printCopies, setPrintCopies] = useState(2);
 
   // Print lifecycle: trigger window.print() after component mounts
   useEffect(() => {
@@ -600,10 +598,10 @@ const CreateInvoice = () => {
   };
 
   const handleSaveAndPrint = async () => {
-    // Save without navigating; on success, show print modal
+    // Save without navigating; on success, set isPrinting which triggers the useEffect
     const success = await handleFinalSave(false);
     if (success) {
-      setShowPrintModal(true);
+      setIsPrinting(true);
     }
   };
 
@@ -1462,20 +1460,8 @@ const CreateInvoice = () => {
                 roundOffDisplay
               }} 
               items={addedItems} 
-              printCopies={printCopies}
             />
           )}
-
-          <PrintCopiesModal 
-            isOpen={showPrintModal} 
-            onClose={() => setShowPrintModal(false)} 
-            onPrint={() => {
-              setShowPrintModal(false);
-              setIsPrinting(true);
-            }} 
-            printCopies={printCopies} 
-            setPrintCopies={setPrintCopies} 
-          />
 
           {/* Secure Delete Confirmation Modal */}
           <DeleteModal 
