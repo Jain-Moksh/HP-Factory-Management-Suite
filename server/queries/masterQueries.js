@@ -70,11 +70,9 @@ const masterQueries = {
                 0 as inward, 
                 bi.quantity as outward, 
                 'billing' as type,
-                b.created_at,
-                c.name as name
+                b.created_at
             FROM billing_items bi
             JOIN billing b ON bi.billing_id = b.id
-            JOIN clients c ON b.client_id = c.id
             WHERE bi.item_id = $1
         )
         UNION ALL
@@ -85,11 +83,9 @@ const masterQueries = {
                 pi.quantity as inward, 
                 0 as outward, 
                 'purchase' as type,
-                p.created_at,
-                j.name as name
+                p.created_at
             FROM purchase_items pi
             JOIN purchase p ON pi.purchase_id = p.id
-            JOIN jobbers j ON p.jobber_id = j.id
             WHERE pi.item_id = $1
         )
         ORDER BY date DESC, created_at DESC

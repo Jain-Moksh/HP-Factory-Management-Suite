@@ -5,18 +5,9 @@ const purchaseQueries = {
         RETURNING *
     `,
     createPurchaseItem: `
-        INSERT INTO purchase_items (purchase_id, item_id, quantity, unit, order_index) 
-        VALUES ($1, $2, $3, $4, $5) 
+        INSERT INTO purchase_items (purchase_id, item_id, quantity, unit) 
+        VALUES ($1, $2, $3, $4) 
         RETURNING *
-    `,
-    updatePurchaseItem: `
-        UPDATE purchase_items SET
-            item_id = $1, quantity = $2, unit = $3, order_index = $4
-        WHERE id = $5
-        RETURNING *
-    `,
-    deleteSinglePurchaseItem: `
-        DELETE FROM purchase_items WHERE id = $1 RETURNING *
     `,
     updateItemStock: `
         UPDATE items SET stock = stock + $1 WHERE id = $2
@@ -36,7 +27,6 @@ const purchaseQueries = {
         FROM purchase_items pi
         JOIN items i ON pi.item_id = i.id
         WHERE pi.purchase_id = $1
-        ORDER BY pi.order_index ASC, pi.id ASC
     `,
     getAllPurchases: `
         SELECT 

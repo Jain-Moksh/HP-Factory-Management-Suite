@@ -561,7 +561,6 @@ const CreateInvoice = () => {
       grand_total: grandTotal,
       challan_no: formData.challanNo,
       items: addedItems.map(item => ({
-        id: item.id && item.id.toString().length < 13 ? item.id : null,
         item_id: item.item_id,
         rate: parseFloat(item.rate),
         discount_percent: parseFloat(item.dPercent) || 0,

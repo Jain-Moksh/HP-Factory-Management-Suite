@@ -10,19 +10,9 @@ const billingQueries = {
     createBillItem: `
         INSERT INTO billing_items (
             billing_id, item_id, rate, discount_percent, discount_amount, 
-            unit, quantity, bundle, total_amount, order_index
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+            unit, quantity, bundle, total_amount
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
         RETURNING *
-    `,
-    updateBillItem: `
-        UPDATE billing_items SET
-            item_id = $1, rate = $2, discount_percent = $3, discount_amount = $4,
-            unit = $5, quantity = $6, bundle = $7, total_amount = $8, order_index = $9
-        WHERE id = $10
-        RETURNING *
-    `,
-    deleteSingleBillItem: `
-        DELETE FROM billing_items WHERE id = $1 RETURNING *
     `,
     updateItemStock: `
         UPDATE items SET stock = stock - $1 WHERE id = $2
@@ -51,7 +41,6 @@ const billingQueries = {
         FROM billing_items bi
         JOIN items i ON bi.item_id = i.id
         WHERE bi.billing_id = $1
-        ORDER BY bi.order_index ASC, bi.id ASC
     `,
     getAllBills: `
         SELECT 

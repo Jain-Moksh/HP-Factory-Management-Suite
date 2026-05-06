@@ -136,7 +136,6 @@ const ItemStockDetails = () => {
                 <tr className="bg-table-header text-white text-[10.5px] uppercase font-bold tracking-wider">
                   <th className="px-6 py-3 text-left border-r border-white/10">Challan No</th>
                   <th className="px-6 py-3 text-left border-r border-white/10">Date</th>
-                  <th className="px-6 py-3 text-left border-r border-white/10">Name</th>
                   <th className="px-6 py-3 text-center border-r border-white/10">Inward Qty</th>
                   <th className="px-6 py-3 text-center border-r border-white/10">Outward Qty</th>
                   <th className="px-6 py-3 text-center">Type</th>
@@ -145,7 +144,7 @@ const ItemStockDetails = () => {
               <tbody className="divide-y divide-border-soft text-[12.5px] font-medium">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center">
+                    <td colSpan="5" className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                         <span className="text-[13px] font-medium text-text-light">Loading movement logs...</span>
@@ -159,7 +158,6 @@ const ItemStockDetails = () => {
                       <td className="px-6 py-3 text-text-light font-bold">
                         {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
                       </td>
-                      <td className="px-6 py-3 font-bold text-text-primary">{t.name}</td>
                       <td className="px-6 py-3 text-center font-black">
                         {t.inward > 0 ? (
                           <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-md border border-green-100">+ {t.inward}</span>
@@ -185,7 +183,7 @@ const ItemStockDetails = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center italic text-text-light">
+                    <td colSpan="5" className="px-6 py-20 text-center italic text-text-light">
                       No transactions found for the selected filters.
                     </td>
                   </tr>
