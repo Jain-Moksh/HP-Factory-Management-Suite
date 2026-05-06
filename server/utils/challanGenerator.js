@@ -87,6 +87,7 @@ const generateChallanNo = async (dateStr, type, client, excludeId = null) => {
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 module.exports = {
   generateChallanNo,
   getFormattedChallan,
@@ -97,3 +98,11 @@ module.exports = { generateChallanNo, getFormattedChallan, getMonthAndFY };
 module.exports = { generateChallanNo, getFormattedChallan };
 
 >>>>>>> parent of 5925bfd (Revert "numbering solved")
+=======
+module.exports = { generateChallanNo, getFormattedChallan, getMonthAndFY };
+module.exports = { generateChallanNo, getFormattedChallan };
+
+=======
+module.exports = { generateChallanNo, getFormattedChallan };
+>>>>>>> parent of 31a0af9 (numbering solved)
+>>>>>>> parent of 50d1a3e (URGENT)
