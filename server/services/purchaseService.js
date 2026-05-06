@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/purchaseQueries');
-const { generateChallanNo, getMonthAndFY } = require('../utils/challanGenerator');
+const { generateChallanNo } = require('../utils/challanGenerator');
 const { toUpperCase } = require('../utils/dataSanitizer');
 
 const purchaseService = {
@@ -103,20 +103,9 @@ const purchaseService = {
     try {
       await client.query('BEGIN');
 
-      const { jobber_id, date, remark, items } = purchaseData; // Ignore challan_no from frontend
+      const { jobber_id, date, remark, items, challan_no } = purchaseData;
 
-      // 1. Get old purchase to check date and get items for stock reversal
-      const oldPurchaseRes = await client.query('SELECT date, challan_no FROM purchase WHERE id = $1', [id]);
-      const oldPurchase = oldPurchaseRes.rows[0];
-
-      let final_challan_no = oldPurchase.challan_no;
-      const oldDateData = getMonthAndFY(oldPurchase.date);
-      const newDateData = getMonthAndFY(date);
-
-      if (oldDateData.monthNum !== newDateData.monthNum || oldDateData.fyRange !== newDateData.fyRange) {
-          final_challan_no = await generateChallanNo(date, 'purchase', client);
-      }
-
+      // 1. Get old items to reverse stock
       const oldItemsRes = await client.query(queries.getPurchaseItems, [id]);
       const oldItems = oldItemsRes.rows;
 
@@ -131,7 +120,7 @@ const purchaseService = {
       }
 
       // 4. Update the purchase record
-      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, toUpperCase(remark), final_challan_no, id]);
+      const purchaseRes = await client.query(queries.updatePurchase, [jobber_id, date, toUpperCase(remark), challan_no, id]);
       const purchase = purchaseRes.rows[0];
 
       // 5. Update/Insert purchase items and update stock differentially
