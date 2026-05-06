@@ -100,6 +100,10 @@ const CreateInvoice = () => {
     extraDiscountAmount: '',
     roundOff: ''
   });
+  
+  // Track original values in edit mode to prevent unnecessary overwrites
+  const [originalDate, setOriginalDate] = useState(null);
+  const [originalChallanNo, setOriginalChallanNo] = useState(null);
 
   // --- Current Entry State (Single Row) ---
   const [currentItem, setCurrentItem] = useState({
@@ -191,6 +195,8 @@ const CreateInvoice = () => {
               extraDiscountAmount: bill.discount_amount || '0',
               roundOff: '' // Calculated automatically
             });
+            setOriginalDate(bill.date.split('T')[0]);
+            setOriginalChallanNo(bill.challan_no);
 
             // Map billing items
             const mappedItems = bill.items.map(item => ({
@@ -229,10 +235,20 @@ const CreateInvoice = () => {
         console.error("Error fetching next challan:", err);
       }
     };
+
     if (formData.date) {
+      // If in edit mode and date hasn't changed month/year, use original challan no
+      if (isEditMode && originalDate && originalChallanNo) {
+        const oldD = new Date(originalDate);
+        const newD = new Date(formData.date);
+        if (oldD.getMonth() === newD.getMonth() && oldD.getFullYear() === newD.getFullYear()) {
+          setFormData(prev => ({ ...prev, challanNo: originalChallanNo }));
+          return;
+        }
+      }
       fetchNextChallan();
     }
-  }, [formData.date, isEditMode, id]);
+  }, [formData.date, isEditMode, id, originalDate, originalChallanNo]);
 
   // --- Handlers ---
   const handleFormChange = (e) => {

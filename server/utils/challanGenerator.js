@@ -45,6 +45,20 @@ const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) 
   const { monthNum, monthName, fyRange } = getMonthAndFY(dateStr);
   const tableName = type === 'billing' ? 'billing' : 'purchase';
 
+  // If editing an existing record, check if month/FY is the same
+  if (excludeId) {
+    const originalRes = await dbOrClient.query(`SELECT date, challan_no FROM ${tableName} WHERE id = $1`, [excludeId]);
+    if (originalRes.rows.length > 0) {
+      const original = originalRes.rows[0];
+      const originalDateData = getMonthAndFY(original.date);
+      
+      // If month and FY range are same, return original challan number
+      if (originalDateData.monthNum === monthNum && originalDateData.fyRange === fyRange) {
+        return original.challan_no;
+      }
+    }
+  }
+
   // Calculate FY start and end for the query
   const dateObj = new Date(dateStr);
   const startYear = dateObj.getMonth() + 1 >= 4 ? dateObj.getFullYear() : dateObj.getFullYear() - 1;
