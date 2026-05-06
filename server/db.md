@@ -255,3 +255,4 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 
 -- Group Tables
 -- UPDATE groups SET name = UPPER(name), description = UPPER(description);
+

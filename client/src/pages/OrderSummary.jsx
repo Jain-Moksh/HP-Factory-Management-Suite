@@ -5,16 +5,18 @@ import FilterBar from '../components/FilterBar';
 import BillingTable from '../components/BillingTable';
 import MonthFilterFooter from '../components/MonthFilterFooter';
 import PrintInvoice from '../components/PrintInvoice';
+import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import { API_BASE_URL } from '../config';
 
 const OrderSummary = () => {
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // --- Printing State ---
   const [isPrinting, setIsPrinting] = useState(false);
   const [printData, setPrintData] = useState(null);
   const [printItems, setPrintItems] = useState([]);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printCopies, setPrintCopies] = useState(2);
   
   // --- Filter State ---
   const [searchChallan, setSearchChallan] = useState('');
@@ -110,7 +112,7 @@ const OrderSummary = () => {
 
         setPrintData(summaryData);
         setPrintItems(mappedItems);
-        setIsPrinting(true);
+        setShowPrintModal(true);
       }
     } catch (err) {
       console.error("Error fetching print data:", err);
@@ -171,8 +173,19 @@ const OrderSummary = () => {
         </div>
 
         {isPrinting && printData && (
-          <PrintInvoice data={printData} items={printItems} />
+          <PrintInvoice data={printData} items={printItems} printCopies={printCopies} />
         )}
+
+        <PrintCopiesModal 
+          isOpen={showPrintModal} 
+          onClose={() => setShowPrintModal(false)} 
+          onPrint={() => {
+            setShowPrintModal(false);
+            setIsPrinting(true);
+          }} 
+          printCopies={printCopies} 
+          setPrintCopies={setPrintCopies} 
+        />
 
         <MonthFilterFooter 
           selectedMonth={selectedMonth}

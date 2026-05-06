@@ -41,7 +41,7 @@ const amountInWords = (amount) => {
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
-const PrintInvoice = ({ data, items }) => {
+const PrintInvoice = ({ data, items, printCopies = 1 }) => {
   // Configurable pagination
   const ROWS_PER_PAGE = 22; 
   // Conditionally show discount column
@@ -58,6 +58,14 @@ const PrintInvoice = ({ data, items }) => {
 
   const itemPages = React.useMemo(() => paginate(items), [items]);
   const totalPages = itemPages.length;
+
+  const duplicatedPages = React.useMemo(() => {
+    const pages = [];
+    for (let i = 0; i < printCopies; i++) {
+      pages.push(...itemPages);
+    }
+    return pages;
+  }, [itemPages, printCopies]);
 
   const CSS = `
     /* 1. Print Master Controls */
@@ -308,7 +316,9 @@ const PrintInvoice = ({ data, items }) => {
     <div className="print-container">
       <style>{CSS}</style>
       
-      {itemPages.map((chunk, pageIndex) => {
+      {duplicatedPages.map((chunk, index) => {
+        // Calculate pageIndex relative to the original single copy
+        const pageIndex = index % totalPages;
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === totalPages - 1;
         const chunkTotal = chunk.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
@@ -317,7 +327,7 @@ const PrintInvoice = ({ data, items }) => {
 
 
         return (
-          <div key={pageIndex} className="bill-page">
+          <div key={index} className="bill-page">
             <div className="watermark">ORDER SUMMARY</div>
             
             {isFirst && (

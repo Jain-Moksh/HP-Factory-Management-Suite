@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import PrintInvoice from '../components/PrintInvoice';
+import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import { API_BASE_URL } from '../config';
 
 const DayBook = () => {
@@ -16,10 +17,11 @@ const DayBook = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // --- Printing State ---
   const [isPrinting, setIsPrinting] = useState(false);
   const [printData, setPrintData] = useState(null);
   const [printItems, setPrintItems] = useState([]);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printCopies, setPrintCopies] = useState(2);
 
   const navigate = useNavigate();
 
@@ -127,7 +129,7 @@ const DayBook = () => {
 
         setPrintData(summaryData);
         setPrintItems(mappedItems);
-        setIsPrinting(true);
+        setShowPrintModal(true);
       }
     } catch (err) {
       console.error("Error fetching print data:", err);
@@ -278,8 +280,19 @@ const DayBook = () => {
         </div>
 
         {isPrinting && printData && (
-          <PrintInvoice data={printData} items={printItems} />
+          <PrintInvoice data={printData} items={printItems} printCopies={printCopies} />
         )}
+
+        <PrintCopiesModal 
+          isOpen={showPrintModal} 
+          onClose={() => setShowPrintModal(false)} 
+          onPrint={() => {
+            setShowPrintModal(false);
+            setIsPrinting(true);
+          }} 
+          printCopies={printCopies} 
+          setPrintCopies={setPrintCopies} 
+        />
 
         {/* Delete Modal */}
         {showDeleteModal && (
