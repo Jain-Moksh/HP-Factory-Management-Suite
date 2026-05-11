@@ -68,6 +68,12 @@ const PartyList = () => {
     fetchClients();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchClients);
+    return () => window.removeEventListener('app-refresh', fetchClients);
+  }, []);
+
   // --- Handlers ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;

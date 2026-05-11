@@ -87,7 +87,15 @@ const GroupList = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, []);
 
   // Compute filtered member pool for add form
   const memberPool = buildMemberPool(availableJobbers, availableClients);

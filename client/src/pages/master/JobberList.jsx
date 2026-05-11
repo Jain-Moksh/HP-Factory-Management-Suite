@@ -83,6 +83,12 @@ const JobberList = () => {
     fetchData();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, []);
+
   const filteredItems = availableItems.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
     !formData.selectedItems.some(si => si.id === item.id)

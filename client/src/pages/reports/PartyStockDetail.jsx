@@ -74,6 +74,12 @@ const PartyStockDetail = () => {
     fetchData();
   }, [clientId, itemId, startDate, endDate]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [clientId, itemId, startDate, endDate]);
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24">

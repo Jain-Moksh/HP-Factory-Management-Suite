@@ -66,6 +66,12 @@ const ItemSoldSummary = () => {
     }
   }, [startDate, endDate]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [startDate, endDate]);
+
   const handlePrintRequest = () => {
     setShowPrintModal(true);
   };

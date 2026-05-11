@@ -77,6 +77,12 @@ const JobWorkReport = () => {
     }
   }, [selectedJobberId, startDate, endDate]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [selectedJobberId, startDate, endDate]);
+
   const totalQuantity = useMemo(() => {
     return data.reduce((sum, row) => sum + parseFloat(row.total_quantity), 0);
   }, [data]);

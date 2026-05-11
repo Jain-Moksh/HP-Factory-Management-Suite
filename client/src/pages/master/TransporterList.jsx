@@ -62,6 +62,12 @@ const TransporterList = () => {
     fetchTransporters();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchTransporters);
+    return () => window.removeEventListener('app-refresh', fetchTransporters);
+  }, []);
+
   // --- Handlers ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;

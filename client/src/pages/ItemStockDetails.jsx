@@ -43,6 +43,12 @@ const ItemStockDetails = () => {
     fetchData();
   }, [id]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [id]);
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
       // Type Filter

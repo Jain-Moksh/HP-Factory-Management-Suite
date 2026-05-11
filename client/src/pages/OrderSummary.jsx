@@ -45,6 +45,12 @@ const OrderSummary = () => {
     fetchBills();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchBills);
+    return () => window.removeEventListener('app-refresh', fetchBills);
+  }, []);
+
   const handleDelete = async (id, password) => {
     if (password !== import.meta.env.VITE_DEL_PASS) {
       return false;

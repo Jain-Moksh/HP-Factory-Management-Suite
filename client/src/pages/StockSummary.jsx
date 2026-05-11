@@ -29,6 +29,12 @@ const StockSummary = () => {
     fetchItems();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchItems);
+    return () => window.removeEventListener('app-refresh', fetchItems);
+  }, []);
+
   const filteredItems = items.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );

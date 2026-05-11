@@ -69,6 +69,12 @@ const ItemList = () => {
     fetchItems();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchItems);
+    return () => window.removeEventListener('app-refresh', fetchItems);
+  }, []);
+
   // --- Handlers ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;

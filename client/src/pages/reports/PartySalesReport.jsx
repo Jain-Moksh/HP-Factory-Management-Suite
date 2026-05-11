@@ -103,6 +103,12 @@ const PartySalesReport = () => {
     fetchData();
   }, [selectedPartyId, startDate, endDate]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [selectedPartyId, startDate, endDate]);
+
   const reportTotal = useMemo(() => {
     return data.reduce((sum, row) => sum + parseFloat(row.total_amount), 0);
   }, [data]);

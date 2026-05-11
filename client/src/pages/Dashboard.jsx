@@ -28,6 +28,12 @@ const Dashboard = () => {
     fetchLowStock();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchLowStock);
+    return () => window.removeEventListener('app-refresh', fetchLowStock);
+  }, []);
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen pb-10">

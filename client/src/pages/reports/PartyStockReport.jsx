@@ -69,6 +69,18 @@ const PartyStockReport = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedClient) {
+      fetchData();
+    }
+  }, [selectedClient, startDate, endDate]);
+
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [selectedClient, startDate, endDate]);
+
   const filteredData = data.filter(row => 
     row.item_name.toLowerCase().includes(searchTerm.toLowerCase())
   );

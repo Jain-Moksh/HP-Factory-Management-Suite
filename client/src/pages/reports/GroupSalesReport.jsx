@@ -77,6 +77,12 @@ const GroupSalesReport = () => {
     }
   }, [selectedGroupId, startDate, endDate]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [selectedGroupId, startDate, endDate]);
+
   const groupTotal = useMemo(() => {
     return data.reduce((sum, row) => sum + parseFloat(row.total_amount), 0);
   }, [data]);

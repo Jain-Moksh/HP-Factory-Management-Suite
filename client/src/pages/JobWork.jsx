@@ -26,6 +26,12 @@ const JobWork = () => {
     fetchJobWorks();
   }, []);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchJobWorks);
+    return () => window.removeEventListener('app-refresh', fetchJobWorks);
+  }, []);
+
   const fetchJobWorks = async () => {
     setLoading(true);
     try {

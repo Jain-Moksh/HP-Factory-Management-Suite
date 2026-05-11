@@ -47,6 +47,12 @@ const DayBook = () => {
     }
   }, [selectedDate]);
 
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [selectedDate]);
+
   const handleEdit = (item) => {
     if (item.type === 'billing') {
       navigate(`/create-invoice/${item.id}`);
