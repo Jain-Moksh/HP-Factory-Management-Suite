@@ -51,7 +51,12 @@ The backend follows a Controller-Service-Query pattern for clean separation of c
 - `/src/components`:
     - `BillingTable.jsx`: A spreadsheet-like interface for entering invoice items.
     - `PrintInvoice.jsx`: A dedicated component that generates a professional A4/Half-page printable bill.
+    - `PrintDetailJobReport.jsx`: A dynamic, configuration-driven report component that adapts to different paper sizes.
     - `Sidebar.jsx`: The primary navigation hub.
+- `/src/constants`:
+    - `printSettings.js`: Definitions for paper sizes (A4/A5), margins, and typography scales.
+- `/src/utils`:
+    - `printUtils.js`: Core logic for the CSS-isolated print lifecycle and report styling.
 - `/src/config.js`: Contains the `API_URL` configuration.
 
 ---
@@ -84,7 +89,17 @@ To ensure that items appear in the same order every time a bill is opened or pri
 
 ---
 
-## 🗄️ 4. Database Schema (Referenced from db.md)
+## 🎨 4. Dynamic Responsive Printing System
+The system features a robust, configuration-driven printing engine designed for maximum data density and professional output.
+- **Paper Size Adaptability**: Supports dynamic switching between A4 (Full Sheet) and A5 (Half Sheet). Configuration is managed in `printSettings.js`.
+- **CSS Isolation**: Uses a dedicated `print-container` with absolute visibility control. During printing, the entire application UI is hidden to prevent layout interference.
+- **Space Efficiency**: Implements a "borderless" design philosophy. Tables use tight row heights and optimized padding to ensure long reports fit on minimal pages.
+- **Print Lifecycle**: Managed via React state (e.g., `isPrinting`), where the print component is only injected into the DOM when needed, then removed after the `window.print()` call.
+- **High-Contrast Styling**: Optimized for both laser and dot-matrix printers using pure black text and bold weight for headers.
+
+---
+
+## 🗄️ 5. Database Schema (Referenced from db.md)
 
 | Table | Description | Key Columns |
 | :--- | :--- | :--- |
@@ -98,7 +113,7 @@ To ensure that items appear in the same order every time a bill is opened or pri
 
 ---
 
-## 🔌 5. Key API Endpoints (Referenced from api.md)
+## 🔌 6. Key API Endpoints (Referenced from api.md)
 
 ### Master Data
 - `GET /api/items?search=...` - Quick search for dropdowns.
@@ -118,17 +133,20 @@ To ensure that items appear in the same order every time a bill is opened or pri
 
 ---
 
-## 📂 6. File-to-Logic Mapping
+## 📂 7. File-to-Logic Mapping
 
 - **Need to change how Challans are formatted?** Look at `server/utils/challanGenerator.js`.
 - **Need to fix a calculation error in the Invoice?** Look at `client/src/pages/CreateInvoice.jsx` (Frontend) or `server/services/billingService.js` (Backend).
 - **Need to add a new report?** Add a route in `server/routes/reportRoutes.js` and a page in `client/src/pages/reports/`.
 - **Need to change the Database?** Update `server/db.md` (for docs) and run the SQL in your PG client.
-- **Need to change the Print layout?** Modify `client/src/components/PrintInvoice.jsx`.
+- **Need to change the Print layout?** 
+    - For general styles/logic, see `client/src/utils/printUtils.js`.
+    - For paper dimensions, see `client/src/constants/printSettings.js`.
+    - For specific reports, see `PrintDetailJobReport.jsx` or `PrintInvoice.jsx`.
 
 ---
 
-## 🛠️ 7. Development Workflows
+## 🛠️ 8. Development Workflows
 - **Starting the app**: Run `start.bat`.
 - **Adding a Master**: Use the boilerplate in `client/src/pages/master/`.
 - **Debugging API**: Use the `GET /health` endpoint to check connectivity.
