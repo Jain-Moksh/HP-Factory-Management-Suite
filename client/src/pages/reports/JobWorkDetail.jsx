@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
+import MonthFilterFooter from '../../components/MonthFilterFooter';
 import { API_BASE_URL } from '../../config';
 
 const JobWorkDetail = () => {
@@ -19,6 +20,29 @@ const JobWorkDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [startDate, setStartDate] = useState(fromDate);
   const [endDate, setEndDate] = useState(toDate);
+
+  // Monthly Filter State
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Update dates when month/year changes
+  useEffect(() => {
+    const firstDay = new Date(selectedYear, selectedMonth, 1);
+    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+    
+    const formatDate = (date) => {
+      const d = new Date(date);
+      let month = '' + (d.getMonth() + 1);
+      let day = '' + d.getDate();
+      const year = d.getFullYear();
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+      return [year, month, day].join('-');
+    };
+
+    setStartDate(formatDate(firstDay));
+    setEndDate(formatDate(lastDay));
+  }, [selectedMonth, selectedYear]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -46,7 +70,7 @@ const JobWorkDetail = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col min-h-screen relative pb-16">
+      <div className="flex flex-col min-h-screen relative pb-24">
         <PageHeader 
           title="Job Work Ledger" 
           subtitle="PRODUCTION HISTORY FOR SELECTED JOBBER AND ITEM"
@@ -171,6 +195,14 @@ const JobWorkDetail = () => {
             </p>
           </div>
         </div>
+
+        <MonthFilterFooter 
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={setSelectedMonth}
+          onYearChange={setSelectedYear}
+          recordCount={data?.transactions?.length || 0}
+        />
       </div>
     </Layout>
   );

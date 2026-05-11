@@ -91,6 +91,9 @@ Manages customer/client records.
         }
         ```
 *   **PUT `/clients/:id`**
+*   **DELETE `/clients/:id`**
+    *   *Description*: Securely delete a client (requires password).
+    *   *Request Body*: `{"password": "your_del_pass"}`
 
 ### 3. Jobbers
 Manages manufacturing/job worker records and their assigned items.
@@ -100,6 +103,9 @@ Manages manufacturing/job worker records and their assigned items.
 *   **POST `/jobbers`**
     *   *Request Body*: `{"name": "John Doe"}`
 *   **PUT `/jobbers/:id`**
+*   **DELETE `/jobbers/:id`**
+    *   *Description*: Securely delete a jobber (requires password).
+    *   *Request Body*: `{"password": "your_del_pass"}`
 
 #### 🔗 Many-to-Many: Jobber Items
 *   **POST `/jobbers/:id/items`**
@@ -121,6 +127,9 @@ Manages transport service records.
 *   **POST `/transporters`**
     *   *Request Body*: `{"name": "Blue Dart"}`
 *   **PUT `/transporters/:id`**
+*   **DELETE `/transporters/:id`**
+    *   *Description*: Securely delete a transporter (requires password).
+    *   *Request Body*: `{"password": "your_del_pass"}`
 
 ---
 
@@ -164,6 +173,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
     *   *Description*: Returns bill details, client name, transporter name, and item list with item names.
 *   **GET `/billing`**
     *   *Description*: List all billing records with client names.
+*   **GET `/billing/next-id`**
     *   *Description*: Fetch the dynamic next numeric ID for internal tracking (Note: This is NOT the formatted Challan Number).
 *   **GET `/billing/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**. Does not reserve the number.
@@ -211,6 +221,9 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
     *   *Description*: List all purchase transactions with jobber names.
 *   **GET `/purchase/next-id`**
     *   *Description*: Fetch the next internal numeric sequence ID.
+*   **GET `/purchase/next-challan`**
+    *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**.
+    *   *Query Params*: `date` (required, YYYY-MM-DD).
 *   **PUT `/purchase/:id`**
     *   *Description*: Update an existing purchase and its items. This operation **reverts** the stock changes of the old purchase and **applies** new stock changes. **Challan generation rules:** The frontend `challan_no` is ignored. If the month/FY changes, the backend automatically generates a new sequence number. Otherwise, the original sequence is retained.
     *   *Request Body*: Same as POST.
@@ -257,7 +270,13 @@ Manages groups of jobbers and clients.
 
 ## 📊 REPORTS APIs
 
-All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query parameters.
+All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query parameters unless otherwise noted.
+
+### 0. Dashboard Summaries
+*   **GET `/reports/party-stock`**
+    *   *Description*: Overview of all items linked to all jobbers.
+*   **GET `/reports/job-work`**
+    *   *Description*: Overview of production volumes across all jobbers.
 
 ### 1. Party Wise Stock
 *   **GET `/reports/party-stock-summary`**
@@ -381,6 +400,21 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           "count": 2,
           "data": [
             { "purchase_id": 1, "date": "2026-05-01", "item_name": "ITEM A", "quantity": 100 }
+          ]
+        }
+        ```
+
+### 8. Job Summary Report
+*   **GET `/reports/job-summary`**
+    *   *Description*: Aggregates total quantities of items per jobber within a date range. Only includes jobbers with purchase activity in the period.
+    *   *Query Params*: `from`, `to` (optional).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            { "jobber_name": "JAIN PRINTERS", "item_name": "RED PEN", "total_quantity": 500 }
           ]
         }
         ```

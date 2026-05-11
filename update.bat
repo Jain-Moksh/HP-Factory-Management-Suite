@@ -1,8 +1,2 @@
-cd /d C:\Users\HP\Documents\GitHub\NP-Frontend\Client
-npm run build
-npm i
-npm run build
-cd..
-cd server
-npm i
-npm start
+cd C:\Users\harsh\OneDrive\Documents\GitHub\NP-Frontend
+cd client && npm i && npm run build && npm i && cd.. && cd server && npm i &&npm start

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
+import MonthFilterFooter from '../../components/MonthFilterFooter';
 import SearchableSelect from '../../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../../config';
 
@@ -13,6 +14,29 @@ const JobWorkReport = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const navigate = useNavigate();
+
+  // Monthly Filter State
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Update dates when month/year changes
+  useEffect(() => {
+    const firstDay = new Date(selectedYear, selectedMonth, 1);
+    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+    
+    const formatDate = (date) => {
+      const d = new Date(date);
+      let month = '' + (d.getMonth() + 1);
+      let day = '' + d.getDate();
+      const year = d.getFullYear();
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+      return [year, month, day].join('-');
+    };
+
+    setStartDate(formatDate(firstDay));
+    setEndDate(formatDate(lastDay));
+  }, [selectedMonth, selectedYear]);
 
   // Fetch jobbers on mount
   useEffect(() => {
@@ -63,7 +87,7 @@ const JobWorkReport = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col min-h-screen relative pb-16">
+      <div className="flex flex-col min-h-screen relative pb-24">
         <PageHeader 
           title="Job Work Report" 
           subtitle="AGGREGATED ITEM PRODUCTION VOLUME PER JOBBER" 
@@ -188,6 +212,14 @@ const JobWorkReport = () => {
             </p>
           </div>
         </div>
+
+        <MonthFilterFooter 
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={setSelectedMonth}
+          onYearChange={setSelectedYear}
+          recordCount={data.length}
+        />
       </div>
     </Layout>
   );

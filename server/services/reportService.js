@@ -72,6 +72,11 @@ const reportService = {
   getDetailJobReport: async (startDate, endDate) => {
     const result = await db.query(queries.getDetailJobReport, [startDate, endDate]);
     return result.rows;
+  },
+
+  getJobSummaryReport: async (fromDate, toDate) => {
+    const result = await db.query(queries.getJobSummaryReport, [fromDate || null, toDate || null]);
+    return result.rows;
   }
 };
 

@@ -216,9 +216,9 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 -- 6. CHALLAN NUMBER LOGIC:
 --    - Format: <sequence>/<MONTH>/<FY> (e.g., 6/APR/26-27).
 --    - Financial Year: Starts April 1st, ends March 31st.
---    - Sequence: Resets every month. The sequence number is maintained in `challan_sequences` table.
---    - Consistency: Once a challan number is generated, it is NEVER reused, even if the record is deleted.
---    - Generation (Create): Sequence is incremented atomically during creation using `INSERT ... ON CONFLICT DO UPDATE`.
+--    - Sequence: Resets every month. The sequence number is calculated by finding the MAX() numeric sequence from existing records in the same month and financial year (excluding the current record in case of edits).
+--    - Consistency: Once a challan number is generated and saved, it remains fixed unless the month/FY changes during an edit.
+--    - Generation (Create): Sequence is calculated during preview and recalculated during actual save to handle concurrency.
 --    - Generation (Edit): The backend strictly evaluates date changes. If the month/FY changes, a new sequence is atomically generated. If it does not change, the original sequence is retained. Frontend inputs for challan_no are ignored.
 223: 
 224: -- 7. DETAIL JOB REPORT:

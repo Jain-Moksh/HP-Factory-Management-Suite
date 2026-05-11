@@ -132,6 +132,16 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getJobSummaryReport: async (req, res, next) => {
+    try {
+      const { from, to } = req.query;
+      const data = await reportService.getJobSummaryReport(from, to);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

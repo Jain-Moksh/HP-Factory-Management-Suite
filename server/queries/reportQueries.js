@@ -203,6 +203,22 @@ const reportQueries = {
             p.id ASC,
             pi.order_index ASC,
             pi.id ASC;
+    `,
+
+    // 13. Job Summary Report (Aggregate by jobber and item for a period)
+    getJobSummaryReport: `
+        SELECT 
+            j.name AS jobber_name, 
+            i.name AS item_name, 
+            SUM(pi.quantity) AS total_quantity
+        FROM purchase p
+        JOIN jobbers j ON p.jobber_id = j.id
+        JOIN purchase_items pi ON p.id = pi.purchase_id
+        JOIN items i ON pi.item_id = i.id
+        WHERE ($1::DATE IS NULL OR p.date >= $1)
+          AND ($2::DATE IS NULL OR p.date <= $2)
+        GROUP BY j.name, i.name
+        ORDER BY j.name ASC, total_quantity DESC;
     `
 };
 
