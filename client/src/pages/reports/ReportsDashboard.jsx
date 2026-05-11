@@ -138,36 +138,6 @@ const ReportsDashboard = () => {
             ))}
           </div>
         </div>
-
-        {/* Analytics Hero Section */}
-        <div className="mt-12 px-6">
-           <div className="bg-brand-navy rounded-3xl p-10 relative overflow-hidden text-white shadow-2xl">
-              <div className="relative z-10 max-w-2xl">
-                <h2 className="text-2xl font-black mb-4 tracking-tight">Enterprise Analytics Suite</h2>
-                <p className="text-white/60 text-sm leading-relaxed mb-8">
-                  Gain deep insights into your inventory cycle, sales velocities, and partner performance. 
-                  Our multi-dimensional reporting system helps you make data-driven decisions for your growing business.
-                </p>
-                <div className="flex gap-4">
-                  <div className="px-4 py-2 bg-white/10 rounded-lg backdrop-blur-md">
-                    <span className="text-[10px] uppercase font-bold opacity-50 block mb-1">Total Data Items</span>
-                    <span className="text-xl font-bold tracking-tighter tracking-widest leading-none">REAL-TIME</span>
-                  </div>
-                  <div className="px-4 py-2 bg-white/10 rounded-lg backdrop-blur-md">
-                    <span className="text-[10px] uppercase font-bold opacity-50 block mb-1">Accuracy Level</span>
-                    <span className="text-xl font-bold tracking-tighter leading-none">100% AUDITABLE</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Decorative SVG background */}
-              <div className="absolute right-0 bottom-0 opacity-10 translate-x-1/4 translate-y-1/4">
-                <svg className="w-96 h-96 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="0.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-           </div>
-        </div>
       </div>
     </Layout>
   );
