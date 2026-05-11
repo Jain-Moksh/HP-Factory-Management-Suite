@@ -293,8 +293,9 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
         }
         ```
 *   **GET `/reports/party-stock-detail`**
-    *   *Description*: Full transaction ledger for a specific client and item.
+    *   *Description*: Full transaction ledger for a specific client and item. Includes `rate` for each transaction.
     *   *Query Params*: `client_id`, `item_id` (required), `from`, `to` (optional).
+    *   *Response Transactions Object*: `{ "challan_no": "...", "date": "...", "rate": 10.50, "quantity": 100 }`
 
 ### 2. Party Wise Sales
 *   **GET `/reports/party-sales`**

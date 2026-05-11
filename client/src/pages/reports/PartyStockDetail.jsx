@@ -143,13 +143,14 @@ const PartyStockDetail = () => {
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Challan No</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Date</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Rate</th>
                     <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider">Quantity Sold</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
                   {isLoading ? (
                     <tr>
-                      <td colSpan="3" className="px-6 py-12 text-center">
+                      <td colSpan="4" className="px-6 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-brand-blue animate-pulse font-bold text-[13px]">
                           <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                           <span>LOADING LEDGER...</span>
@@ -165,6 +166,9 @@ const PartyStockDetail = () => {
                         <td className="px-5 py-1.5 text-center text-[12px] font-bold text-text-primary border-r border-border-soft">
                           {new Date(t.date).toLocaleDateString('en-GB')}
                         </td>
+                        <td className="px-5 py-1.5 text-center text-[12.5px] font-bold text-brand-blue border-r border-border-soft">
+                          ₹ {parseFloat(t.rate).toLocaleString()}
+                        </td>
                         <td className="px-5 py-1.5 text-right text-[13px] font-bold text-brand-blue tracking-tight">
                           {parseFloat(t.quantity).toLocaleString()} 
                           <span className="ml-1 text-[9px] font-bold text-text-light uppercase opacity-60 tracking-tighter">{item?.unit}</span>
@@ -173,7 +177,7 @@ const PartyStockDetail = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="3" className="px-6 py-16 text-center italic text-text-light text-[12px]">
+                      <td colSpan="4" className="px-6 py-16 text-center italic text-text-light text-[12px]">
                         No sales records found for this client-item combination.
                       </td>
                     </tr>
@@ -182,7 +186,7 @@ const PartyStockDetail = () => {
                 {data && data.transactions.length > 0 && (
                   <tfoot>
                     <tr className="bg-bg-main/50 font-bold border-t-2 border-border-soft">
-                      <td colSpan="2" className="px-5 py-2 text-right text-[10px] text-text-light uppercase tracking-widest font-black">Total Quantity Multiplied:</td>
+                      <td colSpan="3" className="px-5 py-2 text-right text-[10px] text-text-light uppercase tracking-widest font-black">Total Quantity Multiplied:</td>
                       <td className="px-5 py-2 text-right text-[15px] font-black text-brand-blue tracking-tight">
                         {parseFloat(data.total_quantity).toLocaleString()}
                         <span className="ml-1 text-[10px] font-bold uppercase">{item?.unit}</span>

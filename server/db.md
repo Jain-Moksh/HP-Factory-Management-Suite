@@ -206,13 +206,14 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 -- REPORTS MODULE LOGIC
 -- =============================================
 -- 1. PARTY WISE STOCK: Computes total quantity billed to a party using SUM(billing_items.quantity) grouped by item. Does NOT use items.stock.
--- 2. PARTY WISE SALES: Aggregates client sales from `billing` and `billing_items` with date range support.
--- 3. GROUP SALES REPORT:
+-- 2. PARTY WISE STOCK DETAIL: Provides a granular transaction ledger for a specific client and item, fetching challan number, date, rate, and quantity from `billing` and `billing_items`.
+-- 3. PARTY WISE SALES: Aggregates client sales from `billing` and `billing_items` with date range support.
+-- 4. GROUP SALES REPORT:
 --    - Uses a polymorphic join on `group_members`.
 --    - If `member_type` = 'client', joins with `clients` and `billing` for volume/amount.
 --    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
--- 4. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
--- 5. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
+-- 5. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
+-- 6. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
 -- 6. CHALLAN NUMBER LOGIC:
 --    - Format: <sequence>/<MONTH>/<FY> (e.g., 6/APR/26-27).
 --    - Financial Year: Starts April 1st, ends March 31st.

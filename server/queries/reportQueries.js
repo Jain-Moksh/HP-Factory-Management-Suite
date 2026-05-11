@@ -88,6 +88,7 @@ const reportQueries = {
         SELECT 
             b.challan_no,
             b.date,
+            bi.rate,
             bi.quantity
         FROM billing b
         JOIN billing_items bi ON b.id = bi.billing_id
