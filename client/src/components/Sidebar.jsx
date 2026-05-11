@@ -1,42 +1,42 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
-const Sidebar = () => {
-  const [masterOpen, setMasterOpen] = useState(true);
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
+  const [masterOpen, setMasterOpen] = useState(false);
 
   const mainMenuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
       </svg>
     )},
     { name: 'Day Book', path: '/day-book', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     )},
     { name: 'Order Summary', path: '/order-summary', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     )},
     { name: 'Stock Summary', path: '/stock-summary', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
       </svg>
     )},
     { name: 'Job Work', path: '/job-work', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
       </svg>
     )},
     { name: 'Payment', path: '/payment', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m4 0h1m-7 4h12l-3-12H6L3 19z" />
       </svg>
     )},
     { name: 'Reports', path: '/reports', icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     )},
@@ -51,7 +51,7 @@ const Sidebar = () => {
   ];
 
   const navLinkClass = (isActive) => `
-    flex items-center gap-2.5 px-3.5 py-2 rounded transition-all duration-150 text-[12px] font-medium
+    flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-2.5 px-3.5'} py-2.5 rounded transition-all duration-300 text-[12px] font-medium
     ${isActive 
       ? 'bg-brand-blue text-white shadow-lg' 
       : 'text-text-light hover:bg-white/5 hover:text-white'
@@ -59,62 +59,83 @@ const Sidebar = () => {
   `;
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[210px] bg-brand-navy flex flex-col shadow-2xl z-50">
-      {/* Branding */}
-      <div className="h-14 flex items-center gap-2.5 px-4 mb-2">
-        <div className="w-7 h-7 bg-brand-blue rounded flex items-center justify-center text-white font-bold text-xs shadow-inner">
-          NP
-        </div>
-        <span className="text-white font-medium text-sm tracking-tight opacity-95">Navkar Plast</span>
+    <aside className={`fixed left-0 top-0 h-screen transition-all duration-300 ${isCollapsed ? 'w-[70px]' : 'w-[210px]'} bg-brand-navy flex flex-col shadow-2xl z-50`}>
+      {/* Toggle Button Section */}
+      <div className={`h-14 flex items-center ${isCollapsed ? 'justify-center' : 'justify-end px-4'} mb-2 border-b border-white/5`}>
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1.5 rounded-lg bg-white/5 text-white hover:bg-brand-blue transition-colors group"
+        >
+          <svg 
+            className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2.5 overflow-y-auto overflow-x-hidden">
-        <ul className="space-y-0.5">
+      <nav className="flex-1 px-2.5 overflow-y-auto overflow-x-hidden pt-2">
+        <ul className="space-y-1">
           {mainMenuItems.map((item) => (
             <li key={item.name}>
-              <NavLink to={item.path} className={({ isActive }) => navLinkClass(isActive)}>
-                <span className="opacity-80">{item.icon}</span>
-                {item.name}
+              <NavLink to={item.path} title={isCollapsed ? item.name : ''} className={({ isActive }) => navLinkClass(isActive)}>
+                <span className={`transition-all duration-300 ${isCollapsed ? 'scale-110' : 'opacity-80'}`}>{item.icon}</span>
+                {!isCollapsed && <span className="truncate">{item.name}</span>}
               </NavLink>
             </li>
           ))}
 
           {/* Master Section */}
-          <li className="pt-2">
-            <button 
-              onClick={() => setMasterOpen(!masterOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-[11px] font-bold text-text-light uppercase tracking-widest hover:text-white transition-colors"
-            >
-              <span>Master</span>
-              <svg className={`w-3 h-3 transition-transform duration-200 ${masterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {masterOpen && (
-              <ul className="mt-1 ml-4 space-y-0.5 border-l border-white/10 pl-2 animate-in slide-in-from-top-1 duration-200">
-                {masterItems.map((item) => (
-                  <li key={item.name}>
-                    <NavLink to={item.path} className={({ isActive }) => `
-                      flex items-center px-3 py-1.5 rounded transition-all duration-150 text-[11.5px] font-medium
-                      ${isActive 
-                        ? 'bg-brand-blue/20 text-brand-blue brightness-150' 
-                        : 'text-text-light hover:text-white hover:bg-white/5'
-                      }
-                    `}>
-                      {item.name}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
+          <li className="pt-4">
+            {!isCollapsed ? (
+              <>
+                <button 
+                  onClick={() => setMasterOpen(!masterOpen)}
+                  className="w-full flex items-center justify-between px-3.5 py-2 text-[10px] font-bold text-text-light uppercase tracking-widest hover:text-white transition-colors"
+                >
+                  <span>Master</span>
+                  <svg className={`w-3 h-3 transition-transform duration-200 ${masterOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {masterOpen && (
+                  <ul className="mt-1 ml-4 space-y-0.5 border-l border-white/10 pl-2 animate-in slide-in-from-top-1 duration-200">
+                    {masterItems.map((item) => (
+                      <li key={item.name}>
+                        <NavLink to={item.path} className={({ isActive }) => `
+                          flex items-center px-3 py-1.5 rounded transition-all duration-150 text-[11px] font-medium
+                          ${isActive 
+                            ? 'bg-brand-blue/20 text-brand-blue brightness-150' 
+                            : 'text-text-light hover:text-white hover:bg-white/5'
+                          }
+                        `}>
+                          {item.name}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center py-2 border-t border-white/5 mt-2">
+                <div className="w-6 h-0.5 bg-white/10 rounded-full" />
+              </div>
             )}
           </li>
         </ul>
       </nav>
 
-      <div className="px-5 py-3 border-t border-white/5">
-        <div className="text-[10px] text-text-light font-medium tracking-tight opacity-40">Accounting System</div>
+      <div className={`px-5 py-4 border-t border-white/5 transition-all duration-300 ${isCollapsed ? 'items-center px-0' : ''} flex flex-col`}>
+        {!isCollapsed ? (
+          <div className="text-[10px] text-text-light font-medium tracking-tight opacity-40">Accounting System v1.0</div>
+        ) : (
+          <div className="text-[10px] text-text-light font-bold opacity-40">AS</div>
+        )}
       </div>
     </aside>
   );
