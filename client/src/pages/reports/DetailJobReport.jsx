@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import PrintDetailJobReport from '../../components/PrintDetailJobReport';
+import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
 import { API_BASE_URL } from '../../config';
 
 const DetailJobReport = () => {
@@ -14,16 +15,28 @@ const DetailJobReport = () => {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedPaperSize, setSelectedPaperSize] = useState('A4');
   const navigate = useNavigate();
 
   // Print lifecycle: trigger window.print() after component mounts
   useEffect(() => {
     if (isPrinting) {
+      const handleAfterPrint = () => {
+        setIsPrinting(false);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      
+      window.addEventListener('afterprint', handleAfterPrint);
+      
       const timer = setTimeout(() => {
         window.print();
-        setIsPrinting(false);
-      }, 500);
-      return () => clearTimeout(timer);
+      }, 1500); // 1.5s is usually the sweet spot for portal mounting
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
     }
   }, [isPrinting]);
 
@@ -46,7 +59,12 @@ const DetailJobReport = () => {
     }
   };
 
-  const handlePrint = () => {
+  const handlePrintRequest = () => {
+    setShowPrintModal(true);
+  };
+
+  const executePrint = () => {
+    setShowPrintModal(false);
     setIsPrinting(true);
   };
 
@@ -101,7 +119,7 @@ const DetailJobReport = () => {
             </div>
 
             <button 
-              onClick={handlePrint}
+              onClick={handlePrintRequest}
               disabled={data.length === 0}
               className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[12.5px] font-bold px-4 py-1.5 rounded transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
@@ -180,8 +198,17 @@ const DetailJobReport = () => {
           data={data} 
           startDate={startDate} 
           endDate={endDate} 
+          paperSize={selectedPaperSize}
         />
       )}
+
+      <PrintOptionsModal 
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        onPrint={executePrint}
+        selectedSize={selectedPaperSize}
+        setSelectedSize={setSelectedPaperSize}
+      />
     </Layout>
   );
 };

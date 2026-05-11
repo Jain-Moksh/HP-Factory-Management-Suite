@@ -1,0 +1,24 @@
+export const PAPER_CONFIG = {
+  A4: {
+    id: 'A4',
+    name: 'A4 Size (Full Sheet)',
+    width: '210mm',
+    height: '297mm',
+    margin: '5mm',
+    fontSize: '9.5px',
+    headerFontSize: '11px',
+    tablePadding: '2px 4px',
+    rowHeight: '17px',
+  },
+  A5: {
+    id: 'A5',
+    name: 'A5 Size (Half Sheet)',
+    width: '148.5mm',
+    height: '210mm',
+    margin: '4mm',
+    fontSize: '8.5px',
+    headerFontSize: '10px',
+    tablePadding: '1px 3px',
+    rowHeight: '15px',
+  }
+};

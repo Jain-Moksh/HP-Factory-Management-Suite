@@ -1,128 +1,84 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { PAPER_CONFIG } from '../constants/printSettings';
+import { getBasePrintCSS, getReportTableCSS } from '../utils/printUtils';
 
-const PrintDetailJobReport = ({ data, startDate, endDate }) => {
+const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) => {
+  const config = PAPER_CONFIG[paperSize] || PAPER_CONFIG.A4;
+
   const CSS = `
-    @media print {
-      @page {
-        size: A4 portrait;
-        margin: 12mm;
-      }
-      
-      #root {
-        display: none !important;
-      }
-
-      .print-container {
-        display: block !important;
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        z-index: 99999 !important;
-        background: white !important;
-        visibility: visible !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      
-      .print-container * {
-        visibility: visible !important;
-      }
-    }
-
-    @media screen {
-      .print-container {
-        display: none;
-      }
-    }
+    ${getBasePrintCSS(config)}
+    ${getReportTableCSS(config)}
 
     .print-report-container {
-      font-family: Arial, sans-serif;
-      color: #000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #000 !important;
       width: 100%;
+      line-height: 1.2;
+      background: #fff !important;
+      margin-bottom: 0 !important;
     }
 
     .date-section {
       display: flex;
-      justify-content: center;
-      gap: 50px;
-      margin-bottom: 20px;
-      border-top: 1px solid #000;
+      justify-content: flex-start;
+      gap: 15px;
+      margin-bottom: 5px;
+      padding-bottom: 2px;
       border-bottom: 1px solid #000;
-      padding: 10px 0;
     }
 
     .date-info {
-      font-size: 13px;
+      font-size: ${config.fontSize};
       text-transform: uppercase;
+      font-weight: 800;
     }
 
     .date-info span {
-      font-weight: bold;
+      font-weight: 800;
     }
 
     .report-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      table-layout: fixed;
+      font-size: ${config.fontSize};
+      color: #000 !important;
+      margin-top: 5px;
+      font-weight: 700;
     }
 
-    .report-table th, .report-table td {
-      border: 1px solid #000;
-      padding: 6px 10px;
-      font-size: 12px;
-      text-align: left;
-    }
+    /* Column Widths - Optimized for borderless view */
+    .col-date { width: 15%; }
+    .col-item { width: 67%; }
+    .col-qty  { width: 18%; text-align: right; }
 
-    .report-table th {
-      background-color: #f2f2f2 !important;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-
-    .report-table tr {
-      page-break-inside: avoid;
-    }
-
-    .report-table thead {
-      display: table-header-group;
-    }
-
-    .text-right {
-      text-align: right;
-    }
-
-    .footer {
-      margin-top: 30px;
-      text-align: right;
-      font-size: 10px;
-      font-style: italic;
-      color: #666;
-    }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: 900; }
   `;
 
   const portalContent = (
     <div className="print-container">
-      <style>{CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="print-report-container">
+        
         {/* Date Section */}
         <div className="date-section">
           <div className="date-info">
-            <span>Start Date :</span> {startDate ? new Date(startDate).toLocaleDateString('en-GB') : 'N/A'}
+            <span>FROM :</span> {startDate ? new Date(startDate).toLocaleDateString('en-GB') : 'N/A'}
           </div>
           <div className="date-info">
-            <span>End Date :</span> {endDate ? new Date(endDate).toLocaleDateString('en-GB') : 'N/A'}
+            <span>TO :</span> {endDate ? new Date(endDate).toLocaleDateString('en-GB') : 'N/A'}
           </div>
         </div>
 
-        {/* Data Table */}
+        {/* Data List (Using borderless table for alignment) */}
         <table className="report-table">
           <thead>
             <tr>
-              <th style={{ width: '20%' }}>Date</th>
-              <th style={{ width: '60%' }}>Item Name</th>
-              <th style={{ width: '20%' }} className="text-right">Qty</th>
+              <th className="col-date">Date</th>
+              <th className="col-item">Item Name</th>
+              <th className="col-qty">Inward Qty</th>
             </tr>
           </thead>
           <tbody>
@@ -130,14 +86,14 @@ const PrintDetailJobReport = ({ data, startDate, endDate }) => {
               data.map((row, index) => {
                 const isFirstOfDate = index === 0 || new Date(row.date).toLocaleDateString('en-GB') !== new Date(data[index - 1].date).toLocaleDateString('en-GB');
                 return (
-                  <tr key={row.purchase_item_id}>
-                    <td style={{ fontWeight: 'bold' }}>
+                  <tr key={row.purchase_item_id || index}>
+                    <td className="col-date">
                       {isFirstOfDate ? new Date(row.date).toLocaleDateString('en-GB') : ''}
                     </td>
-                    <td style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    <td className="col-item" style={{ textTransform: 'uppercase' }}>
                       {row.item_name}
                     </td>
-                    <td className="text-right" style={{ fontWeight: 'bold' }}>
+                    <td className="col-qty font-bold text-right">
                       {parseFloat(row.quantity).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                     </td>
                   </tr>
@@ -145,18 +101,14 @@ const PrintDetailJobReport = ({ data, startDate, endDate }) => {
               })
             ) : (
               <tr>
-                <td colSpan="3" style={{ textAlign: 'center', padding: '40px', fontStyle: 'italic' }}>
-                  No inward stock records found
+                <td colSpan="3" style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
+                  No data found
                 </td>
               </tr>
             )}
           </tbody>
         </table>
 
-        {/* Footer */}
-        <div className="footer">
-          Generated on: {new Date().toLocaleString('en-GB')}
-        </div>
       </div>
     </div>
   );
