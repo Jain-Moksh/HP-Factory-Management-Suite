@@ -220,6 +220,15 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    - Consistency: Once a challan number is generated, it is NEVER reused, even if the record is deleted.
 --    - Generation (Create): Sequence is incremented atomically during creation using `INSERT ... ON CONFLICT DO UPDATE`.
 --    - Generation (Edit): The backend strictly evaluates date changes. If the month/FY changes, a new sequence is atomically generated. If it does not change, the original sequence is retained. Frontend inputs for challan_no are ignored.
+223: 
+224: -- 7. DETAIL JOB REPORT:
+225: --    - Displays inward stock movement from Job Work entries.
+226: --    - Joins `purchase`, `purchase_items`, and `items`.
+227: --    - Uses `purchase_items.order_index` to maintain the specific sequence of items as entered.
+228: --    - Query:
+229: --    SELECT p.id, p.date, pi.quantity, pi.order_index, i.name as item_name 
+230: --    FROM purchase p JOIN purchase_items pi ON p.id = pi.purchase_id JOIN items i ON i.id = pi.item_id 
+231: --    WHERE p.date BETWEEN $1 AND $2 ORDER BY p.date ASC, p.id ASC, pi.order_index ASC;
 
 -- 5. Stable Item Ordering:
 --    - To prevent item shuffling during edits, both `billing_items` and `purchase_items` include an `order_index` column.

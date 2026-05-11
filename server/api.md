@@ -364,6 +364,27 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
         }
         ```
 
+### 7. Detail Job Report
+*   **GET `/reports/detail-job-report`**
+    *   *Description*: Returns inward stock movement details from Job Work (Purchase) entries between selected dates.
+    *   *Query Params*: `startDate` (required, YYYY-MM-DD), `endDate` (required, YYYY-MM-DD).
+    *   *Response Fields*:
+        *   `purchase_id`: Internal ID of the purchase record.
+        *   `date`: Date of the transaction.
+        *   `item_name`: Name of the item received.
+        *   `quantity`: Inward quantity.
+    *   *Sorting*: Ordered by date ASC, purchase_id ASC, and order_index ASC.
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            { "purchase_id": 1, "date": "2026-05-01", "item_name": "ITEM A", "quantity": 100 }
+          ]
+        }
+        ```
+
 ---
 
 ## 📈 DASHBOARD APIs

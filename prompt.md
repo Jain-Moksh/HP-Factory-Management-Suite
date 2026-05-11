@@ -1,50 +1,71 @@
-# Challan Number Creation Formats
+# Reports Documentation
 
-This document outlines the existing format and logic for creating Challan Numbers in the system, specifically for the **Order Summary** (Billing) and **Job Work** (Purchase) pages.
+## How Reports Work
+Reports in this application are implemented as React components that fetch data from specific backend endpoints. They typically follow a pattern:
+1.  **Filters**: Most reports have a filter bar at the top (Dates, Searchable Selects for Parties/Groups/Jobbers).
+2.  **Data Fetching**: Data is fetched using `fetch` from `API_BASE_URL/reports/...`.
+3.  **State Management**: Use `useState` for filter values, report data, and loading state.
+4.  **Display**: Data is displayed in a styled table within a `Layout` component.
+5.  **Navigation**: Some reports allow clicking on rows to drill down into detailed views.
 
-## 1. Order Summary (Billing) Format
-The Challan Number for Billing follows this structure:
-**`[SEQUENCE]/[MONTH]/[FY_RANGE]`**
+## Reusable Components
+The following components are designed for or frequently used in reports:
+*   `Layout`: Wraps the entire page, providing the sidebar and main content area.
+*   `PageHeader`: Displays the title, subtitle, and optional back button.
+*   `SearchableSelect`: A custom searchable dropdown for selecting parties, items, etc.
+*   `Card`: For dashboard-style metric displays (used in Reports Dashboard).
+*   `FilterBar`: Generic filter bar component for dates and search.
+*   `MonthFilterFooter`: Used in some reports for quick month-wise filtering.
 
-*   **Example**: `103/APR/26-27`
-*   **[SEQUENCE]**: A numeric counter that resets at the beginning of each month.
-*   **[MONTH]**: 3-letter uppercase short name of the month (e.g., JAN, FEB, MAR, APR, etc.).
-*   **[FY_RANGE]**: Two-digit representation of the Financial Year range (e.g., 24-25, 26-27).
+## Existing Reports
+| Report Name | Location | Route | Description |
+| :--- | :--- | :--- | :--- |
+| Reports Dashboard | `client/src/pages/reports/ReportsDashboard.jsx` | `/reports` | Hub for all reports. |
+| Group Sales Report | `client/src/pages/reports/GroupSalesReport.jsx` | `/reports/group-sales` | Aggregated sales by group. |
+| Job Work Detail | `client/src/pages/reports/JobWorkDetail.jsx` | `/reports/job-work-detail/:jobberId/:itemId` | Detailed ledger for a specific jobber/item. |
+| Job Work Report | `client/src/pages/reports/JobWorkReport.jsx` | `/reports/job-work` | Summary of work done by jobbers. |
+| Party Billing Detail | `client/src/pages/reports/PartyBillingDetail.jsx` | `/reports/party-billing-detail/:clientId` | Specific challan details for a party. |
+| Party Sales Report | `client/src/pages/reports/PartySalesReport.jsx` | `/reports/party-sales` | Sales performance by individual parties. |
+| Party Stock Detail | `client/src/pages/reports/PartyStockDetail.jsx` | `/reports/party-stock-detail/:clientId/:itemId` | Detailed stock ledger for a party/item. |
+| Party Stock Report | `client/src/pages/reports/PartyStockReport.jsx` | `/reports/party-stock` | Summary of stock held by parties. |
+| Stock Summary | `client/src/pages/StockSummary.jsx` | `/stock-summary` | Overall inventory levels. |
+| Item Stock Details | `client/src/pages/ItemStockDetails.jsx` | `/item-stock-details/:id` | Movement log for a specific item. |
+| Day Book | `client/src/pages/DayBook.jsx` | `/day-book` | Combined ledger of all Billing and Purchase. |
 
-## 2. Job Work (Purchase) Format
-The Challan Number for Job Work follows a similar structure but with a **'P'** prefix:
-**`P[SEQUENCE]/[MONTH]/[FY_RANGE]`**
-
-*   **Example**: `P103/APR/26-27`
-*   **[SEQUENCE]**: A numeric counter that resets at the beginning of each month.
-*   **[MONTH]**: 3-letter uppercase short name of the month.
-*   **[FY_RANGE]**: Two-digit representation of the Financial Year range.
+## Instructions for Creating a New Report
+1.  **Define the Route**: Add the new report route in `client/src/App.jsx`.
+2.  **Add to Dashboard**: Add a new tile for the report in `client/src/pages/reports/ReportsDashboard.jsx`.
+3.  **Component Structure**:
+    *   Use `Layout` as the root wrapper.
+    *   Use `PageHeader` for the title and subtitle.
+    *   Implement a filter section using `SearchableSelect` and native date inputs.
+    *   Style the table using the standard `bg-table-header` for the `<thead>`.
+    *   Handle loading states with a spinner.
+    *   Add a summary/total row in `<tfoot>` if applicable.
+    *   Ensure all numeric values are formatted using `toLocaleString`.
+4.  **Backend Integration**:
+    *   Ensure the corresponding SQL query exists in the backend.
+    *   Expose the endpoint via the reports router in the server.
 
 ---
 
-## 🛠️ Creation Logic (Server-Side)
+## Database: Job Work (Purchase) Schema
+The following tables are central to Job Work (formerly Purchase) reporting. Note that in the UI, "Purchase" has been renamed to "Job Work".
 
-The generation of these numbers is handled automatically by the backend to ensure consistency and concurrency safety.
+### `purchase` Table
+Stores the header information for a job work inward entry.
+*   `id`: SERIAL PRIMARY KEY.
+*   `jobber_id`: INT (FOREIGN KEY to `jobbers.id`).
+*   `date`: DATE of the transaction.
+*   `remark`: TEXT (Optional notes).
+*   `challan_no`: TEXT (Unique identifier for the inward challan).
+*   `created_at`: TIMESTAMP (Default CURRENT_TIMESTAMP).
 
-### A. Sequence Calculation
-The sequence number is determined by counting existing records for the **same month** and **same financial year** in the database.
-*   For Billing: Counts records in the `billing` table.
-*   For Job Work: Counts records in the `purchase` table.
-*   The next available number is `Count + 1`.
-
-### B. Financial Year (FY) Determination
-The Financial Year starts on **April 1st** and ends on **March 31st**.
-*   If the transaction date is in **April or later** (Month >= 4):
-    *   `Start Year = Current Year`
-    *   `End Year = Current Year + 1`
-*   If the transaction date is in **January to March** (Month < 4):
-    *   `Start Year = Current Year - 1`
-    *   `End Year = Current Year`
-*   The range is formatted as `YY-YY` (e.g., 2026-2027 becomes `26-27`).
-
-### C. Concurrency Safety
-The server applies a `LOCK TABLE` in `SHARE ROW EXCLUSIVE MODE` during the creation process. This prevents two users from being assigned the same sequence number if they save records at the exact same time.
-
-### D. Edit Mode Rules
-*   If a record's date is updated but remains within the **same month and FY**, the original Challan Number is **retained**.
-*   If the date is changed to a **different month or FY**, a **new Challan Number** is automatically generated based on the new date's sequence.
+### `purchase_items` Table
+Stores individual line items for a job work entry.
+*   `id`: SERIAL PRIMARY KEY.
+*   `purchase_id`: INT (FOREIGN KEY to `purchase.id` ON DELETE CASCADE).
+*   `item_id`: INT (FOREIGN KEY to `items.id`).
+*   `quantity`: NUMERIC (Number of items received).
+*   `unit`: TEXT (Unit of measurement, e.g., PCS, KG).
+*   `order_index`: INT (Maintains visual order of items, defaults to 0).

@@ -67,6 +67,11 @@ const reportService = {
   getDayBook: async (date) => {
     const result = await db.query(queries.getDayBook, [date]);
     return result.rows;
+  },
+
+  getDetailJobReport: async (startDate, endDate) => {
+    const result = await db.query(queries.getDetailJobReport, [startDate, endDate]);
+    return result.rows;
   }
 };
 

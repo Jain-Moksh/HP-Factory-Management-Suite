@@ -25,6 +25,7 @@ import JobWorkReport from './pages/reports/JobWorkReport';
 import PartyStockDetail from './pages/reports/PartyStockDetail';
 import PartyBillingDetail from './pages/reports/PartyBillingDetail';
 import JobWorkDetail from './pages/reports/JobWorkDetail';
+import DetailJobReport from './pages/reports/DetailJobReport';
 import DayBook from './pages/DayBook';
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
         <Route path="/reports/party-billing-detail/:clientId" element={<PartyBillingDetail />} />
         <Route path="/reports/job-work" element={<JobWorkReport />} />
         <Route path="/reports/job-work-detail/:jobberId/:itemId" element={<JobWorkDetail />} />
+        <Route path="/reports/detail-job-report" element={<DetailJobReport />} />
         <Route path="/day-book" element={<DayBook />} />
         
         {/* Master Routes */}

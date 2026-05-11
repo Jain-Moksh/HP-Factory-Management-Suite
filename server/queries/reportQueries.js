@@ -183,6 +183,26 @@ const reportQueries = {
         JOIN jobbers j ON p.jobber_id = j.id
         WHERE p.date = $1)
         ORDER BY created_at DESC
+    `,
+
+    // 12. Detail Job Report (Inward stock movement)
+    getDetailJobReport: `
+        SELECT
+            p.id AS purchase_id,
+            p.date,
+            pi.id AS purchase_item_id,
+            pi.quantity,
+            pi.order_index,
+            i.name AS item_name
+        FROM purchase p
+        JOIN purchase_items pi ON pi.purchase_id = p.id
+        JOIN items i ON i.id = pi.item_id
+        WHERE p.date BETWEEN $1 AND $2
+        ORDER BY
+            p.date ASC,
+            p.id ASC,
+            pi.order_index ASC,
+            pi.id ASC;
     `
 };
 

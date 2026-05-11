@@ -121,6 +121,17 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getDetailJobReport: async (req, res, next) => {
+    try {
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) return res.status(400).json({ success: false, message: "startDate and endDate are required" });
+      const data = await reportService.getDetailJobReport(startDate, endDate);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 
