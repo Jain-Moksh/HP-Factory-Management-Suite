@@ -29,6 +29,7 @@ import DetailJobReport from './pages/reports/DetailJobReport';
 import JobSummaryReport from './pages/reports/JobSummaryReport';
 import ItemSoldSummary from './pages/reports/ItemSoldSummary';
 import DayBook from './pages/DayBook';
+import Utility from './pages/Utility';
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
         <Route path="/reports/job-summary" element={<JobSummaryReport />} />
         <Route path="/reports/item-sold-summary" element={<ItemSoldSummary />} />
         <Route path="/day-book" element={<DayBook />} />
+        <Route path="/utility" element={<Utility />} />
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />
