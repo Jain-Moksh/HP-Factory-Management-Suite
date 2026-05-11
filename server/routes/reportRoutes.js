@@ -15,5 +15,6 @@ router.get('/job-work-detail', reportController.getJobWorkDetail);
 router.get('/day-book', reportController.getDayBook);
 router.get('/detail-job-report', reportController.getDetailJobReport);
 router.get('/job-summary', reportController.getJobSummaryReport);
+router.get('/item-sold-summary', reportController.getItemSoldSummary);
 
 module.exports = router;

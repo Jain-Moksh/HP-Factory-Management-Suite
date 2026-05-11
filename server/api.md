@@ -419,6 +419,21 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
         }
         ```
 
+### 9. Item Sold Summary Report
+*   **GET `/reports/item-sold-summary`**
+    *   *Description*: Returns aggregated quantities of items sold within a date range.
+    *   *Query Params*: `from` (YYYY-MM-DD), `to` (YYYY-MM-DD).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            { "item_name": "RED PEN", "total_quantity": 1000 }
+          ]
+        }
+        ```
+
 ---
 
 ## 📈 DASHBOARD APIs

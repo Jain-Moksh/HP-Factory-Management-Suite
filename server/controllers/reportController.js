@@ -142,6 +142,16 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getItemSoldSummary: async (req, res, next) => {
+    try {
+      const { from, to } = req.query;
+      const data = await reportService.getItemSoldSummary(from, to);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

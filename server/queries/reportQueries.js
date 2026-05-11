@@ -219,6 +219,20 @@ const reportQueries = {
           AND ($2::DATE IS NULL OR p.date <= $2)
         GROUP BY j.name, i.name
         ORDER BY j.name ASC, total_quantity DESC;
+    `,
+
+    // 14. Item Sold Summary Report (Aggregate by item for a period)
+    getItemSoldSummary: `
+        SELECT 
+            i.name as item_name, 
+            SUM(bi.quantity) as total_quantity
+        FROM billing b
+        JOIN billing_items bi ON b.id = bi.billing_id
+        JOIN items i ON bi.item_id = i.id
+        WHERE ($1::DATE IS NULL OR b.date >= $1)
+          AND ($2::DATE IS NULL OR b.date <= $2)
+        GROUP BY i.name
+        ORDER BY i.name ASC;
     `
 };
 

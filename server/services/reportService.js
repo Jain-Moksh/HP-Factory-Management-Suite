@@ -77,6 +77,11 @@ const reportService = {
   getJobSummaryReport: async (fromDate, toDate) => {
     const result = await db.query(queries.getJobSummaryReport, [fromDate || null, toDate || null]);
     return result.rows;
+  },
+
+  getItemSoldSummary: async (fromDate, toDate) => {
+    const result = await db.query(queries.getItemSoldSummary, [fromDate || null, toDate || null]);
+    return result.rows;
   }
 };
 
