@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
+import PrintDetailJobReport from '../../components/PrintDetailJobReport';
 import { API_BASE_URL } from '../../config';
 
 const DetailJobReport = () => {
@@ -12,7 +13,19 @@ const DetailJobReport = () => {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const navigate = useNavigate();
+
+  // Print lifecycle: trigger window.print() after component mounts
+  useEffect(() => {
+    if (isPrinting) {
+      const timer = setTimeout(() => {
+        window.print();
+        setIsPrinting(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinting]);
 
   const fetchData = async () => {
     if (new Date(startDate) > new Date(endDate)) {
@@ -34,28 +47,17 @@ const DetailJobReport = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    setIsPrinting(true);
   };
 
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-16 text-text-primary">
-        {/* Page Header - Hidden on Print */}
-        <div className="print:hidden">
-          <PageHeader 
-            title="Detail Job Report" 
-            subtitle="DETAILED INWARD STOCK MOVEMENT FROM JOB WORK ENTRIES" 
-            backAction={() => navigate('/reports')}
-          />
-        </div>
-
-        {/* Print Only Header */}
-        <div className="hidden print:block mb-6 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-tight text-black">Detail Job Report</h1>
-            <p className="text-sm font-medium text-gray-600 mt-1 uppercase tracking-widest">
-                Period: {new Date(startDate).toLocaleDateString('en-GB')} to {new Date(endDate).toLocaleDateString('en-GB')}
-            </p>
-        </div>
+        <PageHeader 
+          title="Detail Job Report" 
+          subtitle="DETAILED INWARD STOCK MOVEMENT FROM JOB WORK ENTRIES" 
+          backAction={() => navigate('/reports')}
+        />
         
         <div className="px-6 flex flex-col gap-4 w-full">
           {/* Filter Bar - Hidden on Print */}
@@ -111,17 +113,17 @@ const DetailJobReport = () => {
           </div>
 
           {/* Table Container */}
-          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden print:border-black/20">
+          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
              <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-table-header text-white print:bg-gray-100 print:text-black print:border-b print:border-black/20">
-                        <th className="px-5 py-2 text-left border-r border-white/10 print:border-black/10 text-[10.5px] uppercase font-bold tracking-wider w-32">Date</th>
-                        <th className="px-5 py-2 text-left border-r border-white/10 print:border-black/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
+                      <tr className="bg-table-header text-white">
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-32">Date</th>
+                        <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
                         <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider w-40">Inward Qty</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border-soft print:divide-black/10">
+                    <tbody className="divide-y divide-border-soft">
                         {isLoading ? (
                            <tr>
                              <td colSpan="3" className="px-6 py-20 text-center">
@@ -133,16 +135,16 @@ const DetailJobReport = () => {
                            </tr>
                         ) : data.length > 0 ? (
                            data.map((row, index) => {
-                             const isFirstInPurchase = index === 0 || row.purchase_id !== data[index - 1].purchase_id;
+                             const isFirstOfDate = index === 0 || new Date(row.date).toLocaleDateString('en-GB') !== new Date(data[index - 1].date).toLocaleDateString('en-GB');
                              return (
-                               <tr key={row.purchase_item_id} className="hover:bg-bg-main/30 transition-colors print:hover:bg-transparent">
-                                  <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary border-r border-border-soft print:border-black/10 uppercase tracking-tight">
-                                     {isFirstInPurchase ? new Date(row.date).toLocaleDateString('en-GB') : ''}
+                               <tr key={row.purchase_item_id} className="hover:bg-bg-main/30 transition-colors">
+                                  <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight">
+                                     {isFirstOfDate ? new Date(row.date).toLocaleDateString('en-GB') : ''}
                                   </td>
-                                  <td className="px-5 py-1.5 text-[13px] font-bold text-text-primary border-r border-border-soft print:border-black/10 uppercase tracking-tight">
+                                  <td className="px-5 py-1.5 text-[13px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight">
                                      {row.item_name}
                                   </td>
-                                  <td className="px-5 py-1.5 text-right text-[14px] font-black text-brand-blue print:text-black">
+                                  <td className="px-5 py-1.5 text-right text-[14px] font-black text-brand-blue">
                                      {parseFloat(row.quantity).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                                   </td>
                                </tr>
@@ -172,6 +174,14 @@ const DetailJobReport = () => {
           </div>
         </div>
       </div>
+
+      {isPrinting && (
+        <PrintDetailJobReport 
+          data={data} 
+          startDate={startDate} 
+          endDate={endDate} 
+        />
+      )}
     </Layout>
   );
 };
