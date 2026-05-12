@@ -11,15 +11,18 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
 - **Backend**: Node.js, Express.js.
 - **Database**: PostgreSQL (node-postgres / `pg`).
 - **Development**: Local execution via `start.bat`.
+- **Production**: The backend serves the compiled React `dist` folder as static assets via a wildcard route (`*`) in `app.js`.
 
 ### Folder Structure
 - `/client`: React source code.
   - `/src/pages/master`: Management of Items, Clients, Jobbers, etc.
   - `/src/pages/reports`: Reporting dashboard and individual report pages.
-  - `/src/pages`: Main transaction pages like `CreateInvoice`, `OrderSummary`, `CreateJobWork`, `JobWork`, `Payment`, `Utility`, `Dashboard`, `DayBook`, `StockSummary`, `OrderSummary`.
+  - `/src/pages`: Transactional and dashboard pages (`CreateInvoice`, `CreateJobWork`, `CreatePayment`, `Dashboard`, `DayBook`, `ItemStockDetails`, `JobWork`, `OrderSummary`, `Payment`, `StockSummary`, `Utility`).
+  - `/src/pages/utility`: Specialized system tools (`BackupManager`, `RestoreManager`).
   - `/src/components`: Reusable UI like `BillingTable`, `PrintInvoice`, `Sidebar`, `MonthFilterFooter`, `PrintCopiesModal`, `DeleteModal`, `WarningModal`.
   - `/src/utils`: Logic for printing (`printUtils.js`) and API configuration.
-  - `config.js`: Environment-based API base URL configuration.
+  - `client/src/config.js`: Environment-based API base URL configuration (uses `VITE_API_URL`).
+- `client/.env`: Defines the API URL and the `VITE_DEL_PASS` master password.
 - `/server`: Node.js/Express backend.
   - `/routes`: Endpoint definitions.
   - `/controllers`: Request handling and response mapping.
@@ -146,7 +149,7 @@ CREATE TABLE group_members (
 CREATE TABLE backup_settings (
     id SERIAL PRIMARY KEY,
     auto_backup_enabled BOOLEAN DEFAULT TRUE,
-    auto_backup_path TEXT DEFAULT 'D:/NP-Backups/',
+    auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
     last_backup_time TIMESTAMP WITH TIME ZONE,
     last_backup_file TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -174,10 +177,11 @@ CREATE TABLE backup_settings (
 - `PUT /purchase/:id`: Update purchase. Reverts old stock impact, applies new one.
 - `DELETE /purchase/:id`: Secure delete (Requires password).
 
-- `GET /utility`: System tools dashboard.
 - `GET /api/backup/manual`: Download full DB backup.
-- `PUT /api/backup/settings`: Toggle auto-backup and set path.
+- `GET /api/backup/status`: Fetch latest backup info.
+- `PUT /api/backup/settings`: Update auto-backup configuration.
 - `POST /api/backup/restore`: Overwrite system from file.
+- `GET /utility`: System tools dashboard. Includes placeholders for Password Manager and System Audit (Coming Soon).
 
 ### Reporting Endpoints
 - `GET /reports/party-stock-summary`: Total items billed to a client. Params: `client_id` (req), `from`, `to` (opt).
@@ -199,6 +203,7 @@ CREATE TABLE backup_settings (
 - **Inverse Correction on Edit/Delete**: 
   - To **Edit**: (1) Reverse previous impact. (2) Apply new impact.
   - This ensures stock accuracy even if the user changes the item ID or quantity in an existing bill.
+- **Soft Validation**: The frontend provides warnings if a transaction results in negative stock or falls below minimum stock levels, but allows the user to proceed. The backend performs the update atomically without hard quantity checks.
 
 ### B. Challan Number Sequencing
 - **Format**: `<Sequence>/<MONTH>/<FY>` (e.g., `15/MAY/26-27`).
@@ -215,11 +220,24 @@ CREATE TABLE backup_settings (
 - During Job Work (Purchase) entry, the frontend validates if the selected item is assigned to the selected jobber.
 - If not assigned, a warning is shown, but the user can choose to proceed (creating a soft-link for that transaction).
 
-### E. Backup & Restore System
+### E. Automatic Data Sanitization (UPPERCASE)
+- **Centralized Utility**: The backend uses a recursive `dataSanitizer.js` utility to convert all string inputs to uppercase before database persistence.
+- **Scope**: This applies to all Master data (Names, Units, Remarks) and Transactional data (Remarks, Challan Numbers).
+- **Consistency**: Ensures searchability and standardized reporting across the entire system.
+
+### F. Backup & Restore System
 - **Centralized Trigger**: Backend middleware intercepts successful `POST/PUT/DELETE` to trigger a background auto-backup.
+- **Execution**: Asynchronous background `pg_dump` with `--clean` flag (includes DROP TABLE commands for cleaner restoration).
+- **Storage Provisioning**: The system automatically creates the backup directory (e.g., `C:/NP-Backups/`) if it does not exist on the file system.
 - **Retention**: Only the latest auto-backup is kept; previous files are deleted to optimize storage.
+- **Self-Healing**: If auto-backup is enabled but the last backup file is missing from disk, the system automatically triggers a new backup in the background.
+- **Concurrency Control**: A global memory lock (`isBackupRunning`) prevents multiple backup or restore operations from running simultaneously, returning `429` errors for overlapping requests.
 - **Manual Backups**: Never deleted automatically; streamed directly to the client.
 - **Restore Safety**: High-priority confirmation required; restores overwrite the entire database.
+
+### G. Database Date Precision & Timezones
+- **DATE OID Fix**: To prevent `node-postgres` from shifting dates due to timezone offsets, the system implements a custom type parser for PostgreSQL OID `1082` (DATE).
+- **Behavior**: All DATE values are retrieved as raw ISO string literals (`YYYY-MM-DD`) without any local time conversions. This ensures the date saved in an invoice or job work entry is exactly what is retrieved.
 
 ---
 
@@ -254,7 +272,7 @@ CREATE TABLE backup_settings (
 
 ### 3. Safety Rules
 - **Transactions**: Always wrap multi-table modifications in `BEGIN/COMMIT`.
-- **Passwords**: Deletions in master tables require a password check.
+- **Passwords**: Deletions in master tables require a password check (configured via `VITE_DEL_PASS` in the frontend and `del_pass` in the backend).
 - **Validation**: Check stock availability in the backend before committing a sale.
 
 ---
@@ -270,7 +288,7 @@ CREATE TABLE backup_settings (
 | **Constants** | `client/src/config.js`, `client/src/constants/printSettings.js` |
 | **Reports** | `server/routes/reportRoutes.js`, `client/src/pages/reports/` |
 | **Payment (WIP)** | `Payment.jsx`, `CreatePayment.jsx`, `PaymentTable.jsx` |
-| **Utility & Backup** | `Utility.jsx`, `backupController.js`, `backupService.js` |
+| **Utility & Backup** | `pages/Utility.jsx`, `pages/utility/BackupManager.jsx`, `pages/utility/RestoreManager.jsx`, `backupController.js`, `backupService.js` |
 
 ---
 *End of Master Guide.*

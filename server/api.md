@@ -270,7 +270,8 @@ Manages groups of jobbers and clients.
 1. 
 ### 2. Backup & Restore
 *   **GET `/backup/manual`**
-    *   *Description*: Generates a full database backup and streams it as a `.sql` file download.
+    *   *Description*: Generates a full database backup and streams it as a `.sql` file download. Uses a concurrency lock.
+    *   *Error*: Returns `429` if another backup/restore is in progress.
 *   **GET `/backup/settings`**
     *   *Description*: Retrieves current automatic backup configuration.
 *   **PUT `/backup/settings`**
@@ -284,9 +285,17 @@ Manages groups of jobbers and clients.
         ```
 *   **GET `/backup/status`**
     *   *Description*: Returns timestamp and filename of the latest automatic backup.
+    *   *Response*:
+        ```json
+        {
+          "last_backup_time": "2026-05-12T19:00:00Z",
+          "last_backup_file": "AutoBackup-12-05-2026-19-00.sql"
+        }
+        ```
 *   **POST `/backup/restore`**
     *   *Description*: Restores the database from an uploaded `.sql` or `.backup` file. **WARNING: Overwrites all existing data.**
     *   *Request Body*: `multipart/form-data` with field `backup` containing the file.
+    *   *Error*: Returns `429` if another backup/restore is in progress.
 
 ---
 

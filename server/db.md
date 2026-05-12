@@ -186,7 +186,7 @@ CREATE TABLE group_members (
 CREATE TABLE backup_settings (
     id SERIAL PRIMARY KEY,
     auto_backup_enabled BOOLEAN DEFAULT TRUE,
-    auto_backup_path TEXT DEFAULT 'D:/NP-Backups/',
+    auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
     last_backup_time TIMESTAMP WITH TIME ZONE,
     last_backup_file TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -196,6 +196,13 @@ CREATE TABLE backup_settings (
 -- Note: polymorphic relationship on member_id is validated in backend.
 -- If member_type = 'jobber', member_id must exist in jobbers table.
 -- If member_type = 'client', member_id must exist in clients table.
+
+-- =============================================
+-- DATABASE DATE PRECISION (TIMEZONES)
+-- =============================================
+-- The system configures the `node-postgres` driver to treat DATE OID 1082 as a raw string.
+-- This prevents the driver from automatically converting UTC dates to local time, which often causes date-shifting (e.g., a bill saved on May 1st appearing as April 30th).
+-- All dates are stored and retrieved as raw ISO-8601 string literals (`YYYY-MM-DD`).
 
 -- =============================================
 -- STOCK MAINTENANCE LOGIC
@@ -222,39 +229,50 @@ CREATE TABLE backup_settings (
 --    - Uses a polymorphic join on `group_members`.
 --    - If `member_type` = 'client', joins with `clients` and `billing` for volume/amount.
 --    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
--- 5. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
+-- 5. JOB WORK ANALYSIS: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
 -- 6. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
--- 7. CHALLAN NUMBER LOGIC:
+-- 7. DETAIL JOB REPORT:
+--    - Displays inward stock movement from Job Work entries.
+--    - Joins `purchase`, `purchase_items`, and `items`.
+--    - Uses `purchase_items.order_index` to maintain the specific sequence of items as entered.
+--    - Query:
+--    SELECT p.id AS purchase_id, p.date, pi.quantity, pi.order_index, i.name as item_name 
+--    FROM purchase p JOIN purchase_items pi ON p.id = pi.purchase_id JOIN items i ON i.id = pi.item_id 
+--    WHERE p.date BETWEEN $1 AND $2 
+--    ORDER BY p.date ASC, p.id ASC, pi.order_index ASC;
+-- 8. JOB SUMMARY REPORT:
+--    - Aggregates total quantities of items per jobber within a date range.
+--    - Only includes jobbers with purchase activity in the selected period.
+-- 9. ITEM SOLD SUMMARY:
+--    - Aggregates total quantities sold per item across all clients for a specific period.
+--    - Joins `billing`, `billing_items`, and `items`.
+--    - Used for tracking sales velocity and high-moving inventory items.
+-- 10. CHALLAN NUMBER LOGIC:
 --    - Format: <sequence>/<MONTH>/<FY> (e.g., 6/APR/26-27).
 --    - Financial Year: Starts April 1st, ends March 31st.
 --    - Sequence: Resets every month. The sequence number is calculated by finding the MAX() numeric sequence from existing records in the same month and financial year (excluding the current record in case of edits).
 --    - Consistency: Once a challan number is generated and saved, it remains fixed unless the month/FY changes during an edit.
 --    - Generation (Create): Sequence is calculated during preview and recalculated during actual save to handle concurrency.
 --    - Generation (Edit): The backend strictly evaluates date changes. If the month/FY changes, a new sequence is atomically generated. If it does not change, the original sequence is retained. Frontend inputs for challan_no are ignored.
--- 8. DETAIL JOB REPORT:
---    - Displays inward stock movement from Job Work entries.
---    - Joins `purchase`, `purchase_items`, and `items`.
---    - Uses `purchase_items.order_index` to maintain the specific sequence of items as entered.
---    - Query:
---    SELECT p.id, p.date, pi.quantity, pi.order_index, i.name as item_name 
---    FROM purchase p JOIN purchase_items pi ON p.id = pi.purchase_id JOIN items i ON i.id = pi.item_id 
---    WHERE p.date BETWEEN $1 AND $2 ORDER BY p.date ASC, p.id ASC, pi.order_index ASC;
--- 9. ITEM SOLD SUMMARY:
---    - Aggregates total quantities sold per item across all clients for a specific period.
---    - Joins `billing`, `billing_items`, and `items`.
---    - Used for tracking sales velocity and high-moving inventory items.
--- 10. Stable Item Ordering:
+-- 11. Stable Item Ordering:
 --    - To prevent item shuffling during edits, both `billing_items` and `purchase_items` include an `order_index` column.
 --    - The backend uses an UPSERT logic to edit items in place by their DB `id` while preserving their `order_index`. New items are appended with an incremented `order_index`.
 --    - Queries fetch items `ORDER BY order_index ASC`.
 
 -- =============================================
--- UI FEATURES (SKELETON/WIP)
+-- SYSTEM UTILITIES & DASHBOARDS
 -- =============================================
--- 1. PAYMENT MODULE: 
--- 2. UTILITY DASHBOARD:
---    - Dashboard (`Utility.jsx`) for system tools.
---    - Includes Backup & Restore Management.
+-- 1. UTILITY DASHBOARD (`Utility.jsx`):
+--    - Centralized hub for system tools and maintenance.
+--    - Provides access to Backup, Restore, and planned Security modules.
+-- 2. DASHBOARD:
+--    - High-level overview of system health and low-stock alerts.
+-- 3. MASTER LISTS:
+--    - Individual management pages for Items, Clients, Jobbers, and Transporters.
+-- 4. PLANNED MODULES (WIP):
+--    - PAYMENT MODULE: Integrated tracking of party payments (Currently uses dummy data).
+--    - SECURITY MODULE: Password management and access control (Placeholder in Utility).
+--    - AUDIT SYSTEM: User activity logging (Placeholder in Utility).
 
 -- =============================================
 -- BACKUP & RESTORE SYSTEM
@@ -264,18 +282,24 @@ CREATE TABLE backup_settings (
 --    - Streamed directly to the client for download.
 -- 2. AUTOMATIC BACKUP:
 --    - Centralized Trigger: Middleware in `app.js` detects successful POST/PUT/DELETE operations.
---    - Execution: Asynchronous background `pg_dump` to the path specified in `backup_settings`.
+--    - Execution: Asynchronous background `pg_dump` with `--clean` flag to the path specified in `backup_settings`.
 --    - Retention Policy: System keeps only the latest auto-backup file. Previous files recorded in `last_backup_file` are deleted upon successful creation of a new one.
--- 3. RESTORE LOGIC:
+-- 3. SELF-HEALING:
+--    - If auto-backup is enabled but the file recorded in `last_backup_file` is physically missing from the storage folder, the system automatically triggers a fresh background backup upon the next settings request.
+-- 4. CONCURRENCY CONTROL:
+--    - The system uses a memory lock (`isBackupRunning`) to prevent multiple backup or restore processes from overlapping. Subsequent requests return a `429` error until the active process completes.
+-- 5. RESTORE LOGIC:
 --    - Accepts a .sql or .backup file upload.
 --    - Executes restoration using `psql` or `pg_restore`.
 --    - Overwrites current database data (Schema + Data).
--- 2. UTILITY DASHBOARD:
---    - UI-only dashboard (`Utility.jsx`) for future system tools.
 
 -- =============================================
--- DATA SANITIZATION (REFERENCE)
+-- DATA SANITIZATION (AUTOMATIC)
 -- =============================================
+-- The system uses a centralized backend utility (`dataSanitizer.js`) to recursively convert all string inputs to UPPERCASE before they are saved to the database.
+-- This ensures consistent data entry, standardized reporting, and case-insensitive search reliability.
+-- 
+-- REFERENCE SQL (For manual cleanup):
 -- Master Tables
 -- UPDATE items SET name = UPPER(name), unit = UPPER(unit);
 -- UPDATE clients SET name = UPPER(name), street = UPPER(street), city = UPPER(city), shortform = UPPER(shortform), remark = UPPER(remark);
