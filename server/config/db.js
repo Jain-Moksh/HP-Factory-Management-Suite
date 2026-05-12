@@ -1,5 +1,6 @@
 const { Pool, types } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Fix for DATE shifted by timezone (treat DATE OID 1082 as string)
 types.setTypeParser(1082, (val) => val);

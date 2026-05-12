@@ -179,6 +179,20 @@ CREATE TABLE group_members (
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
 
+-- =========================
+-- SYSTEM TABLES
+-- =========================
+
+CREATE TABLE backup_settings (
+    id SERIAL PRIMARY KEY,
+    auto_backup_enabled BOOLEAN DEFAULT TRUE,
+    auto_backup_path TEXT DEFAULT 'D:/NP-Backups/',
+    last_backup_time TIMESTAMP WITH TIME ZONE,
+    last_backup_file TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Note: polymorphic relationship on member_id is validated in backend.
 -- If member_type = 'jobber', member_id must exist in jobbers table.
 -- If member_type = 'client', member_id must exist in clients table.
@@ -238,8 +252,24 @@ CREATE TABLE group_members (
 -- UI FEATURES (SKELETON/WIP)
 -- =============================================
 -- 1. PAYMENT MODULE: 
---    - Currently exists as a UI-only skeleton (`Payment.jsx`, `CreatePayment.jsx`).
---    - Does not have corresponding backend tables or API routes yet.
+-- 2. UTILITY DASHBOARD:
+--    - Dashboard (`Utility.jsx`) for system tools.
+--    - Includes Backup & Restore Management.
+
+-- =============================================
+-- BACKUP & RESTORE SYSTEM
+-- =============================================
+-- 1. MANUAL BACKUP:
+--    - Generates a full .sql dump using `pg_dump`.
+--    - Streamed directly to the client for download.
+-- 2. AUTOMATIC BACKUP:
+--    - Centralized Trigger: Middleware in `app.js` detects successful POST/PUT/DELETE operations.
+--    - Execution: Asynchronous background `pg_dump` to the path specified in `backup_settings`.
+--    - Retention Policy: System keeps only the latest auto-backup file. Previous files recorded in `last_backup_file` are deleted upon successful creation of a new one.
+-- 3. RESTORE LOGIC:
+--    - Accepts a .sql or .backup file upload.
+--    - Executes restoration using `psql` or `pg_restore`.
+--    - Overwrites current database data (Schema + Data).
 -- 2. UTILITY DASHBOARD:
 --    - UI-only dashboard (`Utility.jsx`) for future system tools.
 

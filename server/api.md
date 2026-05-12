@@ -267,6 +267,26 @@ Manages groups of jobbers and clients.
 *   **GET `/health`**
     *   *Description*: System health check.
     *   *Response*: `{"status": "OK", "timestamp": "..."}`
+1. 
+### 2. Backup & Restore
+*   **GET `/backup/manual`**
+    *   *Description*: Generates a full database backup and streams it as a `.sql` file download.
+*   **GET `/backup/settings`**
+    *   *Description*: Retrieves current automatic backup configuration.
+*   **PUT `/backup/settings`**
+    *   *Description*: Updates automatic backup settings.
+    *   *Request Body*:
+        ```json
+        {
+          "auto_backup_enabled": true,
+          "auto_backup_path": "D:/NP-Backups/"
+        }
+        ```
+*   **GET `/backup/status`**
+    *   *Description*: Returns timestamp and filename of the latest automatic backup.
+*   **POST `/backup/restore`**
+    *   *Description*: Restores the database from an uploaded `.sql` or `.backup` file. **WARNING: Overwrites all existing data.**
+    *   *Request Body*: `multipart/form-data` with field `backup` containing the file.
 
 ---
 

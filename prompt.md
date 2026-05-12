@@ -27,6 +27,7 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
   - `/queries`: Raw SQL templates using parameterized queries.
   - `/utils`: Challan generation, date formatting, validation.
   - `/config`: Database connection pool settings.
+  - `/uploads/backups`: Storage for manual/auto backup files.
   - `db.md` & `api.md`: Documentation (integrated into this file).
 
 ---
@@ -140,6 +141,17 @@ CREATE TABLE group_members (
     member_id INT NOT NULL, -- Refers to jobbers.id or clients.id
     UNIQUE(group_id, member_type, member_id)
 );
+
+-- System Configurations
+CREATE TABLE backup_settings (
+    id SERIAL PRIMARY KEY,
+    auto_backup_enabled BOOLEAN DEFAULT TRUE,
+    auto_backup_path TEXT DEFAULT 'D:/NP-Backups/',
+    last_backup_time TIMESTAMP WITH TIME ZONE,
+    last_backup_file TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ---
@@ -162,10 +174,10 @@ CREATE TABLE group_members (
 - `PUT /purchase/:id`: Update purchase. Reverts old stock impact, applies new one.
 - `DELETE /purchase/:id`: Secure delete (Requires password).
 
-### UI-Only (Work in Progress)
-- `GET /payment`: List payments (currently using dummy data).
-- `POST /payment`: Create payment (currently console log only).
-- `GET /utility`: System tools dashboard (currently empty).
+- `GET /utility`: System tools dashboard.
+- `GET /api/backup/manual`: Download full DB backup.
+- `PUT /api/backup/settings`: Toggle auto-backup and set path.
+- `POST /api/backup/restore`: Overwrite system from file.
 
 ### Reporting Endpoints
 - `GET /reports/party-stock-summary`: Total items billed to a client. Params: `client_id` (req), `from`, `to` (opt).
@@ -202,6 +214,12 @@ CREATE TABLE group_members (
 - Items must be assigned to a Jobber in the Master Database (`jobber_items` table).
 - During Job Work (Purchase) entry, the frontend validates if the selected item is assigned to the selected jobber.
 - If not assigned, a warning is shown, but the user can choose to proceed (creating a soft-link for that transaction).
+
+### E. Backup & Restore System
+- **Centralized Trigger**: Backend middleware intercepts successful `POST/PUT/DELETE` to trigger a background auto-backup.
+- **Retention**: Only the latest auto-backup is kept; previous files are deleted to optimize storage.
+- **Manual Backups**: Never deleted automatically; streamed directly to the client.
+- **Restore Safety**: High-priority confirmation required; restores overwrite the entire database.
 
 ---
 
@@ -252,7 +270,7 @@ CREATE TABLE group_members (
 | **Constants** | `client/src/config.js`, `client/src/constants/printSettings.js` |
 | **Reports** | `server/routes/reportRoutes.js`, `client/src/pages/reports/` |
 | **Payment (WIP)** | `Payment.jsx`, `CreatePayment.jsx`, `PaymentTable.jsx` |
-| **Utility (WIP)** | `Utility.jsx` |
+| **Utility & Backup** | `Utility.jsx`, `backupController.js`, `backupService.js` |
 
 ---
 *End of Master Guide.*

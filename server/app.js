@@ -2,12 +2,29 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const backupService = require('./services/backupService');
+
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Auto Backup Trigger Middleware
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    // Trigger auto backup on successful POST, PUT, DELETE requests
+    if (['POST', 'PUT', 'DELETE'].includes(req.method) && res.statusCode >= 200 && res.statusCode < 300) {
+      // Avoid triggering when the request is already related to backup
+      if (!req.path.startsWith('/api/backup')) {
+        backupService.triggerAutoBackup().catch(err => console.error('Auto backup trigger error:', err));
+      }
+    }
+  });
+  next();
+});
+
 
 // Routes
 app.use('/api/items', require('./routes/itemRoutes'));
@@ -19,6 +36,8 @@ app.use('/api/purchase', require('./routes/purchaseRoutes'));
 app.use('/api/groups', require('./routes/groupRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/backup', require('./routes/backupRoutes'));
+
 
 // Health check
 app.get('/health', (req, res) => {

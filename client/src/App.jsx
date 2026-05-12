@@ -30,6 +30,8 @@ import JobSummaryReport from './pages/reports/JobSummaryReport';
 import ItemSoldSummary from './pages/reports/ItemSoldSummary';
 import DayBook from './pages/DayBook';
 import Utility from './pages/Utility';
+import BackupManager from './pages/utility/BackupManager';
+import RestoreManager from './pages/utility/RestoreManager';
 
 function App() {
   return (
@@ -62,6 +64,8 @@ function App() {
         <Route path="/reports/item-sold-summary" element={<ItemSoldSummary />} />
         <Route path="/day-book" element={<DayBook />} />
         <Route path="/utility" element={<Utility />} />
+        <Route path="/utility/backup" element={<BackupManager />} />
+        <Route path="/utility/restore" element={<RestoreManager />} />
         
         {/* Master Routes */}
         <Route path="/master/items" element={<ItemList />} />
