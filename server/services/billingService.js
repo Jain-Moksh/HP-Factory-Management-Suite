@@ -58,8 +58,52 @@ const billingService = {
     return { ...billRes.rows[0], items: itemsRes.rows };
   },
 
-  getAll: async () => {
-    const result = await db.query(queries.getAllBills);
+  getAll: async (filters = {}) => {
+    const { searchChallan, searchClient, startDate, endDate, month, year } = filters;
+    let queryStr = `
+      SELECT 
+        b.*,
+        c.name as client_name,
+        c.shortform as client_shortform
+      FROM billing b
+      JOIN clients c ON b.client_id = c.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (searchChallan) {
+      params.push(`%${searchChallan}%`);
+      queryStr += ` AND b.challan_no ILIKE $${params.length}`;
+    }
+
+    if (searchClient) {
+      params.push(`%${searchClient}%`);
+      queryStr += ` AND c.name ILIKE $${params.length}`;
+    }
+
+    if (startDate) {
+      params.push(startDate);
+      queryStr += ` AND b.date >= $${params.length}`;
+    }
+
+    if (endDate) {
+      params.push(endDate);
+      queryStr += ` AND b.date <= $${params.length}`;
+    }
+
+    if (month !== undefined && month !== null && month !== '') {
+      params.push(parseInt(month) + 1); // JS months are 0-11, SQL EXTRACT(MONTH) is 1-12
+      queryStr += ` AND EXTRACT(MONTH FROM b.date) = $${params.length}`;
+    }
+
+    if (year) {
+      params.push(year);
+      queryStr += ` AND EXTRACT(YEAR FROM b.date) = $${params.length}`;
+    }
+
+    queryStr += ` ORDER BY b.date DESC, b.id DESC`;
+
+    const result = await db.query(queryStr, params);
     return result.rows;
   },
 

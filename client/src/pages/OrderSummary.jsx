@@ -29,7 +29,16 @@ const OrderSummary = () => {
   const fetchBills = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/billing`);
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (searchChallan) params.append('searchChallan', searchChallan);
+      if (searchClient) params.append('searchClient', searchClient);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (selectedMonth !== undefined) params.append('month', selectedMonth);
+      if (selectedYear) params.append('year', selectedYear);
+
+      const response = await fetch(`${API_BASE_URL}/billing?${params.toString()}`);
       const result = await response.json();
       if (result.success) {
         setBills(result.data);
@@ -41,15 +50,20 @@ const OrderSummary = () => {
     }
   };
 
+  // Debounced fetch for search inputs
   useEffect(() => {
-    fetchBills();
-  }, []);
+    const handler = setTimeout(() => {
+      fetchBills();
+    }, 300); // 300ms debounce
+    return () => clearTimeout(handler);
+  }, [searchChallan, searchClient, startDate, endDate, selectedMonth, selectedYear]);
 
   // Listen for global refresh event
   useEffect(() => {
-    window.addEventListener('app-refresh', fetchBills);
-    return () => window.removeEventListener('app-refresh', fetchBills);
-  }, []);
+    const handleRefresh = () => fetchBills();
+    window.addEventListener('app-refresh', handleRefresh);
+    return () => window.removeEventListener('app-refresh', handleRefresh);
+  }, [searchChallan, searchClient, startDate, endDate, selectedMonth, selectedYear]); // Include deps to ensure latest filters are used on refresh
 
   const handleDelete = async (id, password) => {
     if (password !== import.meta.env.VITE_DEL_PASS) {
@@ -88,7 +102,7 @@ const OrderSummary = () => {
           clientName: bill.client_name,
           clientRawName: bill.client_name,
           client_shortform: bill.client_shortform,
-          address1: bill.address1 || '', // Assume backend provides these or handled in PrintInvoice
+          address1: bill.address1 || '',
           address2: bill.address2 || '',
           transporterName: bill.transporter_name,
           short_remark: bill.short_remark || '',
@@ -101,7 +115,6 @@ const OrderSummary = () => {
           grandTotal: parseFloat(bill.grand_total)
         };
 
-        // Standardized mapping similar to CreateInvoice
         const subtotalBeforeRound = summaryData.itemsSubtotal + parseFloat(summaryData.transport) + parseFloat(summaryData.packing) - parseFloat(summaryData.extraDiscountAmount);
         const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
         summaryData.roundOffDisplay = calculatedRoundOff === 0 ? "0.00" : (calculatedRoundOff > 0 ? "+" : "-") + Math.abs(calculatedRoundOff).toFixed(2);
@@ -126,7 +139,7 @@ const OrderSummary = () => {
     }
   };
 
-  // Print lifecycle: trigger window.print() after component mounts
+  // Print lifecycle
   useEffect(() => {
     if (isPrinting) {
       const timer = setTimeout(() => {
@@ -136,24 +149,6 @@ const OrderSummary = () => {
       return () => clearTimeout(timer);
     }
   }, [isPrinting]);
-
-  const filteredBills = useMemo(() => {
-    return bills.filter(bill => {
-      const matchesChallan = bill.challan_no.toString().includes(searchChallan);
-      const matchesClient = bill.client_name.toLowerCase().includes(searchClient.toLowerCase());
-      
-      const billDateStr = bill.date.split('T')[0];
-      const matchesStart = !startDate || billDateStr >= startDate;
-      const matchesEnd = !endDate || billDateStr <= endDate;
-
-      // Extract month and year for filtering
-      const bDate = new Date(billDateStr);
-      const matchesMonth = bDate.getMonth() === selectedMonth;
-      const matchesYear = bDate.getFullYear() === selectedYear;
-
-      return matchesChallan && matchesClient && matchesStart && matchesEnd && matchesMonth && matchesYear;
-    });
-  }, [bills, searchChallan, searchClient, startDate, endDate, selectedMonth, selectedYear]);
 
   return (
     <Layout>
@@ -171,7 +166,7 @@ const OrderSummary = () => {
             onEndDate={setEndDate}
           />
           <BillingTable 
-            data={filteredBills} 
+            data={bills} 
             isLoading={isLoading} 
             onDelete={handleDelete}
             onPrint={handlePrint}
@@ -198,7 +193,7 @@ const OrderSummary = () => {
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
-          recordCount={filteredBills.length}
+          recordCount={bills.length}
         />
       </div>
     </Layout>

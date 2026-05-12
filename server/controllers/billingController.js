@@ -24,7 +24,7 @@ const billingController = {
 
   getAll: async (req, res, next) => {
     try {
-      const data = await billingService.getAll();
+      const data = await billingService.getAll(req.query);
       res.json({ success: true, count: data.length, data });
     } catch (err) {
       next(err);
