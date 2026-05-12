@@ -26,8 +26,8 @@ const backupService = {
         }
 
         console.log('🛡️ Self-Healing: No backup detected. Actively creating fresh backup...');
-        // Trigger backup in background
-        backupService.triggerAutoBackup().catch(err => console.error('Self-healing backup failed:', err));
+        // Trigger backup in background with FORCE flag to bypass throttle
+        backupService.triggerAutoBackup(true).catch(err => console.error('Self-healing backup failed:', err));
         
         // Return a temporary state so the UI knows one is being made
         return {
@@ -41,13 +41,13 @@ const backupService = {
   },
 
   updateSettings: async (settings) => {
-    const { auto_backup_enabled, auto_backup_path } = settings;
+    const { auto_backup_enabled, auto_backup_path, auto_backup_interval } = settings;
     const result = await db.query(
       `UPDATE backup_settings 
-       SET auto_backup_enabled = $1, auto_backup_path = $2, updated_at = CURRENT_TIMESTAMP 
+       SET auto_backup_enabled = $1, auto_backup_path = $2, auto_backup_interval = $3, updated_at = CURRENT_TIMESTAMP 
        WHERE id = 1 
        RETURNING *`,
-      [auto_backup_enabled, auto_backup_path]
+      [auto_backup_enabled, auto_backup_path, auto_backup_interval || 60]
     );
     return result.rows[0];
   },
@@ -95,7 +95,7 @@ const backupService = {
     });
   },
 
-  triggerAutoBackup: async () => {
+  triggerAutoBackup: async (force = false) => {
     if (isBackupRunning) {
       console.log('Skipping auto-backup: another backup process is already running.');
       return;
@@ -107,6 +107,21 @@ const backupService = {
       if (!settings || !settings.auto_backup_enabled) {
         isBackupRunning = false;
         return;
+      }
+
+      // THROTTLE: Only backup once every X minutes (User Defined)
+      // BYPASS if 'force' is true (used for Self-Healing or Manual trigger)
+      if (!force && settings.last_backup_time) {
+        const lastBackup = new Date(settings.last_backup_time);
+        const now = new Date();
+        const diffMins = (now - lastBackup) / (1000 * 60);
+        const interval = settings.auto_backup_interval || 60;
+
+        if (diffMins < interval) {
+          isBackupRunning = false;
+          console.log(`🛡️ Auto-backup skipped: Last backup was only ${Math.round(diffMins)} minutes ago. (Interval: ${interval}m)`);
+          return;
+        }
       }
 
       const backupDir = settings.auto_backup_path;

@@ -7,6 +7,7 @@ const AutoBackupSettings = () => {
   const [settings, setSettings] = useState({
     auto_backup_enabled: true,
     auto_backup_path: 'C:/NP-Backups/',
+    auto_backup_interval: 60,
     last_backup_time: null,
     last_backup_file: ''
   });
@@ -21,7 +22,7 @@ const AutoBackupSettings = () => {
     try {
       const response = await fetch(`${baseUrl}/api/backup/settings`);
       const data = await response.json();
-      setSettings(data);
+      setSettings(prev => ({ ...prev, ...data }));
     } catch (error) {
       console.error('Failed to fetch backup settings:', error);
     } finally {
@@ -54,10 +55,14 @@ const AutoBackupSettings = () => {
     setSaving(true);
     setStatus(null);
     try {
+      const payload = {
+        ...settings,
+        auto_backup_interval: parseInt(settings.auto_backup_interval) || 60
+      };
       const response = await fetch(`${baseUrl}/api/backup/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify(payload)
       });
       if (response.ok) {
         setStatus('success');
@@ -132,6 +137,30 @@ const AutoBackupSettings = () => {
           </label>
         </div>
 
+        {/* Interval Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Backup Interval (Minutes)
+          </label>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <Input 
+                type="number"
+                min="1"
+                max="1440"
+                value={settings.auto_backup_interval}
+                onChange={(e) => setSettings({...settings, auto_backup_interval: e.target.value})}
+              />
+            </div>
+            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+              Minimum time between backups
+            </span>
+          </div>
+        </div>
+
         {/* Path Input */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
@@ -204,6 +233,19 @@ const AutoBackupSettings = () => {
               <span className="text-xs font-medium">Failed to save settings</span>
             </div>
           )}
+        </div>
+        
+        {/* System Policy Note */}
+        <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="flex gap-3">
+            <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-brand-blue animate-pulse shrink-0"></div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">Performance Policy</span>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                To ensure maximum performance, automatic backups are performed at a minimum interval of <span className="font-bold text-brand-blue">{settings.auto_backup_interval || 60} minutes</span>. Manual backups can be triggered at any time from the main Utility page.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </Card>
