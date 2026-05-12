@@ -26,19 +26,42 @@ const billingService = {
       ]);
       const bill = billRes.rows[0];
 
-      // 2. Insert billing items and update stock
-      const billingItems = [];
-      let orderIndexCounter = 0;
-      for (const item of items) {
-        const itemRes = await client.query(queries.createBillItem, [
-          bill.id, item.item_id, item.rate, item.discount_percent, item.discount_amount,
-          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount, orderIndexCounter++
-        ]);
-        billingItems.push(itemRes.rows[0]);
+      // 3. Bulk Insert billing items and Bulk Update stock
+      const itemValues = [];
+      const stockValues = [];
+      const itemParams = [bill.id];
+      let paramIndex = 2;
 
-        // Stock Update (Decrement)
-        await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
-      }
+      items.forEach((item, index) => {
+        itemValues.push(`($1, $${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, $${paramIndex + 4}, $${paramIndex + 5}, $${paramIndex + 6}, $${paramIndex + 7}, $${paramIndex + 8})`);
+        itemParams.push(
+          item.item_id, item.rate, item.discount_percent, item.discount_amount,
+          toUpperCase(item.unit), item.quantity, item.bundle, item.total_amount, index
+        );
+        paramIndex += 9;
+
+        stockValues.push(`($${index * 2 + 1}::numeric, $${index * 2 + 2}::int)`);
+      });
+
+      // Execute Bulk Insert
+      const insertQuery = `
+        INSERT INTO billing_items (
+          billing_id, item_id, rate, discount_percent, discount_amount, 
+          unit, quantity, bundle, total_amount, order_index
+        ) VALUES ${itemValues.join(',')}
+        RETURNING *
+      `;
+      const billingItemsRes = await client.query(insertQuery, itemParams);
+      const billingItems = billingItemsRes.rows;
+
+      // Execute Bulk Stock Update
+      const stockParams = items.flatMap(item => [item.quantity, item.item_id]);
+      const stockQuery = `
+        UPDATE items SET stock = items.stock - v.qty
+        FROM (VALUES ${stockValues.join(',')}) AS v(qty, id)
+        WHERE items.id = v.id
+      `;
+      await client.query(stockQuery, stockParams);
 
       await client.query('COMMIT');
       return { ...bill, items: billingItems };
@@ -116,9 +139,16 @@ const billingService = {
       const itemsRes = await client.query(queries.getBillItems, [id]);
       const items = itemsRes.rows;
 
-      // 2. Reverse stock updates (Add back original quantities)
-      for (const item of items) {
-        await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
+      // 2. Reverse stock updates in Bulk
+      if (items.length > 0) {
+        const stockValues = items.map((_, i) => `($${i * 2 + 1}::numeric, $${i * 2 + 2}::int)`);
+        const stockParams = items.flatMap(item => [item.quantity, item.item_id]);
+        const stockQuery = `
+          UPDATE items SET stock = items.stock + v.qty
+          FROM (VALUES ${stockValues.join(',')}) AS v(qty, id)
+          WHERE items.id = v.id
+        `;
+        await client.query(stockQuery, stockParams);
       }
 
       // 3. Delete billing items
