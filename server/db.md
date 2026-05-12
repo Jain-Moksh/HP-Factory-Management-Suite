@@ -65,6 +65,7 @@ CREATE TABLE billing (
     long_remark TEXT,
     grand_total NUMERIC,
     challan_no TEXT UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (transporter_id) REFERENCES transporters(id)
@@ -101,6 +102,7 @@ CREATE TABLE purchase (
     date DATE,
     remark TEXT,
     challan_no TEXT UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (jobber_id) REFERENCES jobbers(id)
 );
@@ -181,12 +183,6 @@ CREATE TABLE group_members (
 -- If member_type = 'jobber', member_id must exist in jobbers table.
 -- If member_type = 'client', member_id must exist in clients table.
 
---- Time stamp addition ---
-
-ALTER TABLE billing ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE purchase ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
-
 -- =============================================
 -- STOCK MAINTENANCE LOGIC
 -- =============================================
@@ -214,17 +210,14 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
 -- 5. JOB WORK REPORT: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
 -- 6. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
--- 6. CHALLAN NUMBER LOGIC:
+-- 7. CHALLAN NUMBER LOGIC:
 --    - Format: <sequence>/<MONTH>/<FY> (e.g., 6/APR/26-27).
 --    - Financial Year: Starts April 1st, ends March 31st.
 --    - Sequence: Resets every month. The sequence number is calculated by finding the MAX() numeric sequence from existing records in the same month and financial year (excluding the current record in case of edits).
 --    - Consistency: Once a challan number is generated and saved, it remains fixed unless the month/FY changes during an edit.
 --    - Generation (Create): Sequence is calculated during preview and recalculated during actual save to handle concurrency.
 --    - Generation (Edit): The backend strictly evaluates date changes. If the month/FY changes, a new sequence is atomically generated. If it does not change, the original sequence is retained. Frontend inputs for challan_no are ignored.
-223: 
-224: -- 7. DETAIL JOB REPORT:
-
--- 7. DETAIL JOB REPORT:
+-- 8. DETAIL JOB REPORT:
 --    - Displays inward stock movement from Job Work entries.
 --    - Joins `purchase`, `purchase_items`, and `items`.
 --    - Uses `purchase_items.order_index` to maintain the specific sequence of items as entered.
@@ -232,20 +225,27 @@ ALTER TABLE items ADD COLUMN open_stock NUMERIC DEFAULT 0;
 --    SELECT p.id, p.date, pi.quantity, pi.order_index, i.name as item_name 
 --    FROM purchase p JOIN purchase_items pi ON p.id = pi.purchase_id JOIN items i ON i.id = pi.item_id 
 --    WHERE p.date BETWEEN $1 AND $2 ORDER BY p.date ASC, p.id ASC, pi.order_index ASC;
-
--- 8. ITEM SOLD SUMMARY:
+-- 9. ITEM SOLD SUMMARY:
 --    - Aggregates total quantities sold per item across all clients for a specific period.
 --    - Joins `billing`, `billing_items`, and `items`.
 --    - Used for tracking sales velocity and high-moving inventory items.
-
--- 5. Stable Item Ordering:
+-- 10. Stable Item Ordering:
 --    - To prevent item shuffling during edits, both `billing_items` and `purchase_items` include an `order_index` column.
 --    - The backend uses an UPSERT logic to edit items in place by their DB `id` while preserving their `order_index`. New items are appended with an incremented `order_index`.
 --    - Queries fetch items `ORDER BY order_index ASC`.
---    - Sequence: Resets every month. The sequence number is calculated by counting the existing bills for the same month and financial year (excluding the current record in case of edits).
---    - Dynamic Generation: Triggered automatically in frontend whenever the date is changed.
 
+-- =============================================
+-- UI FEATURES (SKELETON/WIP)
+-- =============================================
+-- 1. PAYMENT MODULE: 
+--    - Currently exists as a UI-only skeleton (`Payment.jsx`, `CreatePayment.jsx`).
+--    - Does not have corresponding backend tables or API routes yet.
+-- 2. UTILITY DASHBOARD:
+--    - UI-only dashboard (`Utility.jsx`) for future system tools.
 
+-- =============================================
+-- DATA SANITIZATION (REFERENCE)
+-- =============================================
 -- Master Tables
 -- UPDATE items SET name = UPPER(name), unit = UPPER(unit);
 -- UPDATE clients SET name = UPPER(name), street = UPPER(street), city = UPPER(city), shortform = UPPER(shortform), remark = UPPER(remark);

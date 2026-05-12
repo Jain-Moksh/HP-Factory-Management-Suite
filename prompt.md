@@ -16,8 +16,10 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
 - `/client`: React source code.
   - `/src/pages/master`: Management of Items, Clients, Jobbers, etc.
   - `/src/pages/reports`: Reporting dashboard and individual report pages.
-  - `/src/components`: Reusable UI like `BillingTable`, `PrintInvoice`, `Sidebar`.
+  - `/src/pages`: Main transaction pages like `CreateInvoice`, `OrderSummary`, `CreateJobWork`, `JobWork`, `Payment`, `Utility`, `Dashboard`, `DayBook`, `StockSummary`, `OrderSummary`.
+  - `/src/components`: Reusable UI like `BillingTable`, `PrintInvoice`, `Sidebar`, `MonthFilterFooter`, `PrintCopiesModal`, `DeleteModal`, `WarningModal`.
   - `/src/utils`: Logic for printing (`printUtils.js`) and API configuration.
+  - `config.js`: Environment-based API base URL configuration.
 - `/server`: Node.js/Express backend.
   - `/routes`: Endpoint definitions.
   - `/controllers`: Request handling and response mapping.
@@ -146,25 +148,34 @@ CREATE TABLE group_members (
 
 ### Master Data Endpoints
 - `GET /items`: List/search items. Supports `?search=term`.
-- `GET /items/:id/transactions`: Movement ledger for an item.
+- `GET /items/:id/transactions`: Movement ledger for an item. Includes both Inward (Purchase) and Outward (Billing) transactions.
 - `POST /items`: Create item.
 - `DELETE /items/:id`: Secure delete (Requires password).
 - `GET /clients`, `GET /jobbers`, `GET /transporters`: Standard CRUD.
+- `POST /jobbers`: Create jobber with optional `item_ids`.
 
 ### Billing & Purchase Endpoints
 - `POST /billing`: Save invoice. Automatically decrements `items.stock`.
 - `PUT /billing/:id`: Update invoice. Reverts old stock impact, applies new one.
-- `GET /billing/next-challan?date=YYYY-MM-DD`: Preview next challan number.
+- `GET /billing/next-challan`: Preview next challan number. Supports `?date=YYYY-MM-DD` and `?billing_id=X` (for edits).
 - `POST /purchase`: Save inward stock. Automatically increments `items.stock`.
 - `PUT /purchase/:id`: Update purchase. Reverts old stock impact, applies new one.
+- `DELETE /purchase/:id`: Secure delete (Requires password).
+
+### UI-Only (Work in Progress)
+- `GET /payment`: List payments (currently using dummy data).
+- `POST /payment`: Create payment (currently console log only).
+- `GET /utility`: System tools dashboard (currently empty).
 
 ### Reporting Endpoints
-- `GET /reports/party-stock-summary?client_id=X`: Total items billed to a client.
-- `GET /reports/party-sales`: Aggregated sales revenue per client.
-- `GET /reports/job-work-summary?jobber_id=X`: Total items received from a jobber.
+- `GET /reports/party-stock-summary`: Total items billed to a client. Params: `client_id` (req), `from`, `to` (opt).
+- `GET /reports/party-stock-detail`: Granular transaction ledger. Params: `client_id`, `item_id` (req), `from`, `to` (opt).
+- `GET /reports/party-sales`: Aggregated sales revenue per client. Params: `client_id`, `from`, `to` (opt).
+- `GET /reports/job-work-summary`: Total items received from a jobber. Params: `jobber_id` (req), `from`, `to` (opt).
 - `GET /reports/day-book?date=YYYY-MM-DD`: Combined ledger of all daily activity.
-- `GET /reports/detail-job-report`: Inward movement ordered by index for printing.
-- `GET /reports/item-sold-summary`: Total sales velocity per item.
+- `GET /reports/detail-job-report`: Inward movement ordered by index for printing. Params: `startDate`, `endDate`.
+- `GET /reports/item-sold-summary`: Total sales velocity per item. Params: `from`, `to`.
+- `GET /reports/job-summary`: Aggregated production by jobber and item. Params: `from`, `to`.
 
 ---
 
@@ -187,6 +198,11 @@ CREATE TABLE group_members (
 - Both `billing_items` and `purchase_items` use `order_index`.
 - During updates, the backend performs a "diff/upsert" using the DB `id` and `order_index` to preserve the user's intended order.
 
+### D. Jobber-Item Assignment Validation
+- Items must be assigned to a Jobber in the Master Database (`jobber_items` table).
+- During Job Work (Purchase) entry, the frontend validates if the selected item is assigned to the selected jobber.
+- If not assigned, a warning is shown, but the user can choose to proceed (creating a soft-link for that transaction).
+
 ---
 
 ## 🎨 5. Responsive Printing Engine
@@ -200,7 +216,10 @@ CREATE TABLE group_members (
 - `client/src/constants/printSettings.js`: Paper configurations.
 - `client/src/utils/printUtils.js`: Lifecycle management.
 - `client/src/components/PrintInvoice.jsx`: Invoice template.
-- `client/src/components/PrintDetailJobReport.jsx`: Report template.
+- `client/src/components/PrintDetailJobReport.jsx`: Detail Job Report template.
+- `client/src/components/PrintPartySalesReport.jsx`: Party Sales template.
+- `client/src/components/PrintItemSoldSummary.jsx`: Item Sold Summary template.
+- `client/src/components/PrintJobSummaryReport.jsx`: Job Summary template.
 
 ---
 
@@ -232,6 +251,8 @@ CREATE TABLE group_members (
 | **Global Styles** | `client/src/index.css` (Tailwind + Print Overrides) |
 | **Constants** | `client/src/config.js`, `client/src/constants/printSettings.js` |
 | **Reports** | `server/routes/reportRoutes.js`, `client/src/pages/reports/` |
+| **Payment (WIP)** | `Payment.jsx`, `CreatePayment.jsx`, `PaymentTable.jsx` |
+| **Utility (WIP)** | `Utility.jsx` |
 
 ---
 *End of Master Guide.*

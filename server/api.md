@@ -101,7 +101,7 @@ Manages manufacturing/job worker records and their assigned items.
 *   **GET `/jobbers`**
 *   **GET `/jobbers/:id`**
 *   **POST `/jobbers`**
-    *   *Request Body*: `{"name": "John Doe"}`
+    *   *Request Body*: `{"name": "John Doe", "item_ids": [1, 2]}` (item_ids is optional)
 *   **PUT `/jobbers/:id`**
 *   **DELETE `/jobbers/:id`**
     *   *Description*: Securely delete a jobber (requires password).
@@ -174,11 +174,11 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 *   **GET `/billing`**
     *   *Description*: List all billing records with client names.
 *   **GET `/billing/next-id`**
-    *   *Description*: Fetch the dynamic next numeric ID for internal tracking (Note: This is NOT the formatted Challan Number).
+    *   *Description*: Fetch the dynamic next numeric ID for internal tracking. If `date` is provided, it returns the formatted Challan Number (same as `next-challan`).
+    *   *Query Params*: `date` (optional, YYYY-MM-DD)
+    *   *Response*: `{"success": true, "nextId": 105}` or `{"success": true, "nextId": "105/apr/26-27"}`
 *   **GET `/billing/next-challan`**
-    *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**. Does not reserve the number.
-    *   *Query Params*: `date` (required, YYYY-MM-DD).
-    *   *Description*: Fetch the dynamically generated Challan Number for a specific date. Supports both Create and Edit modes.
+    *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Supports both Create and Edit modes. Acts as **Preview ONLY**.
     *   *Query Params*: `date` (required, YYYY-MM-DD), `billing_id` (optional, for edit mode to exclude the current record from sequence counting).
     *   *Response*:
         ```json
@@ -220,7 +220,8 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
 *   **GET `/purchase`**
     *   *Description*: List all purchase transactions with jobber names.
 *   **GET `/purchase/next-id`**
-    *   *Description*: Fetch the next internal numeric sequence ID.
+    *   *Description*: Fetch the next internal numeric sequence ID. If `date` is provided, returns the formatted Challan Number.
+    *   *Response*: `{"success": true, "nextId": 50}` or `{"success": true, "nextId": "P50/apr/26-27"}`
 *   **GET `/purchase/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**.
     *   *Query Params*: `date` (required, YYYY-MM-DD).
@@ -229,6 +230,7 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
     *   *Request Body*: Same as POST.
 *   **DELETE `/purchase/:id`**
     *   *Description*: Securely delete a purchase and revert stock.
+    *   *Request Body*: `{"password": "your_del_pass"}`
 
 ---
 
@@ -274,9 +276,10 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
 
 ### 0. Dashboard Summaries
 *   **GET `/reports/party-stock`**
-    *   *Description*: Overview of all items linked to all jobbers.
+    *   *Description*: Overview of all items linked to all jobbers. Returns current stock for each item.
 *   **GET `/reports/job-work`**
     *   *Description*: Overview of production volumes across all jobbers.
+    *   *Query Params*: `from`, `to` (optional).
 
 ### 1. Party Wise Stock
 *   **GET `/reports/party-stock-summary`**
@@ -293,14 +296,27 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
         }
         ```
 *   **GET `/reports/party-stock-detail`**
-    *   *Description*: Full transaction ledger for a specific client and item. Includes `rate` for each transaction.
+    *   *Description*: Full transaction ledger for a specific client and item.
     *   *Query Params*: `client_id`, `item_id` (required), `from`, `to` (optional).
-    *   *Response Transactions Object*: `{ "challan_no": "...", "date": "...", "rate": 10.50, "quantity": 100 }`
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "data": {
+            "item_name": "",
+            "transactions": [
+              { "challan_no": "101/APR/26-27", "date": "2026-04-10", "rate": 10.50, "quantity": 100 }
+            ],
+            "total_quantity": 100
+          }
+        }
+        ```
 
 ### 2. Party Wise Sales
 *   **GET `/reports/party-sales`**
     *   *Description*: Aggregated sales (billing) volume and revenue per client within a specific date range. Supports filtering by a specific client.
     *   *Query Params*: `client_id` (optional), `from`, `to` (optional).
+    *   *Response Fields*: `client_id`, `client_name`, `total_quantity`, `total_amount`.
 
 ### 3. Group Sales
 *   **GET `/reports/group-sales`**
@@ -422,7 +438,7 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
 
 ### 9. Item Sold Summary Report
 *   **GET `/reports/item-sold-summary`**
-    *   *Description*: Returns aggregated quantities of items sold within a date range.
+    *   *Description*: Returns aggregated quantities of items sold (from billing) within a date range.
     *   *Query Params*: `from` (YYYY-MM-DD), `to` (YYYY-MM-DD).
     *   *Response*:
         ```json
