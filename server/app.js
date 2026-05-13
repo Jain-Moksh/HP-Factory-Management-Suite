@@ -26,6 +26,11 @@ app.use((req, res, next) => {
 });
 
 
+// Trigger initial self-healing check on startup
+// This ensures that if the server starts and no backup is present, it's created immediately
+backupService.triggerAutoBackup().catch(err => console.error('Startup auto-backup check failed:', err));
+
+
 // Routes
 app.use('/api/items', require('./routes/itemRoutes'));
 app.use('/api/clients', require('./routes/clientRoutes'));

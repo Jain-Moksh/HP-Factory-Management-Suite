@@ -224,7 +224,7 @@ CREATE TABLE backup_settings (
 -- REPORTS MODULE LOGIC
 -- =============================================
 -- 1. PARTY WISE STOCK: Computes total quantity billed to a party using SUM(billing_items.quantity) grouped by item. Does NOT use items.stock.
--- 2. PARTY WISE STOCK DETAIL: Provides a granular transaction ledger for a specific client and item, fetching challan number, date, rate, and quantity from `billing` and `billing_items`.
+-- 2. PARTY WISE STOCK DETAIL: Provides a granular transaction ledger for a specific client and item, fetching challan number, date, rate, and quantity from `billing` and `billing_items`. The ledger includes the unit rate for each transaction to assist in price tracking.
 -- 3. PARTY WISE SALES: Aggregates client sales from `billing` and `billing_items` with date range support.
 -- 4. GROUP SALES REPORT:
 --    - Uses a polymorphic join on `group_members`.
@@ -285,8 +285,10 @@ CREATE TABLE backup_settings (
 --    - Centralized Trigger: Middleware in `app.js` detects successful POST/PUT/DELETE operations.
 --    - Execution: Asynchronous background `pg_dump` with `--clean` flag to the path specified in `backup_settings`.
 --    - Retention Policy: System keeps only the latest auto-backup file. Previous files recorded in `last_backup_file` are deleted upon successful creation of a new one.
--- 3. SELF-HEALING:
---    - If auto-backup is enabled but the file recorded in `last_backup_file` is physically missing from the storage folder, the system automatically triggers a fresh background backup upon the next settings request.
+-- 3. SELF-HEALING & RESILIENCE:
+--    - Proactive Check (Startup): The system automatically triggers an auto-backup check when the server starts to ensure immediate recovery availability.
+--    - Active Monitoring (Settings): Fetching backup settings triggers a physical disk check; if the last recorded file is missing, a fresh background backup is initiated.
+--    - UI Feedback: During self-healing, the API returns status strings like "Creating fresh backup..." or "Backup in progress..." to inform the user.
 -- 4. CONCURRENCY CONTROL:
 --    - The system uses a memory lock (`isBackupRunning`) to prevent multiple backup or restore processes from overlapping. Subsequent requests return a `429` error until the active process completes.
 -- 5. RESTORE LOGIC:

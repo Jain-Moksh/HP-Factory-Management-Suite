@@ -24,9 +24,8 @@ const backupService = {
           };
         }
 
-        console.log('🛡️ Self-Healing: No backup detected. Actively creating fresh backup...');
-        // Trigger backup in background with FORCE flag to bypass throttle
-        backupService.triggerAutoBackup(true).catch(err => console.error('Self-healing backup failed:', err));
+        // Trigger backup in background (triggerAutoBackup now handles the missing file check internally)
+        backupService.triggerAutoBackup().catch(err => console.error('Self-healing backup failed:', err));
         
         // Return a temporary state so the UI knows one is being made
         return {
@@ -108,9 +107,13 @@ const backupService = {
         return;
       }
 
+      // Check if file physically exists
+      const filePath = settings.last_backup_file ? path.join(settings.auto_backup_path, settings.last_backup_file) : null;
+      const fileExists = filePath && fs.existsSync(filePath);
+
       // THROTTLE: Only backup once every X minutes (User Defined)
-      // BYPASS if 'force' is true (used for Self-Healing or Manual trigger)
-      if (!force && settings.last_backup_time) {
+      // BYPASS if 'force' is true OR if the file is physically missing (Self-Healing)
+      if (!force && fileExists && settings.last_backup_time) {
         const lastBackup = new Date(settings.last_backup_time);
         const now = new Date();
         const diffMins = (now - lastBackup) / (1000 * 60);
@@ -121,6 +124,10 @@ const backupService = {
           console.log(`🛡️ Auto-backup skipped: Last backup was only ${Math.round(diffMins)} minutes ago. (Interval: ${interval}m)`);
           return;
         }
+      }
+
+      if (!fileExists) {
+        console.log('🛡️ Self-Healing: No backup detected or file missing. Actively creating fresh backup...');
       }
 
       const backupDir = settings.auto_backup_path;

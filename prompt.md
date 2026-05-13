@@ -181,6 +181,7 @@ CREATE TABLE backup_settings (
 
 - `GET /api/backup/manual`: Download full DB backup.
 - `GET /api/backup/status`: Fetch latest backup info.
+- `GET /api/backup/settings`: Fetch config; triggers self-healing if files are missing.
 - `PUT /api/backup/settings`: Update auto-backup configuration.
 - `POST /api/backup/restore`: Overwrite system from file.
 - `GET /utility`: System tools dashboard. Includes placeholders for Password Manager and System Audit (Coming Soon).
@@ -232,7 +233,11 @@ CREATE TABLE backup_settings (
 - **Execution**: Asynchronous background `pg_dump` with `--clean` flag (includes DROP TABLE commands for cleaner restoration).
 - **Storage Provisioning**: The system automatically creates the backup directory (e.g., `C:/NP-Backups/`) if it does not exist on the file system.
 - **Retention**: Only the latest auto-backup is kept; previous files are deleted to optimize storage.
-- **Self-Healing & Resilience**: The system is self-healing. If the `backup_settings` table is missing, the backend automatically recreates it. If columns are missing (schema updates), it migrates them automatically. If a recorded backup file is physically missing from disk, it triggers a new background backup.
+- **Self-Healing & Resilience**: The system is self-healing.
+  - **Auto-Recovery**: If the `backup_settings` table is missing, the backend automatically recreates it. If columns are missing, it migrates them automatically.
+  - **Proactive Trigger**: The system triggers a background auto-backup check on server startup.
+  - **Disk Synchronization**: Fetching settings triggers a physical disk check; if a recorded file is missing, a fresh backup is initiated.
+  - **Status Feedback**: Returns strings like `"Creating fresh backup..."` or `"Backup in progress..."` during active operations.
 - **Concurrency Control**: A global memory lock (`isBackupRunning`) prevents multiple backup or restore operations from running simultaneously, returning `429` errors for overlapping requests.
 - **Manual Backups**: Never deleted automatically; streamed directly to the client.
 - **Restore Safety**: High-priority confirmation required; restores overwrite the entire database.

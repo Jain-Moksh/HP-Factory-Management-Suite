@@ -274,7 +274,7 @@ Manages groups of jobbers and clients.
     *   *Error*: Returns `429` if another backup/restore is in progress.
 *   **GET `/backup/settings`**
     *   *Description*: Retrieves current automatic backup configuration.
-    *   *Response*:
+    *   *Response*: Returns current settings. If a backup is missing and being recreated by the self-healing logic, `last_backup_file` will return `"Creating fresh backup..."`.
         ```json
         {
           "id": 1,
@@ -296,7 +296,7 @@ Manages groups of jobbers and clients.
         }
         ```
 *   **GET `/backup/status`**
-    *   *Description*: Returns timestamp and filename of the latest automatic backup.
+    *   *Description*: Returns timestamp and filename of the latest automatic backup. Used for quick dashboard status checks.
     *   *Response*:
         ```json
         {
@@ -337,7 +337,7 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
         }
         ```
 *   **GET `/reports/party-stock-detail`**
-    *   *Description*: Full transaction ledger for a specific client and item.
+    *   *Description*: Full transaction ledger for a specific client and item. Includes unit rate for price tracking.
     *   *Query Params*: `client_id`, `item_id` (required), `from`, `to` (optional).
     *   *Response*:
         ```json
