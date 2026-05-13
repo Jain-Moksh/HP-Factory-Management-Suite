@@ -187,6 +187,7 @@ CREATE TABLE backup_settings (
     id SERIAL PRIMARY KEY,
     auto_backup_enabled BOOLEAN DEFAULT TRUE,
     auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
+    auto_backup_interval INT DEFAULT 60,
     last_backup_time TIMESTAMP WITH TIME ZONE,
     last_backup_file TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

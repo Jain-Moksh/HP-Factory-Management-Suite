@@ -9,8 +9,7 @@ let isBackupRunning = false;
 
 const backupService = {
   getSettings: async () => {
-    const result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
-    const settings = result.rows[0];
+    const settings = await backupService.getSettingsInternal();
 
     if (settings && settings.auto_backup_enabled) {
       const filePath = settings.last_backup_file ? path.join(settings.auto_backup_path, settings.last_backup_file) : null;
@@ -184,8 +183,43 @@ const backupService = {
   },
 
   getSettingsInternal: async () => {
-    const result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
-    return result.rows[0];
+    try {
+      let result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
+      if (result.rows.length === 0) {
+        // Table exists but no settings row, create it
+        await db.query('INSERT INTO backup_settings (id, auto_backup_enabled) VALUES (1, true) ON CONFLICT (id) DO NOTHING');
+        result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
+      }
+
+      // Column check: ensure auto_backup_interval exists (for users with older table schema)
+      if (result.rows[0] && result.rows[0].auto_backup_interval === undefined) {
+        console.log('🛡️ System Recovery: Column "auto_backup_interval" missing. Updating table...');
+        await db.query('ALTER TABLE backup_settings ADD COLUMN IF NOT EXISTS auto_backup_interval INT DEFAULT 60');
+        result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      if (error.code === '42P01') { // relation "backup_settings" does not exist
+        console.log('🛡️ System Recovery: Table "backup_settings" missing. Recreating table...');
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS backup_settings (
+              id SERIAL PRIMARY KEY,
+              auto_backup_enabled BOOLEAN DEFAULT TRUE,
+              auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
+              auto_backup_interval INT DEFAULT 60,
+              last_backup_time TIMESTAMP WITH TIME ZONE,
+              last_backup_file TEXT,
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+          INSERT INTO backup_settings (id, auto_backup_enabled) VALUES (1, true) ON CONFLICT (id) DO NOTHING;
+        `);
+        const retryResult = await db.query('SELECT * FROM backup_settings WHERE id = 1');
+        return retryResult.rows[0];
+      }
+      throw error;
+    }
   },
 
   restore: async (filePath) => {

@@ -274,13 +274,25 @@ Manages groups of jobbers and clients.
     *   *Error*: Returns `429` if another backup/restore is in progress.
 *   **GET `/backup/settings`**
     *   *Description*: Retrieves current automatic backup configuration.
+    *   *Response*:
+        ```json
+        {
+          "id": 1,
+          "auto_backup_enabled": true,
+          "auto_backup_path": "C:/NP-Backups/",
+          "auto_backup_interval": 60,
+          "last_backup_time": "...",
+          "last_backup_file": "..."
+        }
+        ```
 *   **PUT `/backup/settings`**
     *   *Description*: Updates automatic backup settings.
     *   *Request Body*:
         ```json
         {
           "auto_backup_enabled": true,
-          "auto_backup_path": "D:/NP-Backups/"
+          "auto_backup_path": "D:/NP-Backups/",
+          "auto_backup_interval": 60
         }
         ```
 *   **GET `/backup/status`**

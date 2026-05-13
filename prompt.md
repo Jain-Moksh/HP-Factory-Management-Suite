@@ -9,8 +9,9 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
 ### Core Technologies
 - **Frontend**: React.js (Vite), Tailwind CSS, Lucide Icons, Axios, React Router DOM.
 - **Backend**: Node.js, Express.js.
-- **Database**: PostgreSQL (node-postgres / `pg`).
-- **Development**: Local execution via `start.bat`.
+- **Database**: PostgreSQL (node-postgres / `pg`). Requires `pg_dump` and `psql` to be in the system PATH (or configured via `PG_BIN_PATH`).
+- **File Handling**: `multer` (for database restoration uploads).
+- **Development**: Local execution via `start.bat`. System updates and re-builds handled via `update.bat`.
 - **Production**: The backend serves the compiled React `dist` folder as static assets via a wildcard route (`*`) in `app.js`.
 
 ### Folder Structure
@@ -150,6 +151,7 @@ CREATE TABLE backup_settings (
     id SERIAL PRIMARY KEY,
     auto_backup_enabled BOOLEAN DEFAULT TRUE,
     auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
+    auto_backup_interval INT DEFAULT 60,
     last_backup_time TIMESTAMP WITH TIME ZONE,
     last_backup_file TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -209,7 +211,7 @@ CREATE TABLE backup_settings (
 - **Format**: `<Sequence>/<MONTH>/<FY>` (e.g., `15/MAY/26-27`).
 - **Prefixes**: Billing (None), Purchase (`P`).
 - **Reset Logic**: Sequence resets to `1` every month.
-- **Generation Rule**: The backend calculates the sequence using `MAX(sequence) + 1` for the month/FY. Frontend previews are for UI only.
+- **Generation Rule**: The backend calculates the sequence using `MAX(sequence) + 1` for the month/FY. To prevent duplicates in high-concurrency environments, the backend uses `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE` during the save transaction. Frontend previews are for UI only.
 
 ### C. Stable Item Ordering (`order_index`)
 - Both `billing_items` and `purchase_items` use `order_index`.
@@ -230,7 +232,7 @@ CREATE TABLE backup_settings (
 - **Execution**: Asynchronous background `pg_dump` with `--clean` flag (includes DROP TABLE commands for cleaner restoration).
 - **Storage Provisioning**: The system automatically creates the backup directory (e.g., `C:/NP-Backups/`) if it does not exist on the file system.
 - **Retention**: Only the latest auto-backup is kept; previous files are deleted to optimize storage.
-- **Self-Healing**: If auto-backup is enabled but the last backup file is missing from disk, the system automatically triggers a new backup in the background.
+- **Self-Healing & Resilience**: The system is self-healing. If the `backup_settings` table is missing, the backend automatically recreates it. If columns are missing (schema updates), it migrates them automatically. If a recorded backup file is physically missing from disk, it triggers a new background backup.
 - **Concurrency Control**: A global memory lock (`isBackupRunning`) prevents multiple backup or restore operations from running simultaneously, returning `429` errors for overlapping requests.
 - **Manual Backups**: Never deleted automatically; streamed directly to the client.
 - **Restore Safety**: High-priority confirmation required; restores overwrite the entire database.
@@ -247,6 +249,7 @@ CREATE TABLE backup_settings (
 - **Dynamic Sizing**: Supports A4 (Full) and A5 (Half) paper sizes via `printSettings.js`.
 - **CSS Isolation**: The `.print-container` class hides the main UI during `window.print()`.
 - **Optimization**: Pure black text, bold headers, and minimal padding for Dot Matrix printers.
+- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights to fit more items per page.
 
 ### File Mapping for Printing
 - `client/src/constants/printSettings.js`: Paper configurations.
