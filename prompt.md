@@ -187,10 +187,16 @@ CREATE TABLE backup_settings (
 - `GET /utility`: System tools dashboard. Includes placeholders for Password Manager and System Audit (Coming Soon).
 
 ### Reporting Endpoints
+- `GET /reports/party-stock`: Global stock overview (for Dashboard).
+- `GET /reports/job-work`: Global production overview (for Dashboard).
 - `GET /reports/party-stock-summary`: Total items billed to a client. Params: `client_id` (req), `from`, `to` (opt).
-- `GET /reports/party-stock-detail`: Granular transaction ledger. Params: `client_id`, `item_id` (req), `from`, `to` (opt).
+- `GET /reports/party-stock-detail`: Granular transaction ledger for item/client. Params: `client_id`, `item_id` (req), `from`, `to` (opt).
 - `GET /reports/party-sales`: Aggregated sales revenue per client. Params: `client_id`, `from`, `to` (opt).
+- `GET /reports/party-billing-detail`: Full transaction details (challans) for a client. Params: `client_id` (req), `from`, `to` (opt).
+- `GET /reports/group-sales`: Total revenue aggregated by group membership. Params: `from`, `to` (opt).
+- `GET /reports/group-sales-summary`: Sales per client within a specific group. Params: `group_id` (req), `from`, `to` (opt).
 - `GET /reports/job-work-summary`: Total items received from a jobber. Params: `jobber_id` (req), `from`, `to` (opt).
+- `GET /reports/job-work-detail`: Granular transaction ledger for item/jobber. Params: `jobber_id`, `item_id` (req), `from`, `to` (opt).
 - `GET /reports/day-book?date=YYYY-MM-DD`: Combined ledger of all daily activity.
 - `GET /reports/detail-job-report`: Inward movement ordered by index for printing. Params: `startDate`, `endDate`.
 - `GET /reports/item-sold-summary`: Total sales velocity per item. Params: `from`, `to`.
@@ -254,7 +260,7 @@ CREATE TABLE backup_settings (
 - **Dynamic Sizing**: Supports A4 (Full) and A5 (Half) paper sizes via `printSettings.js`.
 - **CSS Isolation**: The `.print-container` class hides the main UI during `window.print()`.
 - **Optimization**: Pure black text, bold headers, and minimal padding for Dot Matrix printers.
-- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
+- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Displays Transport and Packing charges as separate line items in the totals section for better clarity. Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
 
 ### File Mapping for Printing
 - `client/src/constants/printSettings.js`: Paper configurations.

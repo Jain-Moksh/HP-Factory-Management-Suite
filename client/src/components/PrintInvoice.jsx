@@ -249,10 +249,16 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                         <span className="t-label">Subtotal</span>
                         <span className="t-val">₹{fmt(data.itemsSubtotal)}</span>
                       </div>
-                      {(parseFloat(data.transport) > 0 || parseFloat(data.packing) > 0) && (
+                      {parseFloat(data.transport) > 0 && (
                         <div className="t-row">
-                          <span className="t-label">Charges</span>
-                          <span className="t-val">₹{fmt((parseFloat(data.transport) || 0) + (parseFloat(data.packing) || 0))}</span>
+                          <span className="t-label">Transport</span>
+                          <span className="t-val">₹{fmt(data.transport)}</span>
+                        </div>
+                      )}
+                      {parseFloat(data.packing) > 0 && (
+                        <div className="t-row">
+                          <span className="t-label">Packing</span>
+                          <span className="t-val">₹{fmt(data.packing)}</span>
                         </div>
                       )}
                       {parseFloat(data.extraDiscountAmount) > 0 && (

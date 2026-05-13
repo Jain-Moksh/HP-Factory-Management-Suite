@@ -140,7 +140,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 
 *   **POST `/billing`**
     *   *Description*: Create a new bill with multiple items (Transaction-safe). **Challan Number is automatically generated on the server** based on selected date and financial year.
-    *   *Challan Format*: `<sequence>/<month>/<fy>` (e.g., `103/jan/25-26`). Sequence resets monthly.
+    *   *Challan Format*: `<sequence>/<MONTH>/<FY>` (e.g., `103/JAN/25-26`). Sequence resets monthly.
     *   *Request Body*:
         ```json
         {
@@ -149,12 +149,12 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
           "date": "2024-04-09",
           "transport_charge": 100,
           "packing_charge": 50,
-          "discount_percent": 10,
-          "discount_amount": 15,
-          "total_amount": 1500,
+          "discount_percent": 0,
+          "discount_amount": 0,
+          "total_amount": 1000,
           "short_remark": "Rush order",
           "long_remark": "Deliver to side entrance",
-          "grand_total": 1535,
+          "grand_total": 1150,
           "items": [
             {
               "item_id": 1,
@@ -176,7 +176,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 *   **GET `/billing/next-id`**
     *   *Description*: Fetch the dynamic next numeric ID for internal tracking. If `date` is provided, it returns the formatted Challan Number (same as `next-challan`).
     *   *Query Params*: `date` (optional, YYYY-MM-DD)
-    *   *Response*: `{"success": true, "nextId": 105}` or `{"success": true, "nextId": "105/apr/26-27"}`
+    *   *Response*: `{"success": true, "nextId": 105}` or `{"success": true, "nextId": "105/APR/26-27"}`
 *   **GET `/billing/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Supports both Create and Edit modes. Acts as **Preview ONLY**.
     *   *Query Params*: `date` (required, YYYY-MM-DD), `billing_id` (optional, for edit mode to exclude the current record from sequence counting).
@@ -188,7 +188,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
         }
         ```
 *   **PUT `/billing/:id`**
-    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes. **Challan generation rules:** The frontend `challan_no` is ignored. If the month/FY changes, the backend automatically generates a new sequence number. Otherwise, the original sequence is retained.
+    *   *Description*: Update an existing invoice and its items. This operation **reverts** the stock changes of the old bill and **applies** new stock changes. **Challan generation rules:** The frontend `challan_no` is ignored. If the month/FY changes, the backend automatically generates a new sequence number. Otherwise, the original sequence is retained. (e.g., `103/JAN/25-26`)
     *   *Request Body*: Same as POST.
 *   **DELETE `/billing/:id`**
     *   *Description*: Securely delete an invoice. On deletion of invoice, associated item quantities are restored back to stock. Operation is transactional to ensure stock consistency.
@@ -199,7 +199,7 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
 
 *   **POST `/purchase`**
     *   *Description*: Create a new purchase record. **Challan Number is automatically generated on the server.**
-    *   *Challan Format*: `P<sequence>/<month>/<fy>` (e.g., `P103/jan/25-26`). Sequence resets monthly.
+    *   *Challan Format*: `P<sequence>/<MONTH>/<FY>` (e.g., `P103/JAN/25-26`). Sequence resets monthly.
     *   *Request Body*:
         ```json
         {
@@ -221,7 +221,7 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
     *   *Description*: List all purchase transactions with jobber names.
 *   **GET `/purchase/next-id`**
     *   *Description*: Fetch the next internal numeric sequence ID. If `date` is provided, returns the formatted Challan Number.
-    *   *Response*: `{"success": true, "nextId": 50}` or `{"success": true, "nextId": "P50/apr/26-27"}`
+    *   *Response*: `{"success": true, "nextId": 50}` or `{"success": true, "nextId": "P50/APR/26-27"}`
 *   **GET `/purchase/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**.
     *   *Query Params*: `date` (required, YYYY-MM-DD).
@@ -300,6 +300,7 @@ Manages groups of jobbers and clients.
     *   *Response*:
         ```json
         {
+          "success": true,
           "last_backup_time": "2026-05-12T19:00:00Z",
           "last_backup_file": "AutoBackup-12-05-2026-19-00.sql"
         }
@@ -388,7 +389,7 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           "data": {
             "client_name": "ACME CORP",
             "transactions": [
-               { "challan_no": "101/apr/26-27", "date": "2026-04-10", "amount": 5000.00 }
+               { "challan_no": "101/APR/26-27", "date": "2026-04-10", "amount": 5000.00 }
             ],
             "total_amount": 5000.00
           }
