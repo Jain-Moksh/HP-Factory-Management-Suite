@@ -254,7 +254,7 @@ CREATE TABLE backup_settings (
 - **Dynamic Sizing**: Supports A4 (Full) and A5 (Half) paper sizes via `printSettings.js`.
 - **CSS Isolation**: The `.print-container` class hides the main UI during `window.print()`.
 - **Optimization**: Pure black text, bold headers, and minimal padding for Dot Matrix printers.
-- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights to fit more items per page.
+- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
 
 ### File Mapping for Printing
 - `client/src/constants/printSettings.js`: Paper configurations.
