@@ -172,7 +172,14 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
 *   **GET `/billing/:id`**
     *   *Description*: Returns bill details, client name, transporter name, and item list with item names.
 *   **GET `/billing`**
-    *   *Description*: List all billing records with client names.
+    *   *Description*: List all billing records with client names. Supports server-side filtering.
+    *   *Query Params*:
+        *   `searchChallan` (optional): Filter by challan number (ILIKE).
+        *   `searchClient` (optional): Filter by client name (ILIKE).
+        *   `startDate` (optional, YYYY-MM-DD): Filter records on or after this date.
+        *   `endDate` (optional, YYYY-MM-DD): Filter records on or before this date.
+        *   `month` (optional, 0-11): Filter by specific month.
+        *   `year` (optional): Filter by specific year.
 *   **GET `/billing/next-id`**
     *   *Description*: Fetch the dynamic next numeric ID for internal tracking. If `date` is provided, it returns the formatted Challan Number (same as `next-challan`).
     *   *Query Params*: `date` (optional, YYYY-MM-DD)

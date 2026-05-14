@@ -150,7 +150,6 @@ CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
 CREATE INDEX idx_billing_client_date ON billing(client_id, date);
 
-CREATE INDEX idx_group_members_group ON group_members(group_id);
 
 CREATE INDEX idx_purchase_jobber_date ON purchase(jobber_id, date);
 CREATE INDEX idx_purchase_items_item ON purchase_items(item_id);
@@ -178,6 +177,8 @@ CREATE TABLE group_members (
     UNIQUE(group_id, member_type, member_id),
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_group_members_group ON group_members(group_id);
 
 -- =========================
 -- SYSTEM TABLES

@@ -9,7 +9,7 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
 ### Core Technologies
 - **Frontend**: React.js (Vite), Tailwind CSS, Lucide Icons, Axios, React Router DOM.
 - **Backend**: Node.js, Express.js.
-- **Database**: PostgreSQL (node-postgres / `pg`). Requires `pg_dump` and `psql` to be in the system PATH (or configured via `PG_BIN_PATH`).
+- **Database**: PostgreSQL (node-postgres / `pg`). Requires `pg_dump`, `psql`, and `pg_restore` to be in the system PATH (or configured via `PG_BIN_PATH`).
 - **File Handling**: `multer` (for database restoration uploads).
 - **Development**: Local execution via `start.bat`. System updates and re-builds handled via `update.bat`.
 - **Production**: The backend serves the compiled React `dist` folder as static assets via a wildcard route (`*`) in `app.js`.
@@ -20,7 +20,8 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
   - `/src/pages/reports`: Reporting dashboard and individual report pages.
   - `/src/pages`: Transactional and dashboard pages (`CreateInvoice`, `CreateJobWork`, `CreatePayment`, `Dashboard`, `DayBook`, `ItemStockDetails`, `JobWork`, `OrderSummary`, `Payment`, `StockSummary`, `Utility`).
   - `/src/pages/utility`: Specialized system tools (`BackupManager`, `RestoreManager`).
-  - `/src/components`: Reusable UI like `BillingTable`, `PrintInvoice`, `Sidebar`, `MonthFilterFooter`, `PrintCopiesModal`, `DeleteModal`, `WarningModal`.
+  - `/src/components`: Reusable UI like `BillingTable`, `PrintInvoice`, `Sidebar`, `MonthFilterFooter`.
+  - `/src/components/UI`: Specialized UI elements like `PrintCopiesModal`, `PrintOptionsModal`, `DeleteModal`, `WarningModal`, `SearchableSelect`.
   - `/src/utils`: Logic for printing (`printUtils.js`) and API configuration.
   - `client/src/config.js`: Environment-based API base URL configuration (uses `VITE_API_URL`).
 - `client/.env`: Defines the API URL and the `VITE_DEL_PASS` master password.
@@ -69,6 +70,13 @@ CREATE TABLE jobbers (
 CREATE TABLE transporters (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
+);
+
+-- Many-to-Many: jobbers ↔ items
+CREATE TABLE jobber_items (
+    id SERIAL PRIMARY KEY,
+    jobber_id INT NOT NULL REFERENCES jobbers(id) ON DELETE CASCADE,
+    item_id INT NOT NULL REFERENCES items(id) ON DELETE CASCADE
 );
 ```
 
@@ -260,7 +268,7 @@ CREATE TABLE backup_settings (
 - **Dynamic Sizing**: Supports A4 (Full) and A5 (Half) paper sizes via `printSettings.js`.
 - **CSS Isolation**: The `.print-container` class hides the main UI during `window.print()`.
 - **Optimization**: Pure black text, bold headers, and minimal padding for Dot Matrix printers.
-- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Displays Transport and Packing charges as separate line items in the totals section for better clarity. Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
+- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Displays Transport and Packing charges as separate line items in the totals section for better clarity. Enforces dynamic decimal formatting for bundles (e.g., "1.5" instead of "1.50", "—" for zero) to maximize column space. Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
 
 ### File Mapping for Printing
 - `client/src/constants/printSettings.js`: Paper configurations.
