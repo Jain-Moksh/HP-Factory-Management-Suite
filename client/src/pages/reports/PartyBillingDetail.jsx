@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
+import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
+import PrintGroupPartySalesReport from '../../components/PrintGroupPartySalesReport';
 import { API_BASE_URL } from '../../config';
 
 const PartyBillingDetail = () => {
@@ -19,6 +21,32 @@ const PartyBillingDetail = () => {
   const [startDate, setStartDate] = useState(initialFrom);
   const [endDate, setEndDate] = useState(initialTo);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Printing State
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedPaperSize, setSelectedPaperSize] = useState('A5');
+
+  // Print lifecycle: trigger window.print() after component mounts
+  useEffect(() => {
+    if (isPrinting) {
+      const handleAfterPrint = () => {
+        setIsPrinting(false);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      const timer = setTimeout(() => {
+        window.print();
+      }, 1500); // 1.5s for portal mounting
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+    }
+  }, [isPrinting]);
 
   // Monthly Filter State
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -68,6 +96,15 @@ const PartyBillingDetail = () => {
     return () => window.removeEventListener('app-refresh', fetchData);
   }, [clientId, startDate, endDate]);
 
+  const handlePrintRequest = () => {
+    setShowPrintModal(true);
+  };
+
+  const executePrint = () => {
+    setShowPrintModal(false);
+    setIsPrinting(true);
+  };
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24">
@@ -114,16 +151,29 @@ const PartyBillingDetail = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={fetchData}
-                disabled={isLoading}
-                className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition shadow-lg shadow-brand-blue/20 flex items-center gap-2 active:scale-95 disabled:opacity-50"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                {isLoading ? 'Updating...' : 'Set Filter'}
-              </button>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={fetchData}
+                  disabled={isLoading}
+                  className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition shadow-lg shadow-brand-blue/20 flex items-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  <svg className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {isLoading ? 'Updating...' : 'Refresh'}
+                </button>
+
+                <button 
+                  onClick={handlePrintRequest}
+                  disabled={!data || data.transactions.length === 0}
+                  className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition flex items-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print Individual Report
+                </button>
+              </div>
             </div>
           </div>
 
@@ -203,6 +253,30 @@ const PartyBillingDetail = () => {
           recordCount={data?.transactions?.length || 0}
         />
       </div>
+
+      {isPrinting && data && (
+        <PrintGroupPartySalesReport 
+          data={[
+            {
+              client_id: clientId,
+              client_name: data.client_name,
+              transactions: data.transactions,
+              party_total: data.total_amount
+            }
+          ]} 
+          startDate={startDate} 
+          endDate={endDate} 
+          paperSize={selectedPaperSize}
+        />
+      )}
+
+      <PrintOptionsModal 
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        onPrint={executePrint}
+        selectedSize={selectedPaperSize}
+        setSelectedSize={setSelectedPaperSize}
+      />
     </Layout>
   );
 };

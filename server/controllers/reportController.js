@@ -152,6 +152,17 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getGroupSalesPrint: async (req, res, next) => {
+    try {
+      const { group_id, from, to } = req.query;
+      if (!group_id) return res.status(400).json({ success: false, message: "group_id is required" });
+      const data = await reportService.getGroupSalesPrint(group_id, from, to);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

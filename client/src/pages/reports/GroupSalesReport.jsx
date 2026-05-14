@@ -4,6 +4,8 @@ import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
 import SearchableSelect from '../../components/UI/SearchableSelect';
+import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
+import PrintGroupPartySalesReport from '../../components/PrintGroupPartySalesReport';
 import { API_BASE_URL } from '../../config';
 
 const GroupSalesReport = () => {
@@ -13,7 +15,36 @@ const GroupSalesReport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  // Printing State
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printData, setPrintData] = useState([]);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedPaperSize, setSelectedPaperSize] = useState('A5');
+  const [isFetchingPrintData, setIsFetchingPrintData] = useState(false);
+
   const navigate = useNavigate();
+
+  // Print lifecycle: trigger window.print() after component mounts
+  useEffect(() => {
+    if (isPrinting) {
+      const handleAfterPrint = () => {
+        setIsPrinting(false);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      const timer = setTimeout(() => {
+        window.print();
+      }, 1500); // 1.5s for portal mounting
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+    }
+  }, [isPrinting]);
 
   // Monthly Filter State
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -91,6 +122,27 @@ const GroupSalesReport = () => {
     navigate(`/reports/party-billing-detail/${clientId}?from=${startDate}&to=${endDate}`);
   };
 
+  const handlePrintRequest = () => {
+    setShowPrintModal(true);
+  };
+
+  const executePrint = async () => {
+    setShowPrintModal(false);
+    setIsFetchingPrintData(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/reports/group-sales-print?group_id=${selectedGroupId}&from=${startDate}&to=${endDate}`);
+      const result = await response.json();
+      if (result.success) {
+        setPrintData(result.data);
+        setIsPrinting(true);
+      }
+    } catch (err) {
+      console.error("Error fetching print data:", err);
+    } finally {
+      setIsFetchingPrintData(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24">
@@ -110,42 +162,59 @@ const GroupSalesReport = () => {
               <span className="text-[11px] font-bold text-text-primary uppercase tracking-tight whitespace-nowrap">Filter Report</span>
             </div>
 
-            <div className="flex-1 flex items-center gap-4">
-              <SearchableSelect 
-                options={groups}
-                value={selectedGroupId}
-                onChange={setSelectedGroupId}
-                placeholder="Select a Group..."
-                className="flex-1 max-w-[320px]"
-              />
+              <div className="flex-1 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <SearchableSelect 
+                    options={groups}
+                    value={selectedGroupId}
+                    onChange={setSelectedGroupId}
+                    placeholder="Select a Group..."
+                    className="flex-1 min-w-[280px]"
+                  />
 
-              <div className="flex items-center gap-2">
-                <input 
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
-                />
-                <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
-                <input 
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
-                />
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                    />
+                    <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
+                    <input 
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                    />
+                  </div>
+
+                  <button 
+                    onClick={fetchData}
+                    disabled={!selectedGroupId || isLoading}
+                    className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 disabled:opacity-50 active:scale-95"
+                  >
+                    <svg className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {isLoading ? 'Wait...' : 'Refresh'}
+                  </button>
+                </div>
+
+                <button 
+                  onClick={handlePrintRequest}
+                  disabled={!selectedGroupId || data.length === 0 || isFetchingPrintData}
+                  className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[12.5px] font-bold px-4 py-1.5 rounded transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                >
+                  {isFetchingPrintData ? (
+                    <div className="w-3.5 h-3.5 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                  )}
+                  Print Report
+                </button>
               </div>
-
-              <button 
-                onClick={fetchData}
-                disabled={!selectedGroupId || isLoading}
-                className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 disabled:opacity-50 disable:hover:bg-brand-blue active:scale-95"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-                {isLoading ? 'Wait...' : 'Set Filter'}
-              </button>
-            </div>
           </div>
 
           {/* Table Implementation */}
@@ -226,6 +295,23 @@ const GroupSalesReport = () => {
           recordCount={data.length}
         />
       </div>
+
+      {isPrinting && (
+        <PrintGroupPartySalesReport 
+          data={printData} 
+          startDate={startDate} 
+          endDate={endDate} 
+          paperSize={selectedPaperSize}
+        />
+      )}
+
+      <PrintOptionsModal 
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        onPrint={executePrint}
+        selectedSize={selectedPaperSize}
+        setSelectedSize={setSelectedPaperSize}
+      />
     </Layout>
   );
 };

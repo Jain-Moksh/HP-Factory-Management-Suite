@@ -234,6 +234,23 @@ const reportQueries = {
           AND ($2::DATE IS NULL OR b.date <= $2)
         GROUP BY i.name
         ORDER BY i.name ASC;
+    `,
+
+    // 15. Group Party Wise Sales Print (Detailed transactions for all clients in a group)
+    getGroupSalesPrint: `
+        SELECT 
+            c.id as client_id,
+            c.name as client_name,
+            b.challan_no,
+            b.date,
+            b.grand_total as amount
+        FROM group_members gm
+        JOIN clients c ON gm.member_id = c.id AND gm.member_type = 'client'
+        JOIN billing b ON b.client_id = c.id 
+        WHERE gm.group_id = $1
+            AND ($2::DATE IS NULL OR b.date >= $2)
+            AND ($3::DATE IS NULL OR b.date <= $3)
+        ORDER BY c.name ASC, b.date ASC
     `
 };
 

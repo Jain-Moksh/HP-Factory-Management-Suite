@@ -82,6 +82,33 @@ const reportService = {
   getItemSoldSummary: async (fromDate, toDate) => {
     const result = await db.query(queries.getItemSoldSummary, [fromDate || null, toDate || null]);
     return result.rows;
+  },
+
+  getGroupSalesPrint: async (groupId, fromDate, toDate) => {
+    const result = await db.query(queries.getGroupSalesPrint, [groupId, fromDate || null, toDate || null]);
+    const rawRows = result.rows;
+
+    // Group by client
+    const grouped = rawRows.reduce((acc, row) => {
+      const clientId = row.client_id;
+      if (!acc[clientId]) {
+        acc[clientId] = {
+          client_id: clientId,
+          client_name: row.client_name,
+          transactions: [],
+          party_total: 0
+        };
+      }
+      acc[clientId].transactions.push({
+        challan_no: row.challan_no,
+        date: row.date,
+        amount: row.amount
+      });
+      acc[clientId].party_total += parseFloat(row.amount);
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
   }
 };
 

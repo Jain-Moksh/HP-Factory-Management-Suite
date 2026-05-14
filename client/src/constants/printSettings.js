@@ -20,5 +20,16 @@ export const PAPER_CONFIG = {
     headerFontSize: '10px',
     tablePadding: '1px 3px',
     rowHeight: '15px',
+  },
+  A6: {
+    id: 'A6',
+    name: 'A6 Size (Compact)',
+    width: '105mm',
+    height: '148.5mm',
+    margin: '3mm',
+    fontSize: '7.5px',
+    headerFontSize: '9px',
+    tablePadding: '1px 2px',
+    rowHeight: '13px',
   }
 };
