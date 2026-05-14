@@ -4,7 +4,10 @@ import { createPortal } from 'react-dom';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v) => {
   const n = parseFloat(v || 0);
-  return n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  if (Number.isInteger(n)) {
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const formatDate = (dateStr) => {
@@ -209,7 +212,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                 <tbody>
                   {chunk.map((item, idx) => {
                     const bundleRaw = item.qty && item.conversion ? (parseFloat(item.qty) / parseFloat(item.conversion)) : 0;
-                    const bundle = bundleRaw === 0 ? '—' : (Number.isInteger(bundleRaw) ? bundleRaw.toString() : bundleRaw.toFixed(2).replace(/\.?0+$/, ""));
+                    const bundle = bundleRaw === 0 ? '—' : (Number.isInteger(bundleRaw) ? bundleRaw.toString() : bundleRaw.toFixed(2));
                     return (
                       <tr key={idx}>
                         <td className="c-bund">{bundle}</td>

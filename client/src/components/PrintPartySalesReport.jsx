@@ -110,7 +110,7 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
                       {row.client_name}
                     </td>
                     <td className="col-amount font-black text-right">
-                      ₹{parseFloat(row.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₹{parseFloat(row.total_amount).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(row.total_amount)) ? 0 : 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}
@@ -119,7 +119,7 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
                     Grand Total:
                   </td>
                   <td className="col-amount font-black text-right" style={{ fontSize: '1.1em' }}>
-                    ₹{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(totalAmount) ? 0 : 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
               </>

@@ -208,7 +208,7 @@ const PartyBillingDetail = () => {
                           {new Date(t.date).toLocaleDateString('en-GB')}
                         </td>
                         <td className="px-5 py-1.5 text-right text-[14px] font-bold text-brand-blue px-10 tracking-tight">
-                          ₹{parseFloat(t.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          ₹{parseFloat(t.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(t.amount || 0)) ? 0 : 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     ))
@@ -225,7 +225,7 @@ const PartyBillingDetail = () => {
                     <tr className="bg-bg-main/50 font-bold border-t-2 border-border-soft">
                       <td colSpan="2" className="px-5 py-3 text-right text-[10px] text-text-light uppercase tracking-widest font-black italic opacity-70">Total Party Billing:</td>
                       <td className="px-5 py-3 text-right text-[16px] font-black text-brand-blue px-10 tracking-tight">
-                        ₹{parseFloat(data.total_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        ₹{parseFloat(data.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(data.total_amount || 0)) ? 0 : 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
                   </tfoot>

@@ -154,7 +154,7 @@ const PrintGroupPartySalesReport = ({ data, startDate, endDate, paperSize = 'A5'
                     <td className="col-no uppercase">{t.challan_no}</td>
                     <td className="col-date">{formatDate(t.date)}</td>
                     <td className="col-amount text-right">
-                      ₹{parseFloat(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₹{parseFloat(t.amount).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(t.amount)) ? 0 : 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}
@@ -163,7 +163,7 @@ const PrintGroupPartySalesReport = ({ data, startDate, endDate, paperSize = 'A5'
                     Total Party Sales:
                   </td>
                   <td className="text-right font-black" style={{ borderLeft: '1px solid #000' }}>
-                    ₹{parseFloat(party.party_total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹{parseFloat(party.party_total).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(party.party_total)) ? 0 : 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
               </tbody>

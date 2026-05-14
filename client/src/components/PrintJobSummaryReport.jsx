@@ -94,7 +94,7 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
                       {row.item_name}
                     </td>
                     <td className="col-qty font-bold text-right">
-                      {parseFloat(row.total_quantity).toLocaleString()}
+                      {parseFloat(row.total_quantity).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(row.total_quantity)) ? 0 : 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 );

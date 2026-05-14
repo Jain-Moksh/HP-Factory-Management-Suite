@@ -109,7 +109,7 @@ const PrintItemSoldSummary = ({ data, startDate, endDate, paperSize = 'A4' }) =>
                       {row.item_name}
                     </td>
                     <td className="col-qty font-black text-right">
-                      {parseFloat(row.total_quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {parseFloat(row.total_quantity).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(parseFloat(row.total_quantity)) ? 0 : 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}
@@ -118,7 +118,7 @@ const PrintItemSoldSummary = ({ data, startDate, endDate, paperSize = 'A4' }) =>
                     Total Quantity:
                   </td>
                   <td className="col-qty font-black text-right" style={{ fontSize: '1.1em' }}>
-                    {totalQuantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {totalQuantity.toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(totalQuantity) ? 0 : 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
               </>
