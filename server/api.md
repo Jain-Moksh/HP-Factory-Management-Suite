@@ -384,6 +384,26 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           ]
         }
         ```
+*   **GET `/reports/group-sales-print`**
+    *   *Description*: Fetches detailed billing transactions for all clients in a group, pre-grouped by client for printing.
+    *   *Query Params*: `group_id` (required), `from`, `to` (optional).
+    *   *Response*:
+        ```json
+        {
+          "success": true,
+          "count": 2,
+          "data": [
+            {
+              "client_id": 1,
+              "client_name": "ACME CORP",
+              "party_total": 5000.00,
+              "transactions": [
+                { "challan_no": "101/APR/26-27", "date": "2026-04-10", "amount": 5000.00 }
+              ]
+            }
+          ]
+        }
+        ```
 
 ### 4. Party Billing detail
 *   **GET `/reports/party-billing-detail`**

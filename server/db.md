@@ -231,6 +231,7 @@ CREATE TABLE backup_settings (
 --    - Uses a polymorphic join on `group_members`.
 --    - If `member_type` = 'client', joins with `clients` and `billing` for volume/amount.
 --    - If `member_type` = 'jobber', resolves name (sales strictly from clients).
+--    - GROUP SALES PRINT: Fetches all billing transactions for clients in a group. The backend aggregates these into a nested structure (Client -> [Transactions]) and calculates a subtotal per party to facilitate multi-page printable reports.
 -- 5. JOB WORK ANALYSIS: Aggregates inward production volume (quantities) from `purchase` and `purchase_items` by jobber and item. Supports granular item-level transaction ledgers.
 -- 6. DAY BOOK: Provides a combined daily ledger of all Billing and Purchase transactions via a UNION ALL strategy, allowing for a single chronological view of operations.
 -- 7. DETAIL JOB REPORT:

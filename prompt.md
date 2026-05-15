@@ -203,6 +203,7 @@ CREATE TABLE backup_settings (
 - `GET /reports/party-billing-detail`: Full transaction details (challans) for a client. Params: `client_id` (req), `from`, `to` (opt).
 - `GET /reports/group-sales`: Total revenue aggregated by group membership. Params: `from`, `to` (opt).
 - `GET /reports/group-sales-summary`: Sales per client within a specific group. Params: `group_id` (req), `from`, `to` (opt).
+- `GET /reports/group-sales-print`: Detailed billing transactions per client for group reports. Params: `group_id` (req), `from`, `to` (opt).
 - `GET /reports/job-work-summary`: Total items received from a jobber. Params: `jobber_id` (req), `from`, `to` (opt).
 - `GET /reports/job-work-detail`: Granular transaction ledger for item/jobber. Params: `jobber_id`, `item_id` (req), `from`, `to` (opt).
 - `GET /reports/day-book?date=YYYY-MM-DD`: Combined ledger of all daily activity.
@@ -268,7 +269,7 @@ CREATE TABLE backup_settings (
 - **Dynamic Sizing**: Supports A4 (Full) and A5 (Half) paper sizes via `printSettings.js`.
 - **CSS Isolation**: The `.print-container` class hides the main UI during `window.print()`.
 - **Optimization**: Pure black text, bold headers, and minimal padding for Dot Matrix printers.
-- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Displays Transport and Packing charges as separate line items in the totals section for better clarity. Enforces dynamic decimal formatting for bundles (e.g., "1.5" instead of "1.50", "—" for zero) to maximize column space. Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
+- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Displays Transport and Packing charges as separate line items in the totals section for better clarity. Enforces dynamic decimal formatting (zero or two decimal places for rates/currency) to ensure consistent financial presentation. Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
 
 ### File Mapping for Printing
 - `client/src/constants/printSettings.js`: Paper configurations.
@@ -276,6 +277,7 @@ CREATE TABLE backup_settings (
 - `client/src/components/PrintInvoice.jsx`: Invoice template.
 - `client/src/components/PrintDetailJobReport.jsx`: Detail Job Report template.
 - `client/src/components/PrintPartySalesReport.jsx`: Party Sales template.
+- `client/src/components/PrintGroupPartySalesReport.jsx`: Group Party Sales template.
 - `client/src/components/PrintItemSoldSummary.jsx`: Item Sold Summary template.
 - `client/src/components/PrintJobSummaryReport.jsx`: Job Summary template.
 
