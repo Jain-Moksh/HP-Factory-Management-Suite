@@ -7,10 +7,12 @@ This document is the **Single Source of Truth** for the NP-Frontend Accounting &
 ## 🏗️ 1. Project Architecture & Tech Stack
 
 ### Core Technologies
-- **Frontend**: React.js (Vite), Tailwind CSS, Lucide Icons, Axios, React Router DOM.
+- **Frontend**: React.js (Vite), Tailwind CSS, Lucide Icons, Axios, **React Router DOM**.
 - **Backend**: Node.js, Express.js.
 - **Database**: PostgreSQL (node-postgres / `pg`). Requires `pg_dump`, `psql`, and `pg_restore` to be in the system PATH (or configured via `PG_BIN_PATH`).
 - **File Handling**: `multer` (for database restoration uploads).
+- **Navigation**: Uses **React Router DOM** for all navigation. Page state is managed via URL parameters (e.g., `/:id`) and global context where applicable.
+- **Header Management**: Dynamic header titles and actions are managed using `useOutletContext` provided by the `Sidebar` layout.
 - **Development**: Local execution via `start.bat`. System updates and re-builds handled via `update.bat`.
 - **Production**: The backend serves the compiled React `dist` folder as static assets via a wildcard route (`*`) in `app.js`.
 
@@ -70,13 +72,6 @@ CREATE TABLE jobbers (
 CREATE TABLE transporters (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
-);
-
--- Many-to-Many: jobbers ↔ items
-CREATE TABLE jobber_items (
-    id SERIAL PRIMARY KEY,
-    jobber_id INT NOT NULL REFERENCES jobbers(id) ON DELETE CASCADE,
-    item_id INT NOT NULL REFERENCES items(id) ON DELETE CASCADE
 );
 ```
 
@@ -177,7 +172,7 @@ CREATE TABLE backup_settings (
 - `POST /items`: Create item.
 - `DELETE /items/:id`: Secure delete (Requires password).
 - `GET /clients`, `GET /jobbers`, `GET /transporters`: Standard CRUD.
-- `POST /jobbers`: Create jobber with optional `item_ids`.
+- `POST /jobbers`: Create jobber.
 
 ### Billing & Purchase Endpoints
 - `POST /billing`: Save invoice. Automatically decrements `items.stock`.
@@ -195,7 +190,6 @@ CREATE TABLE backup_settings (
 - `GET /utility`: System tools dashboard. Includes placeholders for Password Manager and System Audit (Coming Soon).
 
 ### Reporting Endpoints
-- `GET /reports/party-stock`: Global stock overview (for Dashboard).
 - `GET /reports/job-work`: Global production overview (for Dashboard).
 - `GET /reports/party-stock-summary`: Total items billed to a client. Params: `client_id` (req), `from`, `to` (opt).
 - `GET /reports/party-stock-detail`: Granular transaction ledger for item/client. Params: `client_id`, `item_id` (req), `from`, `to` (opt).
@@ -233,10 +227,7 @@ CREATE TABLE backup_settings (
 - Both `billing_items` and `purchase_items` use `order_index`.
 - During updates, the backend performs a "diff/upsert" using the DB `id` and `order_index` to preserve the user's intended order.
 
-### D. Jobber-Item Assignment Validation
-- Items must be assigned to a Jobber in the Master Database (`jobber_items` table).
-- During Job Work (Purchase) entry, the frontend validates if the selected item is assigned to the selected jobber.
-- If not assigned, a warning is shown, but the user can choose to proceed (creating a soft-link for that transaction).
+
 
 ### E. Automatic Data Sanitization (UPPERCASE)
 - **Centralized Utility**: The backend uses a recursive `dataSanitizer.js` utility to convert all string inputs to uppercase before database persistence.

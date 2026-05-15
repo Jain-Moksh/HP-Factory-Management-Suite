@@ -6,7 +6,6 @@ import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import DeleteModal from '../components/UI/DeleteModal';
-import WarningModal from '../components/UI/WarningModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -95,11 +94,6 @@ const CreateJobWork = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
 
-  // --- Warning Modal State ---
-  const [isWarningOpen, setIsWarningOpen] = useState(false);
-  const [warningMessage, setWarningMessage] = useState('');
-  const [jobberItems, setJobberItems] = useState([]); // Master list of items assigned to current jobber
-
   useEffect(() => {
     const fetchMasters = async () => {
       try {
@@ -161,13 +155,6 @@ const CreateJobWork = () => {
             });
             setJobberSearch(purchase.jobber_name);
 
-            // Fetch jobber items for validation
-            const resJ = await fetch(`${API_BASE_URL}/jobbers/${purchase.jobber_id}/items`);
-            const dataJ = await resJ.json();
-            if (dataJ.success) {
-              setJobberItems(dataJ.data);
-            }
-
             // Map purchase items
             const mappedItems = purchase.items.map(item => ({
               id: item.id,
@@ -200,15 +187,6 @@ const CreateJobWork = () => {
   const handleAppend = () => {
     if (!currentItem.item || !currentItem.qty) return;
 
-    // --- Validation: Check if item is assigned to jobber ---
-    const isAssigned = jobberItems.some(ji => ji.id === parseInt(currentItem.item_id));
-    
-    if (formData.jobber_id && !isAssigned) {
-      setWarningMessage(`The item "${currentItem.item}" is NOT currently assigned to "${formData.jobberName}" in the Master Database. Do you want to proceed anyway?`);
-      setIsWarningOpen(true);
-      return;
-    }
-
     proceedAppend();
   };
 
@@ -219,7 +197,6 @@ const CreateJobWork = () => {
     };
     setAddedItems([...addedItems, newItem]);
     handleRedo(); 
-    setIsWarningOpen(false);
   };
 
   const handleRedo = () => {
@@ -249,16 +226,6 @@ const CreateJobWork = () => {
     setNewJobberData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleToggleModalItem = (item) => {
-    setNewJobberData(prev => ({
-      ...prev,
-      selectedItems: prev.selectedItems.some(si => si.id === item.id)
-        ? prev.selectedItems.filter(i => i.id !== item.id)
-        : [...prev.selectedItems, item]
-    }));
-    setModalItemSearch('');
-  };
-
   const removeModalItem = (item) => {
     setNewJobberData(prev => ({
       ...prev,
@@ -266,7 +233,7 @@ const CreateJobWork = () => {
     }));
   };
 
-  const handleSelectJobber = async (jobber) => {
+  const handleSelectJobber = (jobber) => {
     setFormData(prev => ({
       ...prev,
       jobber_id: jobber.id,
@@ -274,17 +241,6 @@ const CreateJobWork = () => {
     }));
     setJobberSearch(jobber.name);
     setShowJobberDropdown(false);
-
-    // Fetch assigned items for validation
-    try {
-      const res = await fetch(`${API_BASE_URL}/jobbers/${jobber.id}/items`);
-      const data = await res.json();
-      if (data.success) {
-        setJobberItems(data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching jobber items:", err);
-    }
   };
 
   const handleSelectItem = (item) => {
@@ -644,56 +600,6 @@ const CreateJobWork = () => {
                       autoFocus
                     />
                   </div>
-
-                  {/* Assigned Items Multi-Select */}
-                  <div className="flex flex-col gap-1.5 overflow-visible">
-                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Assign Items to Jobber</label>
-                    <div className="relative w-full border border-border-soft rounded-xl bg-bg-main p-3" ref={modalDropdownRef}>
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {newJobberData.selectedItems.map(item => (
-                          <span key={item.id} className="bg-brand-blue/10 text-brand-blue text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-2 border border-brand-blue/20 animate-in zoom-in-95 duration-200">
-                            {item.name}
-                            <button onClick={() => removeModalItem(item)} className="hover:text-red-600 transition-colors">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </span>
-                        ))}
-                        <input 
-                          type="text"
-                          value={modalItemSearch}
-                          onChange={(e) => {
-                            setModalItemSearch(e.target.value);
-                            setIsModalDropdownOpen(true);
-                          }}
-                          onFocus={() => setIsModalDropdownOpen(true)}
-                          className="flex-1 min-w-[150px] bg-transparent outline-none text-[13px] placeholder:text-text-primary/40 font-medium h-7"
-                          placeholder={newJobberData.selectedItems.length === 0 ? "Search brands or items..." : "Assign more..."}
-                        />
-                      </div>
-
-                      {isModalDropdownOpen && (items.filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id)).length > 0 || modalItemSearch) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border-soft shadow-2xl rounded-xl z-[9999] max-h-56 overflow-y-auto animate-in slide-in-from-top-2 duration-300">
-                          {items
-                            .filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id))
-                            .map(item => (
-                              <button
-                                key={item.id}
-                                onClick={() => handleToggleModalItem(item)}
-                                className="w-full text-left px-5 py-3 text-[13px] hover:bg-bg-main text-text-primary hover:text-brand-blue font-bold transition-all border-b border-border-soft/30 last:border-none flex items-center justify-between group"
-                              >
-                                <span>{item.name}</span>
-                                <span className="text-[10px] text-text-primary opacity-0 group-hover:opacity-100 uppercase tracking-widest font-black bg-brand-blue/5 px-2 py-0.5 rounded transition-opacity">Assign</span>
-                              </button>
-                            ))}
-                          {items.filter(i => i.name.toLowerCase().includes(modalItemSearch.toLowerCase()) && !newJobberData.selectedItems.some(si => si.id === i.id)).length === 0 && (
-                            <div className="px-5 py-4 text-[12px] text-text-primary italic text-center">No matching brands found</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
@@ -920,13 +826,6 @@ const CreateJobWork = () => {
             </div>
           )}
         </div>
-        {/* Reusable Warning Modal */}
-        <WarningModal 
-          isOpen={isWarningOpen}
-          onClose={() => setIsWarningOpen(false)}
-          onConfirm={proceedAppend}
-          message={warningMessage}
-        />
       </div>
     </Layout>
   );

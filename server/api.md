@@ -101,23 +101,14 @@ Manages manufacturing/job worker records and their assigned items.
 *   **GET `/jobbers`**
 *   **GET `/jobbers/:id`**
 *   **POST `/jobbers`**
-    *   *Request Body*: `{"name": "John Doe", "item_ids": [1, 2]}` (item_ids is optional)
+    *   *Description*: Create a new jobber.
+    *   *Request Body*: `{"name": "John Doe"}`
 *   **PUT `/jobbers/:id`**
 *   **DELETE `/jobbers/:id`**
     *   *Description*: Securely delete a jobber (requires password).
     *   *Request Body*: `{"password": "your_del_pass"}`
 
-#### 🔗 Many-to-Many: Jobber Items
-*   **POST `/jobbers/:id/items`**
-    *   *Description*: Assign multiple items to a jobber.
-    *   *Request Body*:
-        ```json
-        {
-          "item_ids": [1, 2, 5]
-        }
-        ```
-*   **GET `/jobbers/:id/items`**
-    *   *Description*: Get all items currently assigned to a jobber with item names.
+
 
 ### 4. Transporters
 Manages transport service records.
@@ -324,8 +315,6 @@ Manages groups of jobbers and clients.
 All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query parameters unless otherwise noted.
 
 ### 0. Dashboard Summaries
-*   **GET `/reports/party-stock`**
-    *   *Description*: Overview of all items linked to all jobbers. Returns current stock for each item.
 *   **GET `/reports/job-work`**
     *   *Description*: Overview of production volumes across all jobbers.
     *   *Query Params*: `from`, `to` (optional).

@@ -2,11 +2,6 @@ const db = require('../config/db');
 const queries = require('../queries/reportQueries');
 
 const reportService = {
-  getPartyStock: async () => {
-    const result = await db.query(queries.getPartyStock);
-    return result.rows;
-  },
-
   getPartySales: async (fromDate, toDate, clientId) => {
     const result = await db.query(queries.getPartySales, [fromDate || null, toDate || null, clientId || null]);
     return result.rows;
@@ -28,8 +23,14 @@ const reportService = {
   },
 
   getPartyStockDetail: async (clientId, itemId, fromDate, toDate) => {
-    const result = await db.query(queries.getPartyStockDetail, [clientId, itemId, fromDate || null, toDate || null]);
-    return result.rows;
+    const detail = await db.query(queries.getPartyStockDetail, [clientId, itemId, fromDate || null, toDate || null]);
+    const item = await db.query('SELECT name FROM items WHERE id = $1', [itemId]);
+    
+    return {
+      item_name: item.rows[0]?.name || 'Unknown',
+      transactions: detail.rows,
+      total_quantity: detail.rows.reduce((sum, t) => sum + parseFloat(t.quantity), 0)
+    };
   },
 
   getGroupSalesSummary: async (groupId, fromDate, toDate) => {

@@ -14,27 +14,8 @@ const masterQueries = {
     updateClient: 'UPDATE clients SET name = $1, street = $2, city = $3, shortform = $4, balance = $5, remark = $6 WHERE id = $7 RETURNING *',
 
     // Jobbers
-    getAllJobbers: `
-        SELECT 
-            j.*,
-            COALESCE(json_agg(i.*) FILTER (WHERE i.id IS NOT NULL), '[]') as items
-        FROM jobbers j
-        LEFT JOIN jobber_items ji ON j.id = ji.jobber_id
-        LEFT JOIN items i ON ji.item_id = i.id
-        GROUP BY j.id
-        ORDER BY j.name ASC
-    `,
-    searchJobbers: `
-        SELECT 
-            j.*,
-            COALESCE(json_agg(i.*) FILTER (WHERE i.id IS NOT NULL), '[]') as items
-        FROM jobbers j
-        LEFT JOIN jobber_items ji ON j.id = ji.jobber_id
-        LEFT JOIN items i ON ji.item_id = i.id
-        WHERE j.name ILIKE $1
-        GROUP BY j.id
-        ORDER BY j.name ASC
-    `,
+    getAllJobbers: 'SELECT * FROM jobbers ORDER BY name ASC',
+    searchJobbers: 'SELECT * FROM jobbers WHERE name ILIKE $1 ORDER BY name ASC',
     getJobberById: 'SELECT * FROM jobbers WHERE id = $1',
     createJobber: 'INSERT INTO jobbers (name) VALUES ($1) RETURNING *',
     updateJobber: 'UPDATE jobbers SET name = $1 WHERE id = $2 RETURNING *',
@@ -46,16 +27,7 @@ const masterQueries = {
     createTransporter: 'INSERT INTO transporters (name) VALUES ($1) RETURNING *',
     updateTransporter: 'UPDATE transporters SET name = $1 WHERE id = $2 RETURNING *',
 
-    // Jobber Items
-    getJobberItems: `
-        SELECT 
-            i.*,
-            ji.id as mapping_id
-        FROM jobber_items ji
-        JOIN items i ON ji.item_id = i.id
-        WHERE ji.jobber_id = $1
-        ORDER BY i.name ASC
-    `,
+
 
     deleteItem: 'DELETE FROM items WHERE id = $1 RETURNING *',
     deleteClient: 'DELETE FROM clients WHERE id = $1 RETURNING *',

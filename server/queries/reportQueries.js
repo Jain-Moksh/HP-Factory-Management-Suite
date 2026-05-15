@@ -1,17 +1,5 @@
 const reportQueries = {
-    // 1. Party Wise Stock Report
-    // Returns items linked to jobbers via jobber_items
-    getPartyStock: `
-        SELECT 
-            j.name as party_name, 
-            i.name as item_name, 
-            i.stock, 
-            i.unit 
-        FROM jobbers j 
-        JOIN jobber_items ji ON j.id = ji.jobber_id 
-        JOIN items i ON ji.item_id = i.id
-        ORDER BY j.name, i.name
-    `,
+
 
     // 2. Party Wise Sales Report
     // Aggregates sales (billing) by client and date range

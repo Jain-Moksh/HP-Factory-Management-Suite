@@ -2,18 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
-import Modal from '../../components/UI/Modal';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
 
 const JobberList = () => {
-  // --- Master Items ---
-  const [availableItems, setAvailableItems] = useState([]);
-  
   // --- Form State ---
   const [formData, setFormData] = useState({
-    name: '',
-    selectedItems: [] // Stores item objects {id, name}
+    name: ''
   });
 
   // --- List State ---
@@ -27,29 +22,14 @@ const JobberList = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
 
-  // --- Multi-Select State ---
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
   // --- Inline Edit State ---
   const [editingId, setEditingId] = useState(null);
-  const [editFormData, setEditFormData] = useState({ name: '', selectedItems: [] });
-  const [editSearchTerm, setEditSearchTerm] = useState('');
-  const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
-  const editDropdownRef = useRef(null);
+  const [editFormData, setEditFormData] = useState({ name: '' });
   const editRowRef = useRef(null);
 
-  // Close dropdown on click outside
+  // Close editing on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-      if (editDropdownRef.current && !editDropdownRef.current.contains(event.target)) {
-        setIsEditDropdownOpen(false);
-      }
-      // Click outside the editing row to cancel
       if (editRowRef.current && !editRowRef.current.contains(event.target)) {
         handleEditCancel();
       }
@@ -62,15 +42,8 @@ const JobberList = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [itemsRes, jobbersRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/items`),
-        fetch(`${API_BASE_URL}/jobbers`)
-      ]);
-      
-      const itemsData = await itemsRes.json();
+      const jobbersRes = await fetch(`${API_BASE_URL}/jobbers`);
       const jobbersData = await jobbersRes.json();
-      
-      if (itemsData.success) setAvailableItems(itemsData.data);
       if (jobbersData.success) setJobbers(jobbersData.data);
     } catch (err) {
       setError('Failed to fetch data');
@@ -89,29 +62,7 @@ const JobberList = () => {
     return () => window.removeEventListener('app-refresh', fetchData);
   }, []);
 
-  const filteredItems = availableItems.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-    !formData.selectedItems.some(si => si.id === item.id)
-  );
-
   // --- Handlers ---
-  const handleToggleItem = (item) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedItems: prev.selectedItems.some(si => si.id === item.id)
-        ? prev.selectedItems.filter(i => i.id !== item.id)
-        : [...prev.selectedItems, item]
-    }));
-    setSearchTerm('');
-  };
-
-  const removeItem = (item) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedItems: prev.selectedItems.filter(i => i.id !== item.id)
-    }));
-  };
-
   const handleSave = async () => {
     if (!formData.name) return;
     
@@ -122,7 +73,7 @@ const JobberList = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
-          item_ids: formData.selectedItems.map(item => item.id)
+          item_ids: [] // Send empty array as items are no longer managed here
         })
       });
 
@@ -144,15 +95,13 @@ const JobberList = () => {
   const handleEditClick = (jobber) => {
     setEditingId(jobber.id);
     setEditFormData({
-      name: jobber.name,
-      selectedItems: jobber.items || []
+      name: jobber.name
     });
   };
 
   const handleEditCancel = () => {
     setEditingId(null);
-    setEditFormData({ name: '', selectedItems: [] });
-    setEditSearchTerm('');
+    setEditFormData({ name: '' });
   };
 
   const handleEditSave = async (id) => {
@@ -162,13 +111,13 @@ const JobberList = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: editFormData.name,
-          item_ids: editFormData.selectedItems.map(item => item.id)
+          item_ids: [] // Preserve empty items
         })
       });
 
       const result = await response.json();
       if (result.success) {
-        setJobbers(prev => prev.map(j => j.id === id ? { ...j, name: editFormData.name, items: editFormData.selectedItems } : j));
+        setJobbers(prev => prev.map(j => j.id === id ? { ...j, name: editFormData.name } : j));
         setEditingId(null);
       } else {
         alert(result.message || 'Failed to update jobber');
@@ -178,25 +127,8 @@ const JobberList = () => {
     }
   };
 
-  const handleToggleEditItem = (item) => {
-    setEditFormData(prev => ({
-      ...prev,
-      selectedItems: prev.selectedItems.some(si => si.id === item.id)
-        ? prev.selectedItems.filter(i => i.id !== item.id)
-        : [...prev.selectedItems, item]
-    }));
-    setEditSearchTerm('');
-  };
-
-  const removeEditItem = (item) => {
-    setEditFormData(prev => ({
-      ...prev,
-      selectedItems: prev.selectedItems.filter(i => i.id !== item.id)
-    }));
-  };
-
   const handleEditKeyDown = (e, id) => {
-    if (e.key === 'Enter' && !isEditDropdownOpen) {
+    if (e.key === 'Enter') {
       handleEditSave(id);
     } else if (e.key === 'Escape') {
       handleEditCancel();
@@ -204,8 +136,7 @@ const JobberList = () => {
   };
 
   const handleRedo = () => {
-    setFormData({ name: '', selectedItems: [] });
-    setSearchTerm('');
+    setFormData({ name: '' });
   };
 
   const openDeleteModal = (id) => {
@@ -251,7 +182,7 @@ const JobberList = () => {
       <div className="flex flex-col min-h-screen pb-10">
         <PageHeader 
           title="Jobber List" 
-          subtitle="MANAGE SYSTEM JOBBER MASTER DATA & ITEM ASSIGNMENTS" 
+          subtitle="MANAGE SYSTEM JOBBER MASTER DATA" 
         />
 
         <div className="px-6 flex flex-col gap-6">
@@ -265,8 +196,7 @@ const JobberList = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-bg-main/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-primary">
-                    <th className="px-4 py-2 text-left border-r border-border-soft w-1/3">Jobber Name</th>
-                    <th className="px-4 py-2 text-left">Assigned Item List (Multi-Select)</th>
+                    <th className="px-4 py-2 text-left border-r border-border-soft">Jobber Name</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -279,52 +209,6 @@ const JobberList = () => {
                         className="w-full h-full px-4 bg-transparent outline-none text-[13px] font-medium placeholder:text-text-primary/50"
                         placeholder="Enter jobber name..."
                       />
-                    </td>
-                    <td className="p-0 h-12">
-                      <div className="relative w-full h-full flex items-center px-4" ref={dropdownRef}>
-                        <div className="flex flex-wrap gap-1.5 flex-1 items-center overflow-hidden">
-                          {formData.selectedItems.map(item => (
-                            <span key={item.id} className="bg-brand-blue/10 text-brand-blue text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-brand-blue/20">
-                              {item.name}
-                              <button onClick={() => removeItem(item)} className="hover:text-red-500">
-                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </span>
-                          ))}
-                          <input 
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => {
-                              setSearchTerm(e.target.value);
-                              setIsDropdownOpen(true);
-                            }}
-                            onFocus={() => setIsDropdownOpen(true)}
-                            className="flex-1 min-w-[120px] bg-transparent outline-none text-[12px] placeholder:text-text-primary/50 h-8"
-                            placeholder={formData.selectedItems.length === 0 ? "Type to filter items..." : "Add more..."}
-                          />
-                        </div>
-
-                        {isDropdownOpen && (filteredItems.length > 0 || searchTerm) && (
-                          <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-2xl rounded-b-lg z-[200] max-h-72 overflow-y-auto mt-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                            {filteredItems.map(item => (
-                              <button
-                                key={item.id}
-                                onClick={() => handleToggleItem(item)}
-                                className="w-full text-left px-4 py-2 text-[12px] hover:bg-bg-main/50 text-text-primary hover:text-brand-blue font-medium transition-colors border-b last:border-none border-border-soft/30"
-                              >
-                                {item.name}
-                              </button>
-                            ))}
-                            {filteredItems.length === 0 && (
-                              <div className="px-4 py-3 text-[12px] text-text-primary italic">
-                                No matching items found
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -366,8 +250,7 @@ const JobberList = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-table-header text-white">
-                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-1/3">Jobber Name</th>
-                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Assigned Items</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Jobber Name</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-24">Action</th>
                   </tr>
                 </thead>
@@ -378,7 +261,7 @@ const JobberList = () => {
                         ref={editingId === jobber.id ? editRowRef : null}
                         className={`transition-colors ${editingId === jobber.id ? 'bg-brand-blue/[0.04] relative z-[100]' : 'hover:bg-bg-main/30'}`}
                       >
-                      <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
+                      <td className="px-5 py-2 font-bold text-[12.5px] text-text-primary uppercase tracking-tight">
                         {editingId === jobber.id ? (
                           <input 
                             value={editFormData.name}
@@ -388,55 +271,6 @@ const JobberList = () => {
                             className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue"
                           />
                         ) : jobber.name}
-                      </td>
-                      <td className="px-5 py-2 border-r border-border-soft relative" ref={editingId === jobber.id ? editDropdownRef : null}>
-                        {editingId === jobber.id ? (
-                          <div className="flex flex-wrap gap-1.5 items-center">
-                            {editFormData.selectedItems.map(item => (
-                              <span key={item.id} className="bg-brand-blue/10 text-brand-blue text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-brand-blue/20">
-                                {item.name}
-                                <button onClick={() => removeEditItem(item)} className="hover:text-red-500">
-                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                              </span>
-                            ))}
-                            <input 
-                              type="text"
-                              value={editSearchTerm}
-                              onChange={(e) => {
-                                setEditSearchTerm(e.target.value);
-                                setIsEditDropdownOpen(true);
-                              }}
-                              onFocus={() => setIsEditDropdownOpen(true)}
-                              onKeyDown={(e) => handleEditKeyDown(e, jobber.id)}
-                              className="flex-1 min-w-[100px] bg-white border border-brand-blue/20 rounded px-2 py-0.5 outline-none text-[12px]"
-                              placeholder="Add items..."
-                            />
-                            {isEditDropdownOpen && (availableItems.filter(i => i.name.toLowerCase().includes(editSearchTerm.toLowerCase()) && !editFormData.selectedItems.some(si => si.id === i.id)).length > 0) && (
-                              <div className="absolute top-full left-0 w-full bg-white border border-border-soft shadow-2xl rounded-lg z-[200] max-h-72 overflow-y-auto mt-1">
-                                {availableItems
-                                  .filter(i => i.name.toLowerCase().includes(editSearchTerm.toLowerCase()) && !editFormData.selectedItems.some(si => si.id === i.id))
-                                  .map(item => (
-                                    <button
-                                      key={item.id}
-                                      onClick={() => handleToggleEditItem(item)}
-                                      className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-bg-main/50 text-text-primary hover:text-brand-blue font-medium transition-colors"
-                                    >
-                                      {item.name}
-                                    </button>
-                                  ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap gap-1.5">
-                            {jobber.items?.map(item => (
-                              <span key={item?.id || Math.random()} className="text-[10px] font-bold text-text-primary bg-bg-main px-2 py-0.5 rounded border border-divider-soft">
-                                {item?.name || 'Unknown Item'}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </td>
                       <td className="px-4 py-1.5">
                         <div className="flex items-center justify-center gap-2.5">
@@ -485,14 +319,14 @@ const JobberList = () => {
                   ))}
                   {jobbers.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="3" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
+                      <td colSpan="2" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
                         No jobbers found in master. Add a new jobber to get started.
                       </td>
                     </tr>
                   )}
                   {isLoading && (
                     <tr>
-                      <td colSpan="3" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                      <td colSpan="2" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
                         Loading master data...
                       </td>
                     </tr>

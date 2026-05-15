@@ -33,16 +33,6 @@ CREATE TABLE transporters (
     name TEXT NOT NULL
 );
 
--- Many-to-Many: jobbers ↔ items
-CREATE TABLE jobber_items (
-    id SERIAL PRIMARY KEY,
-    jobber_id INT NOT NULL,
-    item_id INT NOT NULL,
-    
-    FOREIGN KEY (jobber_id) REFERENCES jobbers(id) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
-);
-
 -- =========================
 -- BILLING TABLES
 -- =========================
@@ -121,7 +111,6 @@ CREATE TABLE purchase_items (
     FOREIGN KEY (item_id) REFERENCES items(id)
 );
 
-
 -- =========================
 -- SEARCH INDEXES (Dropdown)
 -- =========================
@@ -143,13 +132,9 @@ CREATE INDEX idx_billing_items_item ON billing_items(item_id);
 CREATE INDEX idx_purchase_jobber ON purchase(jobber_id);
 CREATE INDEX idx_purchase_items_purchase ON purchase_items(purchase_id);
 
-CREATE INDEX idx_jobber_items_jobber ON jobber_items(jobber_id);
-CREATE INDEX idx_jobber_items_item ON jobber_items(item_id);
-
 CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
 CREATE INDEX idx_billing_client_date ON billing(client_id, date);
-
 
 CREATE INDEX idx_purchase_jobber_date ON purchase(jobber_id, date);
 CREATE INDEX idx_purchase_items_item ON purchase_items(item_id);

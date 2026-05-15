@@ -1,15 +1,6 @@
 const reportService = require('../services/reportService');
 
 const reportController = {
-  getPartyStock: async (req, res, next) => {
-    try {
-      const data = await reportService.getPartyStock();
-      res.json({ success: true, count: data.length, data });
-    } catch (err) {
-      next(err);
-    }
-  },
-
   getPartySales: async (req, res, next) => {
     try {
       const { from, to, client_id } = req.query;
@@ -58,9 +49,9 @@ const reportController = {
       const data = await reportService.getPartyStockDetail(client_id, item_id, from, to);
       // Construct the response as expected
       const result = {
-        item_name: data.length > 0 ? "" : "", // We can fetch item_name separately if needed, but for now just send data
-        transactions: data,
-        total_quantity: data.reduce((sum, t) => sum + parseFloat(t.quantity), 0)
+        item_name: data.item_name, 
+        transactions: data.transactions,
+        total_quantity: data.total_quantity
       };
       res.json({ success: true, data: result });
     } catch (err) {
