@@ -1,309 +1,59 @@
-# NP-Frontend: Master AI Development Guide
+# Project: HP Accounting Software (Single Source of Truth)
 
-This document is the **Single Source of Truth** for the NP-Frontend Accounting & Inventory Management System. It contains the complete architecture, database schema, API contracts, and core business logic required for any AI-driven development or code editing.
+## 🏗️ Architecture & Tech Stack
+- **Frontend**: React (Vite), Vanilla CSS (Custom UI System), **React Router DOM** (Navigation).
+- **Backend**: Node.js, Express.
+- **Database**: PostgreSQL (node-postgres).
+- **Navigation**: High-fidelity navigation using `react-router-dom`. The main layout (`Layout.jsx`) manages a persistent `Sidebar` and a dynamic `Header`. Pages use `useOutletContext` to update header titles and actions dynamically.
+- **Production**: Frontend is served as a static build from the `client/dist` directory by the Express server.
 
----
+## 📁 Key Folder Structure
+- `/client/src/pages`: Page components (Dashboard, CreateInvoice, etc.).
+- `/client/src/pages/master`: Master data (Items, Clients, Jobbers, etc.).
+- `/client/src/pages/reports`: Reporting modules (GroupSalesReport, DayBook, etc.).
+- `/client/src/components/UI`: Reusable components (Button, Modal, Card, etc.).
+- `/server/routes`: Express API routes.
+- `/server/queries`: Centralized SQL queries.
+- `/server/services`: Business logic and transactions.
 
-## 🏗️ 1. Project Architecture & Tech Stack
+## 🗄️ Core Database Schema (PostgreSQL)
+- **items**: `id, name (unique), rate, stock, open_stock, conversion, unit, min_stock`.
+- **clients**: `id, name, street, city, shortform, balance, remark`.
+- **jobbers**: `id, name`. (Item assignments removed).
+- **transporters**: `id, name`.
+- **billing**: `id, client_id, transporter_id, date, transport_charge, packing_charge, discount_percent, discount_amount, total_amount, short_remark, long_remark, grand_total, challan_no (unique)`.
+- **billing_items**: `id, billing_id, item_id, rate, discount_percent, discount_amount, unit, quantity, bundle, total_amount, order_index`.
+- **purchase**: `id, jobber_id, date, remark, challan_no (unique)`.
+- **purchase_items**: `id, purchase_id, item_id, quantity, unit, order_index`.
+- **groups** & **group_members**: Polymorphic groupings of jobbers and clients.
+- **backup_settings**: `id, auto_backup_enabled, auto_backup_path, auto_backup_interval, last_backup_time, last_backup_file`.
 
-### Core Technologies
-- **Frontend**: React.js (Vite), Tailwind CSS, Lucide Icons, Axios, **React Router DOM**.
-- **Backend**: Node.js, Express.js.
-- **Database**: PostgreSQL (node-postgres / `pg`). Requires `pg_dump`, `psql`, and `pg_restore` to be in the system PATH (or configured via `PG_BIN_PATH`).
-- **File Handling**: `multer` (for database restoration uploads).
-- **Navigation**: Uses **React Router DOM** for all navigation. Page state is managed via URL parameters (e.g., `/:id`) and global context where applicable.
-- **Header Management**: Dynamic header titles and actions are managed using `useOutletContext` provided by the `Sidebar` layout.
-- **Development**: Local execution via `start.bat`. System updates and re-builds handled via `update.bat`.
-- **Production**: The backend serves the compiled React `dist` folder as static assets via a wildcard route (`*`) in `app.js`.
+## 🔌 API Contract (Selected)
+- **Master Data**: `GET/POST/PUT/DELETE` for `/items`, `/clients`, `/jobbers`, `/transporters`.
+- **Transactions**:
+  - `POST /billing`: Create invoice (Atomic stock decrement + Challan generation).
+  - `POST /purchase`: Create job work (Atomic stock increment + Challan generation).
+  - `GET /billing/next-challan?date=...&id=...`: Preview next available challan number.
+- **Utilities**:
+  - `GET /backup/manual`: Download full DB dump.
+  - `GET /backup/settings`: Fetch/Auto-trigger self-healing backup check.
+- **Reports**:
+  - `/reports/group-sales-print`: Nested billing data per party for group reports.
+  - `/reports/detail-job-report`: Inward movement ordered by date and `order_index`.
+  - `/reports/item-sold-summary`: Sales velocity tracking.
 
-### Folder Structure
-- `/client`: React source code.
-  - `/src/pages/master`: Management of Items, Clients, Jobbers, etc.
-  - `/src/pages/reports`: Reporting dashboard and individual report pages.
-  - `/src/pages`: Transactional and dashboard pages (`CreateInvoice`, `CreateJobWork`, `CreatePayment`, `Dashboard`, `DayBook`, `ItemStockDetails`, `JobWork`, `OrderSummary`, `Payment`, `StockSummary`, `Utility`).
-  - `/src/pages/utility`: Specialized system tools (`BackupManager`, `RestoreManager`).
-  - `/src/components`: Reusable UI like `BillingTable`, `PrintInvoice`, `Sidebar`, `MonthFilterFooter`.
-  - `/src/components/UI`: Specialized UI elements like `PrintCopiesModal`, `PrintOptionsModal`, `DeleteModal`, `WarningModal`, `SearchableSelect`.
-  - `/src/utils`: Logic for printing (`printUtils.js`) and API configuration.
-  - `client/src/config.js`: Environment-based API base URL configuration (uses `VITE_API_URL`).
-- `client/.env`: Defines the API URL and the `VITE_DEL_PASS` master password.
-- `/server`: Node.js/Express backend.
-  - `/routes`: Endpoint definitions.
-  - `/controllers`: Request handling and response mapping.
-  - `/services`: Complex business logic (Stock updates, Transactions).
-  - `/queries`: Raw SQL templates using parameterized queries.
-  - `/utils`: Challan generation, date formatting, validation.
-  - `/config`: Database connection pool settings.
-  - `/uploads/backups`: Storage for manual/auto backup files.
-  - `db.md` & `api.md`: Documentation (integrated into this file).
+## 🛠️ Core Business Rules
+1. **Stock Maintenance**: `items.stock` is updated in real-time via SQL transactions. Edits/Deletions trigger automatic stock reversals.
+2. **Data Sanitization**: All string inputs converted to `UPPERCASE` via `dataSanitizer.js` before persistence.
+3. **Challan Numbers**: Generated as `<seq>/<MONTH>/<FY>`. Sequences reset monthly. Edits preserve original sequences unless month/FY changes.
+4. **Stable Ordering**: `order_index` in transaction items ensures sequence preservation during edits and reporting.
+5. **Precision**: 
+   - Dates (OID 1082) treated as raw strings to avoid timezone shifting.
+   - Decimals: Formatted to exactly 2 decimal places in financial reports.
+6. **Security**: Sensitive deletions require a master password (`VITE_DEL_PASS`).
 
----
-
-## 🗄️ 2. Database Schema (PostgreSQL)
-
-### Master Tables
-```sql
-CREATE TABLE items (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    rate NUMERIC,
-    stock NUMERIC,
-    open_stock NUMERIC DEFAULT 0,
-    conversion NUMERIC,
-    unit TEXT,
-    min_stock NUMERIC DEFAULT 0
-);
-
-CREATE TABLE clients (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    street TEXT,
-    city TEXT,
-    shortform TEXT,
-    balance NUMERIC,
-    remark TEXT
-);
-
-CREATE TABLE jobbers (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
-CREATE TABLE transporters (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-```
-
-### Transaction Tables
-```sql
--- Sales / Billing
-CREATE TABLE billing (
-    id SERIAL PRIMARY KEY,
-    client_id INT NOT NULL REFERENCES clients(id),
-    transporter_id INT REFERENCES transporters(id),
-    date DATE,
-    transport_charge NUMERIC,
-    packing_charge NUMERIC,
-    discount_percent NUMERIC,
-    discount_amount NUMERIC,
-    total_amount NUMERIC,
-    short_remark TEXT,
-    long_remark TEXT,
-    grand_total NUMERIC,
-    challan_no TEXT UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE billing_items (
-    id SERIAL PRIMARY KEY,
-    billing_id INT NOT NULL REFERENCES billing(id) ON DELETE CASCADE,
-    item_id INT NOT NULL REFERENCES items(id),
-    rate NUMERIC,
-    discount_percent NUMERIC,
-    discount_amount NUMERIC,
-    unit TEXT,
-    quantity NUMERIC,
-    bundle NUMERIC,
-    total_amount NUMERIC,
-    order_index INT NOT NULL DEFAULT 0
-);
-
--- Inward / Job Work (Purchase)
-CREATE TABLE purchase (
-    id SERIAL PRIMARY KEY,
-    jobber_id INT NOT NULL REFERENCES jobbers(id),
-    date DATE,
-    remark TEXT,
-    challan_no TEXT UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE purchase_items (
-    id SERIAL PRIMARY KEY,
-    purchase_id INT NOT NULL REFERENCES purchase(id) ON DELETE CASCADE,
-    item_id INT NOT NULL REFERENCES items(id),
-    quantity NUMERIC,
-    unit TEXT,
-    order_index INT NOT NULL DEFAULT 0
-);
-```
-
-### Grouping System
-```sql
-CREATE TYPE member_type_enum AS ENUM ('jobber', 'client');
-
-CREATE TABLE groups (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE group_members (
-    id SERIAL PRIMARY KEY,
-    group_id INT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    member_type member_type_enum NOT NULL,
-    member_id INT NOT NULL, -- Refers to jobbers.id or clients.id
-    UNIQUE(group_id, member_type, member_id)
-);
-
--- System Configurations
-CREATE TABLE backup_settings (
-    id SERIAL PRIMARY KEY,
-    auto_backup_enabled BOOLEAN DEFAULT TRUE,
-    auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
-    auto_backup_interval INT DEFAULT 60,
-    last_backup_time TIMESTAMP WITH TIME ZONE,
-    last_backup_file TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## 🔌 3. API Contract (Base URL: `/api`)
-
-### Master Data Endpoints
-- `GET /items`: List/search items. Supports `?search=term`.
-- `GET /items/:id/transactions`: Movement ledger for an item. Includes both Inward (Purchase) and Outward (Billing) transactions.
-- `POST /items`: Create item.
-- `DELETE /items/:id`: Secure delete (Requires password).
-- `GET /clients`, `GET /jobbers`, `GET /transporters`: Standard CRUD.
-- `POST /jobbers`: Create jobber.
-
-### Billing & Purchase Endpoints
-- `POST /billing`: Save invoice. Automatically decrements `items.stock`.
-- `PUT /billing/:id`: Update invoice. Reverts old stock impact, applies new one.
-- `GET /billing/next-challan`: Preview next challan number. Supports `?date=YYYY-MM-DD` and `?billing_id=X` (for edits).
-- `POST /purchase`: Save inward stock. Automatically increments `items.stock`.
-- `PUT /purchase/:id`: Update purchase. Reverts old stock impact, applies new one.
-- `DELETE /purchase/:id`: Secure delete (Requires password).
-
-- `GET /api/backup/manual`: Download full DB backup.
-- `GET /api/backup/status`: Fetch latest backup info.
-- `GET /api/backup/settings`: Fetch config; triggers self-healing if files are missing.
-- `PUT /api/backup/settings`: Update auto-backup configuration.
-- `POST /api/backup/restore`: Overwrite system from file.
-- `GET /utility`: System tools dashboard. Includes placeholders for Password Manager and System Audit (Coming Soon).
-
-### Reporting Endpoints
-- `GET /reports/job-work`: Global production overview (for Dashboard).
-- `GET /reports/party-stock-summary`: Total items billed to a client. Params: `client_id` (req), `from`, `to` (opt).
-- `GET /reports/party-stock-detail`: Granular transaction ledger for item/client. Params: `client_id`, `item_id` (req), `from`, `to` (opt).
-- `GET /reports/party-sales`: Aggregated sales revenue per client. Params: `client_id`, `from`, `to` (opt).
-- `GET /reports/party-billing-detail`: Full transaction details (challans) for a client. Params: `client_id` (req), `from`, `to` (opt).
-- `GET /reports/group-sales`: Total revenue aggregated by group membership. Params: `from`, `to` (opt).
-- `GET /reports/group-sales-summary`: Sales per client within a specific group. Params: `group_id` (req), `from`, `to` (opt).
-- `GET /reports/group-sales-print`: Detailed billing transactions per client for group reports. Params: `group_id` (req), `from`, `to` (opt).
-- `GET /reports/job-work-summary`: Total items received from a jobber. Params: `jobber_id` (req), `from`, `to` (opt).
-- `GET /reports/job-work-detail`: Granular transaction ledger for item/jobber. Params: `jobber_id`, `item_id` (req), `from`, `to` (opt).
-- `GET /reports/day-book?date=YYYY-MM-DD`: Combined ledger of all daily activity.
-- `GET /reports/detail-job-report`: Inward movement ordered by index for printing. Params: `startDate`, `endDate`.
-- `GET /reports/item-sold-summary`: Total sales velocity per item. Params: `from`, `to`.
-- `GET /reports/job-summary`: Aggregated production by jobber and item. Params: `from`, `to`.
-
----
-
-## 🧠 4. Core Business Logic & Rules
-
-### A. Real-Time Stock Management
-- **Single Source of Truth**: Inventory is stored in `items.stock`.
-- **Atomic Operations**: All stock updates must happen inside a SQL Transaction.
-- **Inverse Correction on Edit/Delete**: 
-  - To **Edit**: (1) Reverse previous impact. (2) Apply new impact.
-  - This ensures stock accuracy even if the user changes the item ID or quantity in an existing bill.
-- **Soft Validation**: The frontend provides warnings if a transaction results in negative stock or falls below minimum stock levels, but allows the user to proceed. The backend performs the update atomically without hard quantity checks.
-
-### B. Challan Number Sequencing
-- **Format**: `<Sequence>/<MONTH>/<FY>` (e.g., `15/MAY/26-27`).
-- **Prefixes**: Billing (None), Purchase (`P`).
-- **Reset Logic**: Sequence resets to `1` every month.
-- **Generation Rule**: The backend calculates the sequence using `MAX(sequence) + 1` for the month/FY. To prevent duplicates in high-concurrency environments, the backend uses `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE` during the save transaction. Frontend previews are for UI only.
-
-### C. Stable Item Ordering (`order_index`)
-- Both `billing_items` and `purchase_items` use `order_index`.
-- During updates, the backend performs a "diff/upsert" using the DB `id` and `order_index` to preserve the user's intended order.
-
-
-
-### E. Automatic Data Sanitization (UPPERCASE)
-- **Centralized Utility**: The backend uses a recursive `dataSanitizer.js` utility to convert all string inputs to uppercase before database persistence.
-- **Scope**: This applies to all Master data (Names, Units, Remarks) and Transactional data (Remarks, Challan Numbers).
-- **Consistency**: Ensures searchability and standardized reporting across the entire system.
-
-### F. Backup & Restore System
-- **Centralized Trigger**: Backend middleware intercepts successful `POST/PUT/DELETE` to trigger a background auto-backup.
-- **Execution**: Asynchronous background `pg_dump` with `--clean` flag (includes DROP TABLE commands for cleaner restoration).
-- **Storage Provisioning**: The system automatically creates the backup directory (e.g., `C:/NP-Backups/`) if it does not exist on the file system.
-- **Retention**: Only the latest auto-backup is kept; previous files are deleted to optimize storage.
-- **Self-Healing & Resilience**: The system is self-healing.
-  - **Auto-Recovery**: If the `backup_settings` table is missing, the backend automatically recreates it. If columns are missing, it migrates them automatically.
-  - **Proactive Trigger**: The system triggers a background auto-backup check on server startup.
-  - **Disk Synchronization**: Fetching settings triggers a physical disk check; if a recorded file is missing, a fresh backup is initiated.
-  - **Status Feedback**: Returns strings like `"Creating fresh backup..."` or `"Backup in progress..."` during active operations.
-- **Concurrency Control**: A global memory lock (`isBackupRunning`) prevents multiple backup or restore operations from running simultaneously, returning `429` errors for overlapping requests.
-- **Manual Backups**: Never deleted automatically; streamed directly to the client.
-- **Restore Safety**: High-priority confirmation required; restores overwrite the entire database.
-
-### G. Database Date Precision & Timezones
-- **DATE OID Fix**: To prevent `node-postgres` from shifting dates due to timezone offsets, the system implements a custom type parser for PostgreSQL OID `1082` (DATE).
-- **Behavior**: All DATE values are retrieved as raw ISO string literals (`YYYY-MM-DD`) without any local time conversions. This ensures the date saved in an invoice or job work entry is exactly what is retrieved.
-
----
-
-## 🎨 5. Responsive Printing Engine
-
-### Capabilities
-- **Dynamic Sizing**: Supports A4 (Full) and A5 (Half) paper sizes via `printSettings.js`.
-- **CSS Isolation**: The `.print-container` class hides the main UI during `window.print()`.
-- **Optimization**: Pure black text, bold headers, and minimal padding for Dot Matrix printers.
-- **A5 Layout**: Specifically optimized for space efficiency; hides secondary fields (like "Amount in Words") and aggregates row heights (5.5mm). Displays Transport and Packing charges as separate line items in the totals section for better clarity. Enforces dynamic decimal formatting (zero or two decimal places for rates/currency) to ensure consistent financial presentation. Uses strict row limits (Single: 20, First: 28, Middle: 38, Last: 22) with `overflow: visible` and a conditional **20mm bottom margin on the last/single page** to prevent clipping and provide footer space.
-
-### File Mapping for Printing
-- `client/src/constants/printSettings.js`: Paper configurations.
-- `client/src/utils/printUtils.js`: Lifecycle management.
-- `client/src/components/PrintInvoice.jsx`: Invoice template.
-- `client/src/components/PrintDetailJobReport.jsx`: Detail Job Report template.
-- `client/src/components/PrintPartySalesReport.jsx`: Party Sales template.
-- `client/src/components/PrintGroupPartySalesReport.jsx`: Group Party Sales template.
-- `client/src/components/PrintItemSoldSummary.jsx`: Item Sold Summary template.
-- `client/src/components/PrintJobSummaryReport.jsx`: Job Summary template.
-
----
-
-## 🛠️ 6. AI Development Guidelines
-
-### 1. Implementation Patterns
-- **Queries**: Keep raw SQL in `/server/queries/`.
-- **Controllers**: Thin controllers, business logic in `/server/services/`.
-- **Components**: Functional React components with hooks. Use `MonthFilterFooter` for report date ranges.
-
-### 2. Implementation Workflow for New Reports
-1. **Backend**: Add SQL query, create service method, add route.
-2. **Frontend**: Create report page, integrate filter, implement printing using `printUtils.js`.
-
-### 3. Safety Rules
-- **Transactions**: Always wrap multi-table modifications in `BEGIN/COMMIT`.
-- **Passwords**: Deletions in master tables require a password check (configured via `VITE_DEL_PASS` in the frontend and `del_pass` in the backend).
-- **Validation**: Check stock availability in the backend before committing a sale.
-
----
-
-## 📂 7. Key File Index
-
-| Feature | Key Files |
-| :--- | :--- |
-| **Billing Logic** | `CreateInvoice.jsx`, `billingController.js`, `billingService.js` |
-| **Stock Logic** | `itemsController.js`, `billingService.js`, `purchaseService.js` |
-| **Challan Format** | `server/utils/challanGenerator.js` |
-| **Global Styles** | `client/src/index.css` (Tailwind + Print Overrides) |
-| **Constants** | `client/src/config.js`, `client/src/constants/printSettings.js` |
-| **Reports** | `server/routes/reportRoutes.js`, `client/src/pages/reports/` |
-| **Payment (WIP)** | `Payment.jsx`, `CreatePayment.jsx`, `PaymentTable.jsx` |
-| **Utility & Backup** | `pages/Utility.jsx`, `pages/utility/BackupManager.jsx`, `pages/utility/RestoreManager.jsx`, `backupController.js`, `backupService.js` |
-
----
-*End of Master Guide.*
+## 📄 Documentation Reference
+- `server/api.md`: Detailed API structures.
+- `server/db.md`: Full SQL schema and report query logic.
+- `client/src/components/PrintInvoice.jsx`: Invoice print template.
+- `client/src/components/PrintGroupPartySalesReport.jsx`: Multi-page group report template.

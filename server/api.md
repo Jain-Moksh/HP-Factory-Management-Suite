@@ -58,7 +58,7 @@ Manages the inventory of items.
               "inward": 0,
               "outward": 10,
               "type": "billing",
-              "name": "Acme Corp"
+              "name": "Acme Corp",
               "created_at": "2026-04-16T17:23:17.000Z"
             },
             {
@@ -96,7 +96,7 @@ Manages customer/client records.
     *   *Request Body*: `{"password": "your_del_pass"}`
 
 ### 3. Jobbers
-Manages manufacturing/job worker records and their assigned items.
+Manages manufacturing/job worker records.
 
 *   **GET `/jobbers`**
 *   **GET `/jobbers/:id`**
@@ -177,7 +177,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
     *   *Response*: `{"success": true, "nextId": 105}` or `{"success": true, "nextId": "105/APR/26-27"}`
 *   **GET `/billing/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Supports both Create and Edit modes. Acts as **Preview ONLY**.
-    *   *Query Params*: `date` (required, YYYY-MM-DD), `billing_id` (optional, for edit mode to exclude the current record from sequence counting).
+    *   *Query Params*: `date` (required, YYYY-MM-DD), `id` (optional, for edit mode to exclude the current record from sequence counting).
     *   *Response*:
         ```json
         {
@@ -192,7 +192,7 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
     *   *Description*: Securely delete an invoice. On deletion of invoice, associated item quantities are restored back to stock. Operation is transactional to ensure stock consistency.
     *   *Request Body*: `{"password": "your_del_pass"}`
 
-### 2. Purchase
+### 2. Purchase (Job Work)
 Used for receiving stock from jobbers. Creating a purchase automatically **increments** item stock.
 
 *   **POST `/purchase`**
@@ -222,7 +222,7 @@ Used for receiving stock from jobbers. Creating a purchase automatically **incre
     *   *Response*: `{"success": true, "nextId": 50}` or `{"success": true, "nextId": "P50/APR/26-27"}`
 *   **GET `/purchase/next-challan`**
     *   *Description*: Fetch the dynamically generated **next available** Challan Number for a specific date. Acts as **Preview ONLY**.
-    *   *Query Params*: `date` (required, YYYY-MM-DD).
+    *   *Query Params*: `date` (required, YYYY-MM-DD), `id` (optional).
 *   **PUT `/purchase/:id`**
     *   *Description*: Update an existing purchase and its items. This operation **reverts** the stock changes of the old purchase and **applies** new stock changes. **Challan generation rules:** The frontend `challan_no` is ignored. If the month/FY changes, the backend automatically generates a new sequence number. Otherwise, the original sequence is retained.
     *   *Request Body*: Same as POST.
@@ -265,7 +265,7 @@ Manages groups of jobbers and clients.
 *   **GET `/health`**
     *   *Description*: System health check.
     *   *Response*: `{"status": "OK", "timestamp": "..."}`
-1. 
+
 ### 2. Backup & Restore
 *   **GET `/backup/manual`**
     *   *Description*: Generates a full database backup and streams it as a `.sql` file download. Uses a concurrency lock.
@@ -462,11 +462,6 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
 *   **GET `/reports/detail-job-report`**
     *   *Description*: Returns inward stock movement details from Job Work (Purchase) entries between selected dates.
     *   *Query Params*: `startDate` (required, YYYY-MM-DD), `endDate` (required, YYYY-MM-DD).
-    *   *Response Fields*:
-        *   `purchase_id`: Internal ID of the purchase record.
-        *   `date`: Date of the transaction.
-        *   `item_name`: Name of the item received.
-        *   `quantity`: Inward quantity.
     *   *Sorting*: Ordered by date ASC, purchase_id ASC, and order_index ASC.
     *   *Response*:
         ```json
