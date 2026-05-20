@@ -35,9 +35,9 @@ const StockSummary = () => {
     return () => window.removeEventListener('app-refresh', fetchItems);
   }, []);
 
-  const filteredItems = items.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = items
+    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => parseFloat(b.stock || 0) - parseFloat(a.stock || 0));
 
   return (
     <Layout>
