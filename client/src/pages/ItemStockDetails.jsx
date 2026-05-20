@@ -49,8 +49,22 @@ const ItemStockDetails = () => {
     return () => window.removeEventListener('app-refresh', fetchData);
   }, [id]);
 
+  const transactionsWithBalance = useMemo(() => {
+    if (!item) return [];
+    let currentBalance = Number(item.stock) || 0;
+    return transactions.map(t => {
+      const closing_balance = currentBalance;
+      if (t.type === 'purchase') {
+        currentBalance -= (Number(t.inward) || 0);
+      } else if (t.type === 'billing') {
+        currentBalance += (Number(t.outward) || 0);
+      }
+      return { ...t, closing_balance };
+    });
+  }, [transactions, item]);
+
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
+    return transactionsWithBalance.filter(t => {
       // Type Filter
       if (typeFilter !== 'all' && t.type !== typeFilter) return false;
 
@@ -66,7 +80,30 @@ const ItemStockDetails = () => {
 
       return matchesStart && matchesEnd && matchesMonth && matchesYear;
     });
-  }, [transactions, typeFilter, startDate, endDate, selectedMonth, selectedYear]);
+  }, [transactionsWithBalance, typeFilter, startDate, endDate, selectedMonth, selectedYear]);
+
+  const calculatedOpeningStock = useMemo(() => {
+    if (!item) return 0;
+    let balance = Number(item.stock) || 0;
+    transactions.forEach(t => {
+      if (t.type === 'purchase') {
+        balance -= (Number(t.inward) || 0);
+      } else if (t.type === 'billing') {
+        balance += (Number(t.outward) || 0);
+      }
+    });
+    return balance;
+  }, [transactions, item]);
+
+  const periodOpeningStock = useMemo(() => {
+    if (filteredTransactions.length === 0) {
+      return calculatedOpeningStock;
+    }
+    const oldestTx = filteredTransactions[filteredTransactions.length - 1];
+    return oldestTx.type === 'purchase'
+      ? (Number(oldestTx.closing_balance) || 0) - (Number(oldestTx.inward) || 0)
+      : (Number(oldestTx.closing_balance) || 0) + (Number(oldestTx.outward) || 0);
+  }, [filteredTransactions, calculatedOpeningStock]);
 
   return (
     <Layout>
@@ -145,13 +182,14 @@ const ItemStockDetails = () => {
                   <th className="px-6 py-3 text-left border-r border-white/10">Name</th>
                   <th className="px-6 py-3 text-center border-r border-white/10">Inward Qty</th>
                   <th className="px-6 py-3 text-center border-r border-white/10">Outward Qty</th>
+                  <th className="px-6 py-3 text-center border-r border-white/10">Closing Balance</th>
                   <th className="px-6 py-3 text-center">Type</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-soft text-[12.5px] font-medium">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center">
+                    <td colSpan="7" className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                         <span className="text-[13px] font-medium text-text-light">Loading movement logs...</span>
@@ -159,39 +197,55 @@ const ItemStockDetails = () => {
                     </td>
                   </tr>
                 ) : filteredTransactions.length > 0 ? (
-                  filteredTransactions.map((t, idx) => (
-                    <tr key={idx} className="hover:bg-bg-main/40 transition-colors">
-                      <td className="px-6 py-3 font-bold text-text-primary uppercase tracking-tight">{t.challan_no}</td>
-                      <td className="px-6 py-3 text-text-light font-bold">
-                        {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
+                  <>
+                    {filteredTransactions.map((t, idx) => (
+                      <tr key={idx} className="hover:bg-bg-main/40 transition-colors">
+                        <td className="px-6 py-3 font-bold text-text-primary uppercase tracking-tight">{t.challan_no}</td>
+                        <td className="px-6 py-3 text-text-light font-bold">
+                          {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
+                        </td>
+                        <td className="px-6 py-3 font-bold text-text-primary">{t.name}</td>
+                        <td className="px-6 py-3 text-center font-black">
+                          {t.inward > 0 ? (
+                            <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-md border border-green-100">+ {t.inward}</span>
+                          ) : (
+                            <span className="opacity-20">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3 text-center font-black">
+                          {t.outward > 0 ? (
+                            <span className="text-red-500 bg-red-50 px-2.5 py-1 rounded-md border border-red-100">- {t.outward}</span>
+                          ) : (
+                            <span className="opacity-20">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3 text-center font-black text-brand-blue">
+                          {t.closing_balance?.toLocaleString()} <span className="text-[9px] font-bold opacity-60 uppercase">{item?.unit}</span>
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
+                            t.type === 'purchase' ? 'bg-green-100 text-green-700' : 'bg-brand-blue/10 text-brand-blue'
+                          }`}>
+                            {t.type === 'purchase' ? 'Purchase' : 'Billing'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-bg-main/20 font-semibold text-text-light border-t border-border-soft">
+                      <td className="px-6 py-3 font-bold text-text-primary uppercase tracking-tight opacity-40">-</td>
+                      <td className="px-6 py-3 opacity-40">-</td>
+                      <td className="px-6 py-3 font-bold text-text-primary uppercase tracking-wider">Opening Stock</td>
+                      <td className="px-6 py-3 text-center opacity-40">-</td>
+                      <td className="px-6 py-3 text-center opacity-40">-</td>
+                      <td className="px-6 py-3 text-center font-black text-brand-blue">
+                        {periodOpeningStock.toLocaleString()} <span className="text-[9px] font-bold opacity-60 uppercase">{item?.unit}</span>
                       </td>
-                      <td className="px-6 py-3 font-bold text-text-primary">{t.name}</td>
-                      <td className="px-6 py-3 text-center font-black">
-                        {t.inward > 0 ? (
-                          <span className="text-green-600 bg-green-50 px-2.5 py-1 rounded-md border border-green-100">+ {t.inward}</span>
-                        ) : (
-                          <span className="opacity-20">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-center font-black">
-                        {t.outward > 0 ? (
-                          <span className="text-red-500 bg-red-50 px-2.5 py-1 rounded-md border border-red-100">- {t.outward}</span>
-                        ) : (
-                          <span className="opacity-20">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-center">
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
-                          t.type === 'purchase' ? 'bg-green-100 text-green-700' : 'bg-brand-blue/10 text-brand-blue'
-                        }`}>
-                          {t.type === 'purchase' ? 'Purchase' : 'Billing'}
-                        </span>
-                      </td>
+                      <td className="px-6 py-3 text-center opacity-40">-</td>
                     </tr>
-                  ))
+                  </>
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-20 text-center italic text-text-light">
+                    <td colSpan="7" className="px-6 py-20 text-center italic text-text-light">
                       No transactions found for the selected filters.
                     </td>
                   </tr>
