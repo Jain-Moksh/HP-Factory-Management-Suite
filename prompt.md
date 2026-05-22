@@ -6,6 +6,8 @@
 - **Database**: PostgreSQL (node-postgres).
 - **Navigation**: High-fidelity navigation using `react-router-dom`. The main layout (`Layout.jsx`) manages a persistent `Sidebar` and a dynamic `Header`. Pages use `useOutletContext` to update header titles and actions dynamically.
 - **Production**: Frontend is served as a static build from the `client/dist` directory by the Express server.
+- **Server Startup**: `start.bat` dynamically fetches the machine's local IP address and opens the frontend in the default browser on the local network.
+- **Database Initialization**: The Node server auto-creates the database if missing and automatically executes `server/db.md` to initialize all tables on startup.
 
 ## 📁 Key Folder Structure
 - `/client/src/pages`: Page components (Dashboard, CreateInvoice, etc.).
