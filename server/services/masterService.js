@@ -66,7 +66,19 @@ const masterService = {
     switch (table) {
       case 'items':
         queryKey = 'updateItem';
-        params = [clean.name, clean.rate, clean.stock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, id];
+        
+        // Fetch old item to calculate stock difference based on open_stock change
+        const oldItem = await masterService.getById('items', id);
+        if (!oldItem) throw new Error('Item not found');
+        
+        const oldOpenStock = Number(oldItem.open_stock) || 0;
+        const currentStock = Number(oldItem.stock) || 0;
+        const newOpenStock = Number(clean.open_stock) || 0;
+        
+        const difference = newOpenStock - oldOpenStock;
+        const updatedStock = currentStock + difference;
+
+        params = [clean.name, clean.rate, updatedStock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, id];
         break;
       case 'clients':
         queryKey = 'updateClient';
