@@ -168,7 +168,7 @@ const ItemList = () => {
 
       const result = await response.json();
       if (result.success) {
-        setItems(prev => prev.map(item => item.id === id ? { ...item, ...editFormData } : item));
+        setItems(prev => prev.map(item => item.id === id ? { ...item, ...result.data } : item));
         setEditingId(null);
       } else {
         alert(result.message || 'Failed to update item');
