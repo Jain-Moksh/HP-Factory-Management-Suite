@@ -23,30 +23,38 @@ async function initializeDatabase() {
       console.log(`Database "${dbName}" not found. Creating it...`);
       await client.query(`CREATE DATABASE "${dbName}"`);
       console.log(`Database "${dbName}" created successfully.`);
-      
-      console.log(`Connecting to new database "${dbName}" to initialize tables...`);
-      const newClient = new Client({
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: dbName,
-        password: process.env.DB_PASSWORD,
-        port: parseInt(process.env.DB_PORT || '5432', 10),
-      });
-      await newClient.connect();
-      
-      const fs = require('fs');
-      try {
-        console.log(`Running schema from db.md...`);
-        const dbSchema = fs.readFileSync(path.join(__dirname, 'db.md'), 'utf8');
-        await newClient.query(dbSchema);
-        
-        console.log(`All tables initialized successfully.`);
-      } catch (scriptErr) {
-        console.error("Error running initialization scripts:", scriptErr.message);
-      } finally {
-        await newClient.end();
-      }
     }
+
+    // Now connect to the actual database to check if tables exist
+    const dbClient = new Client({
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: dbName,
+      password: process.env.DB_PASSWORD,
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+    });
+
+    try {
+      await dbClient.connect();
+      // Check if tables exist (e.g., check for 'items' table)
+      const tableCheck = await dbClient.query(`SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'items'
+      )`);
+
+      if (!tableCheck.rows[0].exists) {
+        console.log(`Tables not found in database "${dbName}". Initializing schema...`);
+        const fs = require('fs');
+        const dbSchema = fs.readFileSync(path.join(__dirname, 'db.md'), 'utf8');
+        await dbClient.query(dbSchema);
+        console.log(`All tables initialized successfully.`);
+      }
+    } catch (dbErr) {
+      console.error("Error checking or creating tables:", dbErr.message);
+    } finally {
+      await dbClient.end();
+    }
+
   } catch (err) {
     console.error("Error during database initialization:", err.message);
   } finally {

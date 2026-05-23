@@ -14,8 +14,17 @@ const pool = new Pool({
 });
 
 // For simple queries
-const query = (text, params) => pool.query(text, params);
-
+const query = async (text, params) => {
+  try {
+    return await pool.query(text, params);
+  } catch (err) {
+    if (err.code === '42P01') {
+      const { autoHealDatabase } = require('../utils/dbHealer');
+      autoHealDatabase(pool).catch(e => console.error('Error triggering auto-heal from db.js:', e));
+    }
+    throw err;
+  }
+};
 // For transactions
 const getClient = () => pool.connect();
 

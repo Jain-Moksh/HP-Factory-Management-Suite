@@ -62,6 +62,19 @@ app.use((req, res) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  // 42P01: undefined_table (Table does not exist)
+  if (err.code === '42P01') {
+    const { autoHealDatabase } = require('./utils/dbHealer');
+    const { pool } = require('./config/db');
+    autoHealDatabase(pool).catch(e => console.error('Error triggering auto-heal:', e));
+    
+    return res.status(500).json({
+      success: false,
+      message: 'A missing database table was detected. The system is automatically recreating it in the background. Please try your action again in a few seconds.'
+    });
+  }
+
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
   res.status(status).json({

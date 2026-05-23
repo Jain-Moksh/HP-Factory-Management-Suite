@@ -60,9 +60,12 @@ const billingController = {
   getNextChallan: async (req, res, next) => {
     try {
       const { date, billing_id } = req.query;
+      require('fs').appendFileSync('C:/Users/harsh/OneDrive/Documents/GitHub/NP-Frontend/server/debug.log', `[BILLING NEXT-CHALLAN] req: date=${date}\n`);
       const challan_no = await billingService.getNextChallan(date, billing_id);
+      require('fs').appendFileSync('C:/Users/harsh/OneDrive/Documents/GitHub/NP-Frontend/server/debug.log', `[BILLING NEXT-CHALLAN] res: challan_no=${challan_no}\n`);
       res.json({ success: true, challan_no });
     } catch (err) {
+      require('fs').appendFileSync('C:/Users/harsh/OneDrive/Documents/GitHub/NP-Frontend/server/debug.log', `[BILLING NEXT-CHALLAN] ERROR: ${err.message}\n`);
       next(err);
     }
   },
