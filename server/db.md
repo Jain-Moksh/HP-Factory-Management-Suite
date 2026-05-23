@@ -195,6 +195,7 @@ CREATE TABLE backup_settings (
 -- 1. PURCHASE: Increments `items.stock`.
 -- 2. BILLING: Decrements `items.stock`.
 -- 3. EDITS/DELETIONS: Stock is automatically reversed (using quantities from existing items) before applying new changes or deleting records.
+-- 4. MASTER DATA EDITS: If 'open_stock' is changed via an item update, the system automatically calculates a delta adjustment and applies it to 'items.stock'.
 
 -- =============================================
 -- REPORTS MODULE LOGIC

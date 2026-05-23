@@ -45,7 +45,7 @@
   - `/reports/item-sold-summary`: Sales velocity tracking.
 
 ## 🛠️ Core Business Rules
-1. **Stock Maintenance**: `items.stock` is updated in real-time via SQL transactions. Edits/Deletions trigger automatic stock reversals.
+1. **Stock Maintenance**: `items.stock` is updated in real-time via SQL transactions. Edits/Deletions trigger automatic stock reversals. Additionally, if 'open_stock' is changed via a master data edit, the system automatically calculates a delta adjustment and applies it to 'items.stock'.
 2. **Data Sanitization**: All string inputs converted to `UPPERCASE` via `dataSanitizer.js` before persistence.
 3. **Challan Numbers**: Generated as `<seq>/<MONTH>/<FY>`. Sequences reset monthly. Edits preserve original sequences unless month/FY changes.
 4. **Stable Ordering**: `order_index` in transaction items ensures sequence preservation during edits and reporting.

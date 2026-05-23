@@ -33,7 +33,7 @@ Manages the inventory of items.
         }
         ```
 *   **PUT `/items/:id`**
-    *   *Description*: Update an existing item.
+    *   *Description*: Update an existing item. Note: If `open_stock` is modified, the system automatically calculates the delta (new `open_stock` - old `open_stock`) and applies it to the `stock` transactionally to ensure consistency.
     *   *Request Body*: Same as POST.
 *   **DELETE `/items/:id`**
     *   *Description*: Securely delete an item.
