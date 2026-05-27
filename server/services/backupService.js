@@ -7,6 +7,20 @@ require('dotenv').config();
 // Concurrency lock to prevent multiple backups at once
 let isBackupRunning = false;
 
+// Helper to check if file is a binary backup format
+const isBinaryBackup = (filePath) => {
+  try {
+    const buffer = Buffer.alloc(5);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 5, 0);
+    fs.closeSync(fd);
+    return buffer.toString() === 'PGDMP';
+  } catch (err) {
+    console.error('Error checking file format:', err);
+    return false;
+  }
+};
+
 const backupService = {
   getSettings: async () => {
     const settings = await backupService.getSettingsInternal();
@@ -148,13 +162,30 @@ const backupService = {
       
       const pgDumpPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_dump') : 'pg_dump';
 
-      // Use --clean to include DROP TABLE commands for easier restoration
-      const command = `"${pgDumpPath}" -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} --clean ${DB_NAME} > "${newFilePath}"`;
+      // Use spawn to be quote-safe and pipe stdout directly to the file stream
+      const out = fs.createWriteStream(newFilePath);
+      const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '--clean', DB_NAME];
+      const child = spawn(pgDumpPath, args, { env });
 
-      exec(command, { env }, async (error, stdout, stderr) => {
+      child.stdout.pipe(out);
+
+      let stderr = '';
+      child.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('error', (err) => {
         isBackupRunning = false;
-        if (error) {
-          console.error('Auto backup failed:', error);
+        console.error('Auto backup failed to start:', err);
+      });
+
+      child.on('close', async (code) => {
+        isBackupRunning = false;
+        if (code !== 0) {
+          console.error(`Auto backup process exited with code ${code}. Error: ${stderr}`);
+          if (fs.existsSync(newFilePath)) {
+            try { fs.unlinkSync(newFilePath); } catch (e) {}
+          }
           return;
         }
 
@@ -234,49 +265,93 @@ const backupService = {
       throw new Error('Another backup or restore is already in progress. Please wait.');
     }
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       isBackupRunning = true;
       const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
       
       const psqlPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'psql') : 'psql';
+      const pgRestorePath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_restore') : 'pg_restore';
       const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
 
-      try {
-        // Step 1: Ensure the database exists (connect to 'postgres' to do this)
-        const createDbCmd = `"${psqlPath}" -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d postgres -c "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'"`;
-        
-        exec(createDbCmd, { env }, (err, stdout) => {
-          if (!stdout.includes('1')) {
-            console.log(`Database ${DB_NAME} not found. Creating...`);
-            const mkDbCmd = `"${psqlPath}" -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d postgres -c "CREATE DATABASE ${DB_NAME}"`;
-            exec(mkDbCmd, { env }, (mkErr) => {
-              if (mkErr) console.warn('Database creation warning (might already exist):', mkErr.message);
-              proceedWithRestore();
-            });
-          } else {
+      // Step 1: Ensure the database exists (connect to 'postgres' to do this)
+      const checkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'`];
+      const checkDb = spawn(psqlPath, checkDbArgs, { env });
+      
+      let stdout = '';
+      let stderr = '';
+      checkDb.stdout.on('data', (data) => { stdout += data.toString(); });
+      checkDb.stderr.on('data', (data) => { stderr += data.toString(); });
+
+      checkDb.on('error', (err) => {
+        isBackupRunning = false;
+        console.error('Failed to start DB existence check:', err);
+        return reject(err);
+      });
+
+      checkDb.on('close', (code) => {
+        if (code !== 0 && !stderr.includes('already exists')) {
+          console.warn(`Warning checking database existence (code ${code}): ${stderr}`);
+        }
+
+        if (!stdout.includes('1')) {
+          console.log(`Database ${DB_NAME} not found. Creating...`);
+          const mkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `CREATE DATABASE ${DB_NAME}`];
+          const mkDb = spawn(psqlPath, mkDbArgs, { env });
+          
+          let mkStderr = '';
+          mkDb.stderr.on('data', (data) => { mkStderr += data.toString(); });
+
+          mkDb.on('error', (err) => {
+            isBackupRunning = false;
+            return reject(err);
+          });
+
+          mkDb.on('close', (mkCode) => {
+            if (mkCode !== 0) {
+              console.warn(`Database creation warning (might already exist): ${mkStderr}`);
+            }
             proceedWithRestore();
-          }
+          });
+        } else {
+          proceedWithRestore();
+        }
+      });
+
+      const proceedWithRestore = () => {
+        const isBinary = isBinaryBackup(filePath);
+        let child;
+        
+        if (isBinary) {
+          console.log('Restoring using pg_restore (Binary format)...');
+          const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '--clean', filePath];
+          child = spawn(pgRestorePath, args, { env });
+        } else {
+          console.log('Restoring using psql (Plain text format)...');
+          const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '-f', filePath];
+          child = spawn(psqlPath, args, { env });
+        }
+
+        let restoreStderr = '';
+        child.stderr.on('data', (data) => {
+          restoreStderr += data.toString();
         });
 
-        const proceedWithRestore = () => {
-          // Step 2: Run the actual restoration
-          const restoreCmd = `"${psqlPath}" -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} < "${filePath}"`;
-          
-          exec(restoreCmd, { env }, (error, stdout, stderr) => {
-            isBackupRunning = false;
-            if (error) {
-              console.error('Database restore failed:', error);
-              return reject(error);
-            }
-            console.log('Database restored successfully');
-            resolve(stdout);
-          });
-        };
+        child.on('error', (err) => {
+          isBackupRunning = false;
+          console.error('Restore spawn error:', err);
+          return reject(err);
+        });
 
-      } catch (err) {
-        isBackupRunning = false;
-        reject(err);
-      }
+        child.on('close', (restoreCode) => {
+          isBackupRunning = false;
+          if (restoreCode !== 0) {
+            console.error(`Restore process exited with code ${restoreCode}. Error: ${restoreStderr}`);
+            return reject(new Error(`Restore process exited with code ${restoreCode}: ${restoreStderr}`));
+          }
+          console.log('Database restored successfully');
+          resolve();
+        });
+      };
     });
   },
 };
