@@ -10,7 +10,7 @@
 - **Database Initialization**: The Node server auto-creates the database if missing and automatically executes `server/db.md` to initialize all tables on startup.
 
 ## 📁 Key Folder Structure
-- `/client/src/pages`: Page components (Dashboard, CreateInvoice, etc.).
+- `/client/src/pages`: Page components (Dashboard, CreateInvoice, etc.). Includes newly added `CreatePayment` and `Payment` stubs for tracking party settlements.
 - `/client/src/pages/master`: Master data (Items, Clients, Jobbers, etc.).
 - `/client/src/pages/reports`: Reporting modules (GroupSalesReport, DayBook, etc.).
 - `/client/src/components/UI`: Reusable components (Button, Modal, Card, etc.).
@@ -29,6 +29,7 @@
 - **purchase_items**: `id, purchase_id, item_id, quantity, unit, order_index`.
 - **groups** & **group_members**: Polymorphic groupings of jobbers and clients.
 - **backup_settings**: `id, auto_backup_enabled, auto_backup_path, auto_backup_interval, last_backup_time, last_backup_file`.
+- **payments (Pending implementation)**: UI exists on the frontend (`CreatePayment`), backend schema and APIs are yet to be implemented.
 
 ## 🔌 API Contract (Selected)
 - **Master Data**: `GET/POST/PUT/DELETE` for `/items`, `/clients`, `/jobbers`, `/transporters`.

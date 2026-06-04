@@ -1,16 +1,48 @@
-# React + Vite
+# HP Accounting Software (Single Source of Truth)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🏗️ Architecture & Tech Stack
+- **Frontend**: React (Vite), Vanilla CSS (Custom UI System), React Router DOM (Navigation).
+- **Backend**: Node.js, Express.
+- **Database**: PostgreSQL (node-postgres).
+- **Navigation**: High-fidelity navigation using `react-router-dom`. The main layout (`Layout.jsx`) manages a persistent `Sidebar` and a dynamic `Header`. Pages use `useOutletContext` to update header titles and actions dynamically.
+- **Production**: Frontend is served as a static build from the `client/dist` directory by the Express server.
+- **Server Startup**: `start.bat` dynamically fetches the machine's local IP address and opens the frontend in the default browser on the local network.
+- **Database Initialization**: The Node server auto-creates the database if missing and automatically executes `server/db.md` to initialize all tables on startup.
 
-Currently, two official plugins are available:
+## 🗄️ Core Database Schema (PostgreSQL)
+- **items**: `id, name (unique), rate, stock, open_stock, conversion, unit, min_stock`.
+- **clients**: `id, name, street, city, shortform, balance, remark`.
+- **jobbers**: `id, name`.
+- **transporters**: `id, name`.
+- **billing**: Invoices, automatically decrements item stock.
+- **billing_items**: Invoice items.
+- **purchase**: Job work received, automatically increments item stock.
+- **purchase_items**: Job work items.
+- **groups** & **group_members**: Polymorphic groupings of jobbers and clients.
+- **backup_settings**: Auto-backup configuration.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Core Business Rules
+1. **Stock Maintenance**: `items.stock` is updated in real-time via SQL transactions.
+2. **Data Sanitization**: All string inputs converted to `UPPERCASE` via `dataSanitizer.js` before persistence.
+3. **Challan Numbers**: Generated as `<seq>/<MONTH>/<FY>`. Sequences reset monthly.
+4. **Precision**: Dates (OID 1082) treated as raw strings to avoid timezone shifting. Decimals formatted to exactly 2 decimal places in financial reports.
+5. **Security**: Sensitive deletions require a master password (`VITE_DEL_PASS`).
 
-## React Compiler
+## 📄 Documentation Reference
+- `server/api.md`: Detailed API structures.
+- `server/db.md`: Full SQL schema and report query logic.
+- `prompt.md`: Project summary and AI prompt context.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Running Locally
+### Prerequisites
+- Node.js installed
+- PostgreSQL installed and running on port 5432
 
-## Expanding the ESLint configuration
+### Setup
+1. Clone the repository.
+2. Run `npm install` in both `client` and `server` directories.
+3. Create a `.env` file in the `server` directory with your database credentials.
+4. Run `npm run dev` in the `client` directory to start the frontend.
+5. Run `node server.js` (or `node app.js`) in the `server` directory to start the backend.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Alternatively, use `start.bat` on Windows to build and start the production server locally.
