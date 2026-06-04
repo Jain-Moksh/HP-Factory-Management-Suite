@@ -3,6 +3,7 @@ import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import ManualBackup from '../../components/backup/ManualBackup';
 import AutoBackupSettings from '../../components/backup/AutoBackupSettings';
+import FtpBackupSettings from '../../components/backup/FtpBackupSettings';
 
 const BackupManager = () => {
   return (
@@ -17,6 +18,7 @@ const BackupManager = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ManualBackup />
             <AutoBackupSettings />
+            <FtpBackupSettings />
           </div>
         </div>
       </div>

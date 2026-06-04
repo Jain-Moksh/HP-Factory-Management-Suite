@@ -21,6 +21,8 @@ if (!fs.existsSync(uploadDir)) {
 router.get('/manual', backupController.manualBackup);
 router.get('/settings', backupController.getSettings);
 router.put('/settings', backupController.updateSettings);
+router.get('/ftp-settings', backupController.getFtpSettings);
+router.put('/ftp-settings', backupController.updateFtpSettings);
 router.get('/status', backupController.getStatus);
 router.post('/restore', upload.single('backup'), backupController.restore);
 

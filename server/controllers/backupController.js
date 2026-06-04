@@ -21,6 +21,24 @@ const backupController = {
     }
   },
 
+  getFtpSettings: async (req, res, next) => {
+    try {
+      const settings = await backupService.getFtpSettings();
+      res.json(settings);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  updateFtpSettings: async (req, res, next) => {
+    try {
+      const settings = await backupService.updateFtpSettings(req.body);
+      res.json(settings);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   manualBackup: async (req, res, next) => {
     try {
       await backupService.streamManualBackup(res);

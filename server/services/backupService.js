@@ -2,6 +2,7 @@ const { exec, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const db = require('../config/db');
+const ftp = require('basic-ftp');
 require('dotenv').config();
 
 // Concurrency lock to prevent multiple backups at once
@@ -60,6 +61,30 @@ const backupService = {
        WHERE id = 1 
        RETURNING *`,
       [auto_backup_enabled, auto_backup_path, auto_backup_interval || 60]
+    );
+    return result.rows[0];
+  },
+
+  getFtpSettings: async () => {
+    const settings = await backupService.getSettingsInternal();
+    return {
+      ftp_backup_enabled: settings.ftp_backup_enabled,
+      ftp_host: settings.ftp_host,
+      ftp_port: settings.ftp_port,
+      ftp_username: settings.ftp_username,
+      ftp_password: settings.ftp_password,
+      ftp_path: settings.ftp_path
+    };
+  },
+
+  updateFtpSettings: async (settings) => {
+    const { ftp_backup_enabled, ftp_host, ftp_port, ftp_username, ftp_password, ftp_path } = settings;
+    const result = await db.query(
+      `UPDATE backup_settings 
+       SET ftp_backup_enabled = $1, ftp_host = $2, ftp_port = $3, ftp_username = $4, ftp_password = $5, ftp_path = $6, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = 1 
+       RETURNING ftp_backup_enabled, ftp_host, ftp_port, ftp_username, ftp_password, ftp_path`,
+      [ftp_backup_enabled, ftp_host, ftp_port, ftp_username, ftp_password, ftp_path]
     );
     return result.rows[0];
   },
@@ -189,6 +214,30 @@ const backupService = {
           return;
         }
 
+        // FTP Upload Logic
+        if (settings.ftp_backup_enabled && settings.ftp_host && settings.ftp_username) {
+          const client = new ftp.Client();
+          client.ftp.verbose = true;
+          try {
+            console.log('Initiating FTP upload for:', newFilename);
+            await client.access({
+              host: settings.ftp_host,
+              port: settings.ftp_port || 21,
+              user: settings.ftp_username,
+              password: settings.ftp_password,
+              secure: false
+            });
+            const remoteDir = settings.ftp_path || '/';
+            await client.ensureDir(remoteDir);
+            await client.uploadFrom(newFilePath, path.join(remoteDir, newFilename).replace(/\\/g, '/'));
+            console.log('FTP upload successful:', newFilename);
+          } catch (ftpError) {
+            console.error('FTP upload failed:', ftpError);
+          } finally {
+            client.close();
+          }
+        }
+
         // Handle Retention: Delete old backup only if it's different from the new one
         const oldFilename = settings.last_backup_file;
         if (oldFilename && oldFilename !== newFilename) {
@@ -236,6 +285,21 @@ const backupService = {
         result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
       }
 
+      // Column check for FTP settings
+      if (result.rows[0] && result.rows[0].ftp_backup_enabled === undefined) {
+        console.log('🛡️ System Recovery: FTP columns missing. Updating table...');
+        await db.query(`
+          ALTER TABLE backup_settings 
+          ADD COLUMN IF NOT EXISTS ftp_backup_enabled BOOLEAN DEFAULT FALSE,
+          ADD COLUMN IF NOT EXISTS ftp_host TEXT,
+          ADD COLUMN IF NOT EXISTS ftp_port INT DEFAULT 21,
+          ADD COLUMN IF NOT EXISTS ftp_username TEXT,
+          ADD COLUMN IF NOT EXISTS ftp_password TEXT,
+          ADD COLUMN IF NOT EXISTS ftp_path TEXT DEFAULT '/'
+        `);
+        result = await db.query('SELECT * FROM backup_settings WHERE id = 1');
+      }
+
       return result.rows[0];
     } catch (error) {
       if (error.code === '42P01') { // relation "backup_settings" does not exist
@@ -246,6 +310,12 @@ const backupService = {
               auto_backup_enabled BOOLEAN DEFAULT TRUE,
               auto_backup_path TEXT DEFAULT 'C:/NP-Backups/',
               auto_backup_interval INT DEFAULT 60,
+              ftp_backup_enabled BOOLEAN DEFAULT FALSE,
+              ftp_host TEXT,
+              ftp_port INT DEFAULT 21,
+              ftp_username TEXT,
+              ftp_password TEXT,
+              ftp_path TEXT DEFAULT '/',
               last_backup_time TIMESTAMP WITH TIME ZONE,
               last_backup_file TEXT,
               created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
