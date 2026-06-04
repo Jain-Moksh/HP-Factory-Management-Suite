@@ -189,6 +189,7 @@ const reportQueries = {
         WHERE p.date BETWEEN $1 AND $2
         ORDER BY
             p.date ASC,
+            i.name ASC,
             p.id ASC,
             pi.order_index ASC,
             pi.id ASC;
@@ -207,7 +208,7 @@ const reportQueries = {
         WHERE ($1::DATE IS NULL OR p.date >= $1)
           AND ($2::DATE IS NULL OR p.date <= $2)
         GROUP BY j.name, i.name
-        ORDER BY j.name ASC, total_quantity DESC;
+        ORDER BY j.name ASC, i.name ASC;
     `,
 
     // 14. Item Sold Summary Report (Aggregate by item for a period)
