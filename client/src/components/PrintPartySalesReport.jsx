@@ -22,13 +22,13 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
     }
 
     .report-header {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       border-bottom: 2px solid #000;
-      padding-bottom: 5px;
+      padding-bottom: 6px;
     }
 
     .report-title {
-      font-size: ${config.headerFontSize};
+      font-size: 19px !important;
       font-weight: 900;
       text-transform: uppercase;
       margin-bottom: 4px;
@@ -43,7 +43,7 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
     }
 
     .date-info {
-      font-size: ${config.fontSize};
+      font-size: 15.5px !important;
       text-transform: uppercase;
       font-weight: 800;
     }
@@ -56,9 +56,19 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: ${config.fontSize};
+      font-size: 15.5px !important;
       color: #000 !important;
       font-weight: 700;
+    }
+
+    .report-table th {
+      font-size: 15.5px !important;
+      padding: 6px 10px !important;
+    }
+
+    .report-table td {
+      padding: 6px 10px !important;
+      height: 30px !important;
     }
 
     /* Column Widths */

@@ -29,7 +29,7 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
     }
 
     .date-info {
-      font-size: ${config.fontSize};
+      font-size: 15.5px !important;
       text-transform: uppercase;
       font-weight: 800;
     }
@@ -42,10 +42,20 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: ${config.fontSize};
+      font-size: 15.5px !important;
       color: #000 !important;
       margin-top: 5px;
       font-weight: 700;
+    }
+
+    .report-table th {
+      font-size: 15.5px !important;
+      padding: 6px 10px !important;
+    }
+
+    .report-table td {
+      padding: 6px 10px !important;
+      height: 30px !important;
     }
 
     /* Column Widths - Optimized for borderless view */
