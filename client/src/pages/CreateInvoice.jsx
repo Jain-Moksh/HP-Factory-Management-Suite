@@ -348,7 +348,33 @@ const CreateInvoice = () => {
   const updateEntryValue = (name, value) => {
     setCurrentItem(prev => {
       let updated = { ...prev, [name]: value };
-      if (['qty', 'rate', 'dPercent', 'dAmount'].includes(name)) {
+      if (name === 'item') {
+        const match = items.find(i => i.name.toLowerCase() === value.trim().toLowerCase());
+        if (match) {
+          const rate = match.rate || '';
+          const results = calculateRowValues(updated.qty, rate, updated.dPercent, updated.dAmount, 'percent');
+          updated = {
+            ...updated,
+            item_id: match.id,
+            rate: rate,
+            unit: match.unit || 'PCS',
+            stock: match.stock || '0',
+            conversion: match.conversion || 1,
+            min_stock: match.min_stock || '0',
+            ...results
+          };
+        } else {
+          const results = calculateRowValues(updated.qty, '', updated.dPercent, updated.dAmount, 'percent');
+          updated = {
+            ...updated,
+            item_id: '',
+            rate: '',
+            stock: '0',
+            min_stock: '0',
+            ...results
+          };
+        }
+      } else if (['qty', 'rate', 'dPercent', 'dAmount'].includes(name)) {
         const priority = name === 'dAmount' ? 'amount' : 'percent';
         const results = calculateRowValues(updated.qty, updated.rate, updated.dPercent, updated.dAmount, priority);
         updated = { ...updated, ...results };
@@ -423,16 +449,21 @@ const CreateInvoice = () => {
       if (result.success) {
         setItems(prev => [...prev, result.data]);
         // Auto-select the newly created item in the entry row
-        setCurrentItem(prev => ({
-          ...prev,
-          item_id: result.data.id,
-          item: result.data.name,
-          unit: result.data.unit,
-          rate: result.data.rate.toString(),
-          stock: result.data.stock.toString(),
-          conversion: (result.data.conversion || 1).toString(),
-          min_stock: (result.data.min_stock || 0).toString()
-        }));
+        setCurrentItem(prev => {
+          const rate = result.data.rate.toString();
+          const results = calculateRowValues(prev.qty, rate, prev.dPercent, prev.dAmount, 'percent');
+          return {
+            ...prev,
+            item_id: result.data.id,
+            item: result.data.name,
+            unit: result.data.unit,
+            rate: rate,
+            stock: result.data.stock.toString(),
+            conversion: (result.data.conversion || 1).toString(),
+            min_stock: (result.data.min_stock || 0).toString(),
+            ...results
+          };
+        });
         setShowItemModal(false);
         handleRedoNewItem();
       }
@@ -460,16 +491,21 @@ const CreateInvoice = () => {
   };
 
   const handleSelectItem = (item) => {
-    setCurrentItem(prev => ({
-      ...prev,
-      item_id: item.id,
-      item: item.name,
-      rate: item.rate || '',
-      unit: item.unit || 'PCS',
-      stock: item.stock || '0',
-      conversion: item.conversion || 1,
-      min_stock: item.min_stock || '0'
-    }));
+    setCurrentItem(prev => {
+      const rate = item.rate || '';
+      const results = calculateRowValues(prev.qty, rate, prev.dPercent, prev.dAmount, 'percent');
+      return {
+        ...prev,
+        item_id: item.id,
+        item: item.name,
+        rate: rate,
+        unit: item.unit || 'PCS',
+        stock: item.stock || '0',
+        conversion: item.conversion || 1,
+        min_stock: item.min_stock || '0',
+        ...results
+      };
+    });
     setShowItemDropdown(false);
   };
 
@@ -533,6 +569,20 @@ const CreateInvoice = () => {
     setAddedItems(prev => prev.map(item => {
       if (item.id === id) {
         let updated = { ...item, [field]: value };
+        if (field === 'item') {
+          const match = items.find(i => i.name.toLowerCase() === value.trim().toLowerCase());
+          if (match) {
+            const rate = match.rate || '';
+            const results = calculateRowValues(updated.qty, rate, updated.dPercent, updated.dAmount, 'percent');
+            updated = {
+              ...updated,
+              item_id: match.id,
+              rate: rate,
+              unit: match.unit || 'PCS',
+              ...results
+            };
+          }
+        }
         if (['qty', 'rate', 'dPercent', 'dAmount'].includes(field)) {
           const priority = field === 'dAmount' ? 'amount' : 'percent';
           const results = calculateRowValues(updated.qty, updated.rate, updated.dPercent, updated.dAmount, priority);

@@ -53,8 +53,12 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
     .col-item { width: 67%; }
     .col-qty  { width: 18%; text-align: right; }
 
-    .text-right { text-align: right; }
+    .text-right { text-align: right !important; }
     .font-bold { font-weight: 900; }
+    
+    .report-table tbody tr td {
+      border-bottom: 1px solid #e0e0e0 !important;
+    }
   `;
 
   const portalContent = (
@@ -78,7 +82,7 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
             <tr>
               <th className="col-date">Date</th>
               <th className="col-item">Item Name</th>
-              <th className="col-qty">Inward Qty</th>
+              <th className="col-qty text-right">Inward Qty</th>
             </tr>
           </thead>
           <tbody>

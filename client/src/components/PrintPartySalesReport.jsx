@@ -65,8 +65,12 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
     .col-party { width: 70%; }
     .col-amount { width: 30%; text-align: right; }
 
-    .text-right { text-align: right; }
+    .text-right { text-align: right !important; }
     .font-black { font-weight: 900; }
+    
+    .report-table tbody tr:not(.footer-row) td {
+      border-bottom: 1px solid #e0e0e0 !important;
+    }
     
     .footer-row td {
       border-top: 2px solid #000 !important;
@@ -98,7 +102,7 @@ const PrintPartySalesReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
           <thead>
             <tr>
               <th className="col-party">Party Name</th>
-              <th className="col-amount">Total Sales Amount</th>
+              <th className="col-amount text-right">Total Sales Amount</th>
             </tr>
           </thead>
           <tbody>
