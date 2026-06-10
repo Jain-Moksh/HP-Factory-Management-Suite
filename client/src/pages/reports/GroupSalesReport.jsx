@@ -6,6 +6,7 @@ import MonthFilterFooter from '../../components/MonthFilterFooter';
 import SearchableSelect from '../../components/UI/SearchableSelect';
 import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
 import PrintGroupPartySalesReport from '../../components/PrintGroupPartySalesReport';
+import PrintGroupPartySalesSummary from '../../components/PrintGroupPartySalesSummary';
 import { API_BASE_URL } from '../../config';
 
 const GroupSalesReport = () => {
@@ -22,6 +23,7 @@ const GroupSalesReport = () => {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedPaperSize, setSelectedPaperSize] = useState('A5');
   const [isFetchingPrintData, setIsFetchingPrintData] = useState(false);
+  const [printMode, setPrintMode] = useState(null); // 'detail' or 'summary'
 
   const navigate = useNavigate();
 
@@ -30,6 +32,7 @@ const GroupSalesReport = () => {
     if (isPrinting) {
       const handleAfterPrint = () => {
         setIsPrinting(false);
+        setPrintMode(null);
         window.removeEventListener('afterprint', handleAfterPrint);
       };
       
@@ -38,7 +41,7 @@ const GroupSalesReport = () => {
       const timer = setTimeout(() => {
         window.print();
       }, 1500); // 1.5s for portal mounting
-
+      
       return () => {
         clearTimeout(timer);
         window.removeEventListener('afterprint', handleAfterPrint);
@@ -123,23 +126,34 @@ const GroupSalesReport = () => {
   };
 
   const handlePrintRequest = () => {
+    setPrintMode('detail');
+    setShowPrintModal(true);
+  };
+
+  const handlePrintSummaryRequest = () => {
+    setPrintMode('summary');
     setShowPrintModal(true);
   };
 
   const executePrint = async () => {
     setShowPrintModal(false);
-    setIsFetchingPrintData(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/reports/group-sales-print?group_id=${selectedGroupId}&from=${startDate}&to=${endDate}`);
-      const result = await response.json();
-      if (result.success) {
-        setPrintData(result.data);
-        setIsPrinting(true);
+    if (printMode === 'detail') {
+      setIsFetchingPrintData(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/reports/group-sales-print?group_id=${selectedGroupId}&from=${startDate}&to=${endDate}`);
+        const result = await response.json();
+        if (result.success) {
+          setPrintData(result.data);
+          setIsPrinting(true);
+        }
+      } catch (err) {
+        console.error("Error fetching print data:", err);
+      } finally {
+        setIsFetchingPrintData(false);
       }
-    } catch (err) {
-      console.error("Error fetching print data:", err);
-    } finally {
-      setIsFetchingPrintData(false);
+    } else if (printMode === 'summary') {
+      setPrintData(data);
+      setIsPrinting(true);
     }
   };
 
@@ -200,20 +214,33 @@ const GroupSalesReport = () => {
                   </button>
                 </div>
 
-                <button 
-                  onClick={handlePrintRequest}
-                  disabled={!selectedGroupId || data.length === 0 || isFetchingPrintData}
-                  className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[12.5px] font-bold px-4 py-1.5 rounded transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-                >
-                  {isFetchingPrintData ? (
-                    <div className="w-3.5 h-3.5 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handlePrintSummaryRequest}
+                    disabled={!selectedGroupId || data.length === 0 || isFetchingPrintData}
+                    className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[12.5px] font-bold px-4 py-1.5 rounded transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                  >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
-                  )}
-                  Print Report
-                </button>
+                    Print Summary
+                  </button>
+
+                  <button 
+                    onClick={handlePrintRequest}
+                    disabled={!selectedGroupId || data.length === 0 || isFetchingPrintData}
+                    className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[12.5px] font-bold px-4 py-1.5 rounded transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+                  >
+                    {isFetchingPrintData ? (
+                      <div className="w-3.5 h-3.5 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                    )}
+                    Print Report
+                  </button>
+                </div>
               </div>
           </div>
 
@@ -296,9 +323,19 @@ const GroupSalesReport = () => {
         />
       </div>
 
-      {isPrinting && (
+      {isPrinting && printMode === 'detail' && (
         <PrintGroupPartySalesReport 
           data={printData} 
+          startDate={startDate} 
+          endDate={endDate} 
+          paperSize={selectedPaperSize}
+        />
+      )}
+
+      {isPrinting && printMode === 'summary' && (
+        <PrintGroupPartySalesSummary 
+          data={printData}
+          groupName={groups.find(g => String(g.id) === String(selectedGroupId))?.name || ''}
           startDate={startDate} 
           endDate={endDate} 
           paperSize={selectedPaperSize}
