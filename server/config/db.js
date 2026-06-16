@@ -5,7 +5,7 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // Fix for DATE shifted by timezone (treat DATE OID 1082 as string)
 types.setTypeParser(1082, (val) => val);
 
-const pool = new Pool({
+let pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
@@ -18,7 +18,7 @@ const query = async (text, params) => {
   try {
     return await pool.query(text, params);
   } catch (err) {
-    if (err.code === '42P01') {
+    if (err.code === '42P01' && !global.isBackupRestoreRunning) {
       const { autoHealDatabase } = require('../utils/dbHealer');
       autoHealDatabase(pool).catch(e => console.error('Error triggering auto-heal from db.js:', e));
     }
@@ -37,8 +37,26 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
+const refreshPool = async () => {
+  console.log('🔄 Refreshing database connection pool...');
+  const oldPool = pool;
+  pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+  });
+  await pool.query('SELECT NOW()');
+  oldPool.end().catch(err => console.error('Error ending old pool:', err));
+  console.log('✅ Database connection pool refreshed.');
+};
+
 module.exports = {
   query,
   getClient,
-  pool
+  get pool() {
+    return pool;
+  },
+  refreshPool
 };

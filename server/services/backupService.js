@@ -335,94 +335,100 @@ const backupService = {
       throw new Error('Another backup or restore is already in progress. Please wait.');
     }
 
-    return new Promise((resolve, reject) => {
-      isBackupRunning = true;
-      const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
-      
-      const psqlPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'psql') : 'psql';
-      const pgRestorePath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_restore') : 'pg_restore';
-      const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
+    console.log(`[RESTORE] 📂 Backup file detected: ${filePath}`);
+    isBackupRunning = true;
+    global.isBackupRestoreRunning = true;
 
-      // Step 1: Ensure the database exists (connect to 'postgres' to do this)
-      const checkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'`];
-      const checkDb = spawn(psqlPath, checkDbArgs, { env });
-      
-      let stdout = '';
-      let stderr = '';
-      checkDb.stdout.on('data', (data) => { stdout += data.toString(); });
-      checkDb.stderr.on('data', (data) => { stderr += data.toString(); });
+    const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
+    const psqlPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'psql') : 'psql';
+    const pgRestorePath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_restore') : 'pg_restore';
+    const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
 
-      checkDb.on('error', (err) => {
-        isBackupRunning = false;
-        console.error('Failed to start DB existence check:', err);
-        return reject(err);
-      });
-
-      checkDb.on('close', (code) => {
-        if (code !== 0 && !stderr.includes('already exists')) {
-          console.warn(`Warning checking database existence (code ${code}): ${stderr}`);
-        }
-
-        if (!stdout.includes('1')) {
-          console.log(`Database ${DB_NAME} not found. Creating...`);
-          const mkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `CREATE DATABASE ${DB_NAME}`];
-          const mkDb = spawn(psqlPath, mkDbArgs, { env });
-          
-          let mkStderr = '';
-          mkDb.stderr.on('data', (data) => { mkStderr += data.toString(); });
-
-          mkDb.on('error', (err) => {
-            isBackupRunning = false;
-            return reject(err);
-          });
-
-          mkDb.on('close', (mkCode) => {
-            if (mkCode !== 0) {
-              console.warn(`Database creation warning (might already exist): ${mkStderr}`);
-            }
-            proceedWithRestore();
-          });
-        } else {
-          proceedWithRestore();
-        }
-      });
-
-      const proceedWithRestore = () => {
-        const isBinary = isBinaryBackup(filePath);
-        let child;
-        
-        if (isBinary) {
-          console.log('Restoring using pg_restore (Binary format)...');
-          const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '--clean', filePath];
-          child = spawn(pgRestorePath, args, { env });
-        } else {
-          console.log('Restoring using psql (Plain text format)...');
-          const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '-f', filePath];
-          child = spawn(psqlPath, args, { env });
-        }
-
-        let restoreStderr = '';
-        child.stderr.on('data', (data) => {
-          restoreStderr += data.toString();
-        });
-
-        child.on('error', (err) => {
-          isBackupRunning = false;
-          console.error('Restore spawn error:', err);
-          return reject(err);
-        });
-
-        child.on('close', (restoreCode) => {
-          isBackupRunning = false;
-          if (restoreCode !== 0) {
-            console.error(`Restore process exited with code ${restoreCode}. Error: ${restoreStderr}`);
-            return reject(new Error(`Restore process exited with code ${restoreCode}: ${restoreStderr}`));
+    const runSpawn = (cmd, args) => {
+      return new Promise((resolve, reject) => {
+        const child = spawn(cmd, args, { env });
+        let stderr = '';
+        let stdout = '';
+        child.stdout.on('data', (d) => { stdout += d.toString(); });
+        child.stderr.on('data', (d) => { stderr += d.toString(); });
+        child.on('error', reject);
+        child.on('close', (code) => {
+          if (stderr) {
+            console.log(`[RESTORE] ${path.basename(cmd)} output:\n${stderr}`);
           }
-          console.log('Database restored successfully');
-          resolve();
+          if (code !== 0) {
+            const isFatal = !stderr.includes('already exists') && 
+                            !stderr.includes('does not exist') && 
+                            !stderr.includes('NOTICE') && 
+                            !stderr.includes('WARNING');
+            if (isFatal) {
+              return reject(new Error(`Process ${path.basename(cmd)} exited with code ${code}. Error: ${stderr}`));
+            }
+          }
+          resolve({ code, stdout, stderr });
         });
-      };
-    });
+      });
+    };
+
+    try {
+      // Step 1: Ensure database exists
+      console.log('[RESTORE] 🔍 Checking if database exists...');
+      const checkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'`];
+      const checkDbRes = await runSpawn(psqlPath, checkDbArgs);
+
+      if (!checkDbRes.stdout.includes('1')) {
+        console.log(`[RESTORE] 🛠️ Database ${DB_NAME} not found. Creating...`);
+        const mkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `CREATE DATABASE ${DB_NAME}`];
+        await runSpawn(psqlPath, mkDbArgs);
+        console.log(`[RESTORE] Database ${DB_NAME} created successfully.`);
+      }
+
+      // Step 2: Schema validation started & Table creation started
+      console.log('[RESTORE] 🛡️ Schema validation started.');
+      console.log('[RESTORE] 🧹 Table creation started - Cleaning existing public schema...');
+      const cleanDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'];
+      await runSpawn(psqlPath, cleanDbArgs);
+      console.log('[RESTORE] 🧹 Table creation completed - Schema cleaned successfully.');
+
+      // Step 3: Data import started
+      console.log('[RESTORE] 📥 Data import started.');
+      const isBinary = isBinaryBackup(filePath);
+      if (isBinary) {
+        console.log('[RESTORE] Restoring using pg_restore (Binary format)...');
+        const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '--clean', filePath];
+        await runSpawn(pgRestorePath, args);
+      } else {
+        console.log('[RESTORE] Restoring using psql (Plain text format)...');
+        const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '-f', filePath];
+        await runSpawn(psqlPath, args);
+      }
+      console.log('[RESTORE] 📥 Data import completed.');
+
+      // Step 4: Post-restore initialization started
+      console.log('[RESTORE] ⚙️ Post-restore initialization started.');
+      const { autoHealDatabase } = require('../utils/dbHealer');
+      await autoHealDatabase(db.pool);
+      console.log('[RESTORE] ⚙️ Post-restore initialization completed.');
+
+      // Step 5: Cache refresh started
+      console.log('[RESTORE] 🔄 Cache refresh started.');
+      await db.refreshPool();
+      console.log('[RESTORE] 🔄 Cache refresh completed.');
+
+      // Step 6: Log final record counts
+      console.log('[RESTORE] 📊 Querying final record counts...');
+      const tables = ['items', 'clients', 'jobbers', 'transporters', 'billing', 'billing_items', 'purchase', 'purchase_items', 'groups', 'group_members'];
+      const counts = await Promise.all(tables.map(t => db.query('SELECT COUNT(*) FROM ' + t).then(res => `${t}: ${res.rows[0].count}`).catch(err => `${t}: Error (${err.message})`)));
+      console.log('[RESTORE] 📊 Final record counts:', counts.join(', '));
+
+      console.log('[RESTORE] 🎉 Restore success confirmation.');
+    } catch (err) {
+      console.error('[RESTORE] ❌ Restore process failed:', err);
+      throw err;
+    } finally {
+      isBackupRunning = false;
+      global.isBackupRestoreRunning = false;
+    }
   },
 };
 
