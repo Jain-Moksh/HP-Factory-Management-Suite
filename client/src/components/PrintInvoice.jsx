@@ -173,9 +173,9 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                   </div>
                 </div>
                 <div className="top-right">
-                  <div className="info-row">
+                  <div className="info-row" style={{ fontSize: '13px' }}>
                     <div className="info-label">No :</div>
-                    <div className="info-val" style={{ fontWeight: 800 }}>#{data.challanNo}</div>
+                    <div className="info-val" style={{ fontWeight: 800 }}>#{data.challanNo ? String(data.challanNo).split('/')[0] : ''}</div>
                   </div>
                   <div className="info-row">
                     <div className="info-label">Date:</div>

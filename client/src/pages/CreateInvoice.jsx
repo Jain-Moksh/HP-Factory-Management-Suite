@@ -43,6 +43,7 @@ const CreateInvoice = () => {
   const clientRef = useRef(null);
   const itemRef = useRef(null);
   const transporterRef = useRef(null);
+  const itemNameInputRef = useRef(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -287,6 +288,11 @@ const CreateInvoice = () => {
     setAddedItems([...addedItems, newItem]);
     handleRedoCurrent();
     setIsWarningOpen(false);
+    setTimeout(() => {
+      if (itemNameInputRef.current) {
+        itemNameInputRef.current.focus();
+      }
+    }, 0);
   };
 
   const handleSummaryFieldChange = (e) => {
@@ -652,6 +658,9 @@ const CreateInvoice = () => {
       });
       const result = await response.json();
       if (result.success) {
+        if (result.data && result.data.challan_no) {
+          setFormData(prev => ({ ...prev, challanNo: result.data.challan_no }));
+        }
         if (shouldNavigate) navigate('/order-summary');
         return true;
       } else {
@@ -995,6 +1004,7 @@ const CreateInvoice = () => {
                   <input 
                     type="text" 
                     name="item"
+                    ref={itemNameInputRef}
                     value={currentItem.item}
                     onChange={(e) => {
                       handleEntryChange(e);
