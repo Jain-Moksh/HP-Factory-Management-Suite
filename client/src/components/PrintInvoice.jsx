@@ -78,7 +78,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     }
 
     .print-container { font-family: 'Inter', -apple-system, sans-serif; color: #000; }
-    .bill-page { width: 148mm; height: 210mm; display: flex; flex-direction: column; padding: 4mm 5mm 5mm 5mm; position: relative; box-sizing: border-box; flex-shrink: 0; }
+    .bill-page { width: 148mm; height: 210mm; display: flex; flex-direction: column; padding: 5mm; position: relative; box-sizing: border-box; flex-shrink: 0; }
     .bill-page * { box-sizing: border-box; }
 
     .watermark { text-align: center; font-size: 11px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; padding-bottom: 1mm; border-bottom: 2px solid #000; margin-bottom: 2mm; }
