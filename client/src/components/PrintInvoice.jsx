@@ -24,7 +24,7 @@ const formatDate = (dateStr) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items, printCopies = 1 }) => {
   // Balanced limits to ensure Page 1 and Page 2 are utilized well
-  const ROWS_FIRST_PAGE = 28; 
+  const ROWS_FIRST_PAGE = 28;
   const ROWS_MIDDLE_PAGE = 38;
   const ROWS_LAST_PAGE = 22;
   const ROWS_SINGLE_PAGE = 20;
@@ -34,7 +34,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
   const paginate = (rawItems) => {
     const pages = [];
     const totalItems = rawItems.length;
-    
+
     if (totalItems <= ROWS_SINGLE_PAGE) {
       pages.push(rawItems);
     } else {
@@ -144,12 +144,12 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
   const portalContent = (
     <div className="print-container">
       <style>{CSS}</style>
-      
+
       {duplicatedPages.map((chunk, index) => {
         const pageIndex = index % totalPages;
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === totalPages - 1;
-        
+
         let maxRows = ROWS_MIDDLE_PAGE;
         if (totalPages === 1) maxRows = ROWS_SINGLE_PAGE;
         else if (isFirst) maxRows = ROWS_FIRST_PAGE;
@@ -161,7 +161,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
         return (
           <div key={index} className="bill-page" style={isLast ? { paddingBottom: '20mm' } : {}}>
             <div className="watermark">ORDER SUMMARY</div>
-            
+
             {isFirst && (
               <div className="section-top">
                 <div className="top-left">
