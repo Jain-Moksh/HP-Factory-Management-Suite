@@ -5,7 +5,7 @@ export const getBasePrintCSS = (config) => `
   @media print {
     @page {
       size: ${config.width} ${config.height} portrait;
-      margin: 0 !important;
+      margin: ${config.margin} !important;
     }
     
     /* Hide EVERYTHING in the body except our print container */
@@ -25,10 +25,10 @@ export const getBasePrintCSS = (config) => `
     .print-container {
       display: block !important;
       position: relative !important;
-      width: ${config.width} !important;
+      width: 100% !important;
       height: auto !important;
       margin: 0 auto !important;
-      padding: ${config.margin} !important;
+      padding: 0 !important;
       background: white !important;
       box-sizing: border-box !important;
       page-break-after: avoid !important;
