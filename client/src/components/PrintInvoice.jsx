@@ -1,21 +1,40 @@
-import React, { useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useMemo } from "react";
+import { createPortal } from "react-dom";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v) => {
   const n = parseFloat(v || 0);
   if (Number.isInteger(n)) {
-    return n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return n.toLocaleString("en-IN", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
   }
-  return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 };
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
   const day = date.getDate();
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const month = months[date.getMonth()];
   const year = date.getFullYear();
   return `${day}-${month}-${year}`;
@@ -24,17 +43,17 @@ const formatDate = (dateStr) => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items, printCopies = 1 }) => {
   // Balanced limits to ensure Page 1 and Page 2 are utilized well
-  const ROWS_FIRST_PAGE = 28; 
+  const ROWS_FIRST_PAGE = 28;
   const ROWS_MIDDLE_PAGE = 38;
   const ROWS_LAST_PAGE = 22;
   const ROWS_SINGLE_PAGE = 20;
 
-  const hasDiscount = items.some(item => parseFloat(item.dAmount) > 0);
+  const hasDiscount = items.some((item) => parseFloat(item.dAmount) > 0);
 
   const paginate = (rawItems) => {
     const pages = [];
     const totalItems = rawItems.length;
-    
+
     if (totalItems <= ROWS_SINGLE_PAGE) {
       pages.push(rawItems);
     } else {
@@ -78,7 +97,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     }
 
     .print-container { font-family: 'Inter', -apple-system, sans-serif; color: #000; }
-    .bill-page { width: 148mm; height: 210mm; display: flex; flex-direction: column; padding: 5mm; position: relative; box-sizing: border-box; flex-shrink: 0; }
+    .bill-page { width: 148mm; height: 210mm; display: flex; flex-direction: column; padding: 4mm 5mm 5mm 5mm; position: relative; box-sizing: border-box; flex-shrink: 0; }
     .bill-page * { box-sizing: border-box; }
 
     .watermark { text-align: center; font-size: 11px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; padding-bottom: 1mm; border-bottom: 2px solid #000; margin-bottom: 2mm; }
@@ -123,7 +142,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     .bill-table tr.empty-row:not(:last-child) td { height: 5.5mm; }
 
     .c-bund  { width: 8%; text-align: center; }
-    .c-desc  { width: ${hasDiscount ? '44%' : '53%'}; text-align: left; }
+    .c-desc  { width: ${hasDiscount ? "44%" : "53%"}; text-align: left; }
     .c-qty   { width: 17%; text-align: center; }
     .c-rate  { width: 11%; text-align: right; }
     .c-disc  { width: 9%; text-align: right; }
@@ -144,12 +163,12 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
   const portalContent = (
     <div className="print-container">
       <style>{CSS}</style>
-      
+
       {duplicatedPages.map((chunk, index) => {
         const pageIndex = index % totalPages;
         const isFirst = pageIndex === 0;
         const isLast = pageIndex === totalPages - 1;
-        
+
         let maxRows = ROWS_MIDDLE_PAGE;
         if (totalPages === 1) maxRows = ROWS_SINGLE_PAGE;
         else if (isFirst) maxRows = ROWS_FIRST_PAGE;
@@ -159,23 +178,36 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
         const emptyRows = Array.from({ length: emptyRowsCount });
 
         return (
-          <div key={index} className="bill-page" style={isLast ? { paddingBottom: '20mm' } : {}}>
+          <div
+            key={index}
+            className="bill-page"
+            style={isLast ? { paddingBottom: "20mm" } : {}}
+          >
             <div className="watermark">ORDER SUMMARY</div>
-            
+
             {isFirst && (
               <div className="section-top">
                 <div className="top-left">
-                  <div className="party-title">{data.clientRawName || data.clientName}</div>
+                  <div className="party-title">
+                    {data.clientRawName || data.clientName}
+                  </div>
                   <div className="info-row">
                     <div className="info-val">
-                      {[data.address1, data.address2].filter(Boolean).join(', ')}
+                      {[data.address1, data.address2]
+                        .filter(Boolean)
+                        .join(", ")}
                     </div>
                   </div>
                 </div>
                 <div className="top-right">
-                  <div className="info-row" style={{ fontSize: '13px' }}>
+                  <div className="info-row" style={{ fontSize: "13px" }}>
                     <div className="info-label">No :</div>
-                    <div className="info-val" style={{ fontWeight: 800 }}>#{data.challanNo ? String(data.challanNo).split('/')[0] : ''}</div>
+                    <div className="info-val" style={{ fontWeight: 800 }}>
+                      #
+                      {data.challanNo
+                        ? String(data.challanNo).split("/")[0]
+                        : ""}
+                    </div>
                   </div>
                   <div className="info-row">
                     <div className="info-label">Date:</div>
@@ -211,15 +243,29 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                 </thead>
                 <tbody>
                   {chunk.map((item, idx) => {
-                    const bundleRaw = item.qty && item.conversion ? (parseFloat(item.qty) / parseFloat(item.conversion)) : 0;
-                    const bundle = bundleRaw === 0 ? '—' : (Number.isInteger(bundleRaw) ? bundleRaw.toString() : bundleRaw.toFixed(2));
+                    const bundleRaw =
+                      item.qty && item.conversion
+                        ? parseFloat(item.qty) / parseFloat(item.conversion)
+                        : 0;
+                    const bundle =
+                      bundleRaw === 0
+                        ? "—"
+                        : Number.isInteger(bundleRaw)
+                          ? bundleRaw.toString()
+                          : bundleRaw.toFixed(2);
                     return (
                       <tr key={idx}>
                         <td className="c-bund">{bundle}</td>
-                        <td className="c-desc" style={{ fontWeight: 600 }}>{item.item}</td>
-                        <td className="c-qty">{item.qty} {item.unit}</td>
+                        <td className="c-desc" style={{ fontWeight: 600 }}>
+                          {item.item}
+                        </td>
+                        <td className="c-qty">
+                          {item.qty} {item.unit}
+                        </td>
                         <td className="c-rate">{fmt(item.rate)}</td>
-                        {hasDiscount && <td className="c-disc">{fmt(item.dAmount)}</td>}
+                        {hasDiscount && (
+                          <td className="c-disc">{fmt(item.dAmount)}</td>
+                        )}
                         <td className="c-total">{fmt(item.total)}</td>
                       </tr>
                     );
@@ -244,13 +290,17 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                   <div className="bottom-wrapper">
                     <div className="remark-box">
                       <div className="remark-title">Invoice Remark:</div>
-                      <div className="remark-content">{data.long_remark?.trim() || ''}</div>
+                      <div className="remark-content">
+                        {data.long_remark?.trim() || ""}
+                      </div>
                     </div>
 
                     <div className="totals-box">
                       <div className="t-row">
                         <span className="t-label">Subtotal</span>
-                        <span className="t-val">₹{fmt(data.itemsSubtotal)}</span>
+                        <span className="t-val">
+                          ₹{fmt(data.itemsSubtotal)}
+                        </span>
                       </div>
                       {parseFloat(data.transport) > 0 && (
                         <div className="t-row">
@@ -267,10 +317,12 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                       {parseFloat(data.extraDiscountAmount) > 0 && (
                         <div className="t-row">
                           <span className="t-label">Discount</span>
-                          <span className="t-val">(-) ₹{fmt(data.extraDiscountAmount)}</span>
+                          <span className="t-val">
+                            (-) ₹{fmt(data.extraDiscountAmount)}
+                          </span>
                         </div>
                       )}
-                      {data.roundOffDisplay !== '0.00' && (
+                      {data.roundOffDisplay !== "0.00" && (
                         <div className="t-row">
                           <span className="t-label">Round Off</span>
                           <span className="t-val">{data.roundOffDisplay}</span>
@@ -285,7 +337,6 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                 </>
               )}
             </div>
-
           </div>
         );
       })}
