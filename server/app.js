@@ -44,6 +44,17 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/backup', require('./routes/backupRoutes'));
 
 
+// Verify login password
+app.post('/api/verify-login-pass', (req, res) => {
+  const { password } = req.body;
+  const expectedPassword = process.env.login_pass ? process.env.login_pass.toString().trim() : '';
+  if (expectedPassword && password && password.toString().trim() === expectedPassword) {
+    return res.json({ success: true });
+  }
+  return res.json({ success: false, message: 'Invalid password' });
+});
+
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
