@@ -44,6 +44,7 @@ const CreateInvoice = () => {
   const itemRef = useRef(null);
   const transporterRef = useRef(null);
   const itemNameInputRef = useRef(null);
+  const qtyInputRef = useRef(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -472,6 +473,11 @@ const CreateInvoice = () => {
         });
         setShowItemModal(false);
         handleRedoNewItem();
+        setTimeout(() => {
+          if (qtyInputRef.current) {
+            qtyInputRef.current.focus();
+          }
+        }, 0);
       }
     } catch (err) {
       console.error("Error saving item:", err);
@@ -513,6 +519,11 @@ const CreateInvoice = () => {
       };
     });
     setShowItemDropdown(false);
+    setTimeout(() => {
+      if (qtyInputRef.current) {
+        qtyInputRef.current.focus();
+      }
+    }, 0);
   };
 
   const handleSelectTransporter = (transporter) => {
@@ -1049,6 +1060,7 @@ const CreateInvoice = () => {
                     <input 
                       type="number" 
                       name="qty"
+                      ref={qtyInputRef}
                       value={currentItem.qty}
                       onChange={handleEntryChange}
                       className="w-full h-9 px-3 bg-white border border-brand-blue/30 rounded-lg text-[13px] font-bold text-brand-blue text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 

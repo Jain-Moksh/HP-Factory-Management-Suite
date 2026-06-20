@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
 import Modal from '../../components/UI/Modal';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
+import FilterBar from '../../components/FilterBar';
 
 const PartyList = () => {
   // --- Form State ---
@@ -21,6 +22,14 @@ const PartyList = () => {
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredClients = useMemo(() => {
+    return clients.filter(c => 
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.shortform && c.shortform.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [clients, searchTerm]);
 
   // --- Inline Edit State ---
   const [editingId, setEditingId] = useState(null);
@@ -343,6 +352,11 @@ const PartyList = () => {
               <div className="w-1.5 h-4 bg-brand-blue rounded-full"></div>
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Existing Parties Master</h2>
             </div>
+
+            <FilterBar 
+              searchPlaceholder1="Search by Party Name"
+              onSearch1={setSearchTerm}
+            />
             
             <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
@@ -357,7 +371,7 @@ const PartyList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                   {clients.map((client) => (
+                   {filteredClients.map((client) => (
                     <tr 
                       key={client.id} 
                       ref={editingId === client.id ? editRowRef : null}
@@ -480,10 +494,10 @@ const PartyList = () => {
                       </td>
                     </tr>
                   ))}
-                  {clients.length === 0 && !isLoading && (
+                  {filteredClients.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="6" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
-                        No parties found in master. Add a new party to get started.
+                        {clients.length === 0 ? "No parties found in master. Add a new party to get started." : "No parties match your search."}
                       </td>
                     </tr>
                   )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Card from '../../components/UI/Card';
@@ -6,6 +6,7 @@ import Button from '../../components/UI/Button';
 import Modal from '../../components/UI/Modal';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
+import FilterBar from '../../components/FilterBar';
 
 const ItemList = () => {
   // --- Form State ---
@@ -22,6 +23,13 @@ const ItemList = () => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [items, searchTerm]);
 
   // --- Inline Edit State ---
   const [editingId, setEditingId] = useState(null);
@@ -355,6 +363,11 @@ const ItemList = () => {
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Existing Items Master</h2>
             </div>
             
+            <FilterBar 
+              searchPlaceholder1="Search by Item Name"
+              onSearch1={setSearchTerm}
+            />
+
             <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
                 <thead>
@@ -370,7 +383,7 @@ const ItemList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft text-text-primary">
-                   {items.map((item) => (
+                   {filteredItems.map((item) => (
                     <tr 
                       key={item.id} 
                       ref={editingId === item.id ? editRowRef : null}
@@ -513,10 +526,10 @@ const ItemList = () => {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && !isLoading && (
+                  {filteredItems.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="8" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
-                        No items found in master. Add a new item to get started.
+                        {items.length === 0 ? "No items found in master. Add a new item to get started." : "No items match your search."}
                       </td>
                     </tr>
                   )}

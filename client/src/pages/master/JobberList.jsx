@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
+import FilterBar from '../../components/FilterBar';
 
 const JobberList = () => {
   // --- Form State ---
@@ -15,6 +16,13 @@ const JobberList = () => {
   const [jobbers, setJobbers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredJobbers = useMemo(() => {
+    return jobbers.filter(j => 
+      j.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [jobbers, searchTerm]);
 
   // --- Delete Modal State ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -245,6 +253,11 @@ const JobberList = () => {
               <div className="w-1.5 h-4 bg-brand-blue rounded-full"></div>
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Jobber Master List</h2>
             </div>
+
+            <FilterBar 
+              searchPlaceholder1="Search by Jobber Name"
+              onSearch1={setSearchTerm}
+            />
             
             <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
@@ -255,7 +268,7 @@ const JobberList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                   {jobbers.map((jobber) => (
+                   {filteredJobbers.map((jobber) => (
                       <tr 
                         key={jobber.id} 
                         ref={editingId === jobber.id ? editRowRef : null}
@@ -317,10 +330,10 @@ const JobberList = () => {
                       </td>
                     </tr>
                   ))}
-                  {jobbers.length === 0 && !isLoading && (
+                  {filteredJobbers.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="2" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
-                        No jobbers found in master. Add a new jobber to get started.
+                        {jobbers.length === 0 ? "No jobbers found in master. Add a new jobber to get started." : "No jobbers match your search."}
                       </td>
                     </tr>
                   )}

@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
+import FilterBar from '../../components/FilterBar';
 
 const GroupList = () => {
   // --- Available members pool ---
@@ -27,6 +28,13 @@ const GroupList = () => {
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredGroups = useMemo(() => {
+    return groups.filter(g => 
+      g.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [groups, searchQuery]);
 
   // --- Delete Modal State ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -413,6 +421,11 @@ const GroupList = () => {
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Group Master List</h2>
             </div>
 
+            <FilterBar 
+              searchPlaceholder1="Search by Group Name"
+              onSearch1={setSearchQuery}
+            />
+
             <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
                 <thead>
@@ -424,7 +437,7 @@ const GroupList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                  {groups.map((group) => (
+                  {filteredGroups.map((group) => (
                     <tr
                       key={group.id}
                       ref={editingId === group.id ? editRowRef : null}
@@ -541,10 +554,10 @@ const GroupList = () => {
                     </tr>
                   ))}
 
-                  {groups.length === 0 && !isLoading && (
+                  {filteredGroups.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="4" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
-                        No groups found. Create a new group to get started.
+                        {groups.length === 0 ? "No groups found. Create a new group to get started." : "No groups match your search."}
                       </td>
                     </tr>
                   )}

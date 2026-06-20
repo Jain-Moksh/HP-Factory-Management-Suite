@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/UI/Button';
 import DeleteModal from '../../components/UI/DeleteModal';
 import { API_BASE_URL } from '../../config';
+import FilterBar from '../../components/FilterBar';
 
 const TransporterList = () => {
   // --- Form State ---
@@ -15,6 +16,13 @@ const TransporterList = () => {
   const [transporters, setTransporters] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredTransporters = useMemo(() => {
+    return transporters.filter(t => 
+      t.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [transporters, searchTerm]);
 
   // --- Inline Edit State ---
   const [editingId, setEditingId] = useState(null);
@@ -262,6 +270,11 @@ const TransporterList = () => {
               <div className="w-1.5 h-4 bg-brand-blue rounded-full"></div>
               <h2 className="text-[13px] font-bold text-text-primary uppercase tracking-tight">Transporter Master</h2>
             </div>
+
+            <FilterBar 
+              searchPlaceholder1="Search by Transporter Name"
+              onSearch1={setSearchTerm}
+            />
             
             <div className="bg-white border border-border-soft rounded-xl shadow-sm">
               <table className="w-full border-collapse">
@@ -272,7 +285,7 @@ const TransporterList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
-                   {transporters.map((transporter) => (
+                   {filteredTransporters.map((transporter) => (
                     <tr 
                       key={transporter.id} 
                       ref={editingId === transporter.id ? editRowRef : null}
@@ -335,10 +348,10 @@ const TransporterList = () => {
                       </td>
                     </tr>
                   ))}
-                  {transporters.length === 0 && !isLoading && (
+                  {filteredTransporters.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan="2" className="px-6 py-10 text-center text-text-light italic text-[13px]">
-                        No transporters found in master. Add a new transporter to get started.
+                        {transporters.length === 0 ? "No transporters found in master. Add a new transporter to get started." : "No transporters match your search."}
                       </td>
                     </tr>
                   )}
