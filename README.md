@@ -1,4 +1,4 @@
-# HP Accounting Software (Single Source of Truth)
+# HP Accounting Software 
 
 ## 🏗️ Architecture & Tech Stack
 - **Frontend**: React (Vite), Vanilla CSS (Custom UI System), React Router DOM (Navigation).
