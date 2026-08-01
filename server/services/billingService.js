@@ -11,7 +11,7 @@ const billingService = {
 
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, total_amount, short_remark,
+        discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark,
         long_remark, grand_total, items
       } = billData;
 
@@ -21,7 +21,7 @@ const billingService = {
       // 2. Insert billing record
       const billRes = await client.query(queries.createBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, total_amount, toUpperCase(short_remark),
+        discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, toUpperCase(short_remark),
         toUpperCase(long_remark), grand_total, challan_no
       ]);
       const bill = billRes.rows[0];
@@ -188,7 +188,7 @@ const billingService = {
 
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, total_amount, short_remark,
+        discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark,
         long_remark, grand_total, items
       } = billData; // Ignored challan_no from frontend
 
@@ -220,7 +220,7 @@ const billingService = {
       // 4. Update the billing record
       const billRes = await client.query(queries.updateBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, total_amount, toUpperCase(short_remark),
+        discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, toUpperCase(short_remark),
         toUpperCase(long_remark), grand_total, final_challan_no, id
       ]);
       const bill = billRes.rows[0];

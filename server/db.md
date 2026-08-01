@@ -50,6 +50,9 @@ CREATE TABLE billing (
     discount_percent NUMERIC,
     discount_amount NUMERIC,
     
+    adjustment_percent NUMERIC,
+    adjustment_amount NUMERIC,
+    
     total_amount NUMERIC,
     short_remark TEXT,
     long_remark TEXT,

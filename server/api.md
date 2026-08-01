@@ -142,6 +142,8 @@ Used for sales/billing. Creating a bill automatically **decrements** item stock.
           "packing_charge": 50,
           "discount_percent": 0,
           "discount_amount": 0,
+          "adjustment_percent": 0,
+          "adjustment_amount": 0,
           "total_amount": 1000,
           "short_remark": "Rush order",
           "long_remark": "Deliver to side entrance",

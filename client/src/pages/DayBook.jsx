@@ -116,10 +116,12 @@ const DayBook = () => {
           packing: bill.packing_charge || 0,
           extraDiscountPercent: bill.discount_percent || 0,
           extraDiscountAmount: bill.discount_amount || 0,
+          adjustmentPercent: bill.adjustment_percent || 0,
+          adjustmentAmount: bill.adjustment_amount || 0,
           grandTotal: parseFloat(bill.grand_total)
         };
 
-        const subtotalBeforeRound = summaryData.itemsSubtotal + parseFloat(summaryData.transport) + parseFloat(summaryData.packing) - parseFloat(summaryData.extraDiscountAmount);
+        const subtotalBeforeRound = summaryData.itemsSubtotal + parseFloat(summaryData.transport) + parseFloat(summaryData.packing) + parseFloat(summaryData.adjustmentAmount) - parseFloat(summaryData.extraDiscountAmount);
         const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
         summaryData.roundOffDisplay = calculatedRoundOff === 0 ? "0.00" : (calculatedRoundOff > 0 ? "+" : "-") + Math.abs(calculatedRoundOff).toFixed(2);
 

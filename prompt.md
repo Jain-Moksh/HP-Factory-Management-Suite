@@ -23,7 +23,7 @@
 - **clients**: `id, name, street, city, shortform, balance, remark`.
 - **jobbers**: `id, name`. (Item assignments removed).
 - **transporters**: `id, name`.
-- **billing**: `id, client_id, transporter_id, date, transport_charge, packing_charge, discount_percent, discount_amount, total_amount, short_remark, long_remark, grand_total, challan_no (unique)`.
+- **billing**: `id, client_id, transporter_id, date, transport_charge, packing_charge, discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark, long_remark, grand_total, challan_no (unique)`.
 - **billing_items**: `id, billing_id, item_id, rate, discount_percent, discount_amount, unit, quantity, bundle, total_amount, order_index`.
 - **purchase**: `id, jobber_id, date, remark, challan_no (unique)`.
 - **purchase_items**: `id, purchase_id, item_id, quantity, unit, order_index`.

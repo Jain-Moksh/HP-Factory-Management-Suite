@@ -100,6 +100,8 @@ const CreateInvoice = () => {
     packing: '',
     extraDiscountPercent: '',
     extraDiscountAmount: '',
+    adjustmentPercent: '',
+    adjustmentAmount: '',
     roundOff: ''
   });
   
@@ -195,6 +197,8 @@ const CreateInvoice = () => {
               packing: bill.packing_charge || '0',
               extraDiscountPercent: bill.discount_percent || '0',
               extraDiscountAmount: bill.discount_amount || '0',
+              adjustmentPercent: bill.adjustment_percent || '0',
+              adjustmentAmount: bill.adjustment_amount || '0',
               roundOff: '' // Calculated automatically
             });
             setOriginalDate(bill.date.split('T')[0]);
@@ -311,6 +315,12 @@ const CreateInvoice = () => {
       } else if (name === 'extraDiscountAmount') {
         const amount = parseFloat(value) || 0;
         updated.extraDiscountPercent = itemsSub > 0 ? ((amount / itemsSub) * 100).toFixed(2) : '0';
+      } else if (name === 'adjustmentPercent') {
+        const percent = parseFloat(value) || 0;
+        updated.adjustmentAmount = ((itemsSub * percent) / 100).toFixed(2);
+      } else if (name === 'adjustmentAmount') {
+        const amount = parseFloat(value) || 0;
+        updated.adjustmentPercent = itemsSub > 0 ? ((amount / itemsSub) * 100).toFixed(2) : '0';
       }
       return updated;
     });
@@ -629,7 +639,8 @@ const CreateInvoice = () => {
     const transport = parseFloat(formData.transport) || 0;
     const packing = parseFloat(formData.packing) || 0;
     const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
-    const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
+    const adjustmentAmount = parseFloat(formData.adjustmentAmount) || 0;
+    const subtotalBeforeRound = itemsSubtotal + transport + packing + adjustmentAmount - discountAmount;
     const grandTotal = Math.round(subtotalBeforeRound);
     
     const payload = {
@@ -640,6 +651,8 @@ const CreateInvoice = () => {
       packing_charge: packing,
       discount_percent: parseFloat(formData.extraDiscountPercent) || 0,
       discount_amount: discountAmount,
+      adjustment_percent: parseFloat(formData.adjustmentPercent) || 0,
+      adjustment_amount: adjustmentAmount,
       total_amount: itemsSubtotal,
       short_remark: formData.short_remark,
       long_remark: formData.long_remark,
@@ -698,8 +711,9 @@ const CreateInvoice = () => {
   const transport = parseFloat(formData.transport) || 0;
   const packing = parseFloat(formData.packing) || 0;
   const discountAmount = parseFloat(formData.extraDiscountAmount) || 0;
+  const adjustmentAmount = parseFloat(formData.adjustmentAmount) || 0;
   const totalAmount = itemsSubtotal;
-  const subtotalBeforeRound = itemsSubtotal + transport + packing - discountAmount;
+  const subtotalBeforeRound = itemsSubtotal + transport + packing + adjustmentAmount - discountAmount;
   const grandTotal = Math.round(subtotalBeforeRound).toFixed(2);
   const calculatedRoundOff = Math.round(subtotalBeforeRound) - subtotalBeforeRound;
   // Flipped logic: show + when rounding up, - when rounding down
@@ -1482,6 +1496,34 @@ const CreateInvoice = () => {
                             type="number"
                             name="extraDiscountAmount"
                             value={formData.extraDiscountAmount}
+                            onChange={handleSummaryFieldChange}
+                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
+                            placeholder="0.00"
+                          />
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">₹</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 bg-bg-main/20 p-2 rounded-lg border border-border-soft/50">
+                    <label className="text-[9px] font-black text-text-primary uppercase tracking-[0.2em]">Adjustment</label>
+                    <div className="flex items-center gap-2">
+                       <div className="flex-1 relative">
+                          <input 
+                            type="number"
+                            name="adjustmentPercent"
+                            value={formData.adjustmentPercent}
+                            onChange={handleSummaryFieldChange}
+                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
+                            placeholder="0"
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">%</span>
+                       </div>
+                       <div className="flex-1 relative">
+                          <input 
+                            type="number"
+                            name="adjustmentAmount"
+                            value={formData.adjustmentAmount}
                             onChange={handleSummaryFieldChange}
                             className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
                             placeholder="0.00"

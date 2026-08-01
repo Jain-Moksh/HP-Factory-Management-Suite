@@ -322,6 +322,14 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                           </span>
                         </div>
                       )}
+                      {parseFloat(data.adjustmentAmount) > 0 && (
+                        <div className="t-row">
+                          <span className="t-label">Adjustment</span>
+                          <span className="t-val">
+                            (+) ₹{fmt(data.adjustmentAmount)}
+                          </span>
+                        </div>
+                      )}
                       {data.roundOffDisplay !== "0.00" && (
                         <div className="t-row">
                           <span className="t-label">Round Off</span>

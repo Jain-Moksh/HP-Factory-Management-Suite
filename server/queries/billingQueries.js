@@ -2,9 +2,9 @@ const billingQueries = {
     createBill: `
         INSERT INTO billing (
             client_id, transporter_id, date, transport_charge, packing_charge, 
-            discount_percent, discount_amount, total_amount, short_remark, 
+            discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark, 
             long_remark, grand_total, challan_no
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
         RETURNING *
     `,
     createBillItem: `
@@ -69,10 +69,11 @@ const billingQueries = {
             client_id = $1, transporter_id = $2, date = $3, 
             transport_charge = $4, packing_charge = $5, 
             discount_percent = $6, discount_amount = $7, 
-            total_amount = $8, short_remark = $9, 
-            long_remark = $10, grand_total = $11, 
-            challan_no = $12
-        WHERE id = $13
+            adjustment_percent = $8, adjustment_amount = $9, 
+            total_amount = $10, short_remark = $11, 
+            long_remark = $12, grand_total = $13, 
+            challan_no = $14
+        WHERE id = $15
         RETURNING *
     `,
     deleteBillItems: 'DELETE FROM billing_items WHERE billing_id = $1'

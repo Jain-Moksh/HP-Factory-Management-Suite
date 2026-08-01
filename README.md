@@ -14,7 +14,7 @@
 - **clients**: `id, name, street, city, shortform, balance, remark`.
 - **jobbers**: `id, name`.
 - **transporters**: `id, name`.
-- **billing**: Invoices, automatically decrements item stock.
+- **billing**: Invoices with support for discounts and adjustments, automatically decrements item stock.
 - **billing_items**: Invoice items.
 - **purchase**: Job work received, automatically increments item stock.
 - **purchase_items**: Job work items.
