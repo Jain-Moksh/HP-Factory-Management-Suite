@@ -100,7 +100,7 @@ const CreateInvoice = () => {
     packing: '',
     extraDiscountPercent: '',
     extraDiscountAmount: '',
-    adjustmentPercent: '',
+    adjustmentPercent: '3',
     adjustmentAmount: '',
     roundOff: ''
   });
@@ -127,6 +127,37 @@ const CreateInvoice = () => {
   // --- Invoice Summary State ---
   const [addedItems, setAddedItems] = useState([]);
   
+  // Auto-calculate summary amounts when items change
+  useEffect(() => {
+    setFormData(prev => {
+      if (addedItems.length === 0) return prev; // Do not recalculate if no items
+
+      const itemsSub = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+      let updated = { ...prev };
+      let changed = false;
+
+      if (prev.extraDiscountPercent !== '') {
+        const dPct = parseFloat(prev.extraDiscountPercent) || 0;
+        const newDAmount = itemsSub > 0 ? ((itemsSub * dPct) / 100).toFixed(2) : '0';
+        if (prev.extraDiscountAmount !== newDAmount) {
+          updated.extraDiscountAmount = newDAmount;
+          changed = true;
+        }
+      }
+      
+      if (prev.adjustmentPercent !== '') {
+        const aPct = parseFloat(prev.adjustmentPercent) || 0;
+        const newAAmount = itemsSub > 0 ? ((itemsSub * aPct) / 100).toFixed(2) : '0';
+        if (prev.adjustmentAmount !== newAAmount) {
+          updated.adjustmentAmount = newAAmount;
+          changed = true;
+        }
+      }
+
+      return changed ? updated : prev;
+    });
+  }, [addedItems]);
+
   // --- In-place Editing State ---
   const [editingId, setEditingId] = useState(null);
 
