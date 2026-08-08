@@ -7,6 +7,7 @@ require('dotenv').config();
 
 // Concurrency lock to prevent multiple backups at once
 let isBackupRunning = false;
+let backupPending = false;
 
 // Helper to check if file is a binary backup format
 const isBinaryBackup = (filePath) => {
@@ -118,6 +119,13 @@ const backupService = {
       if (!res.headersSent) {
         res.status(500).send('Backup failed');
       }
+      if (backupPending) {
+        backupPending = false;
+        console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+        setImmediate(() => {
+          backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+        });
+      }
     });
 
     child.stderr.on('data', (data) => {
@@ -129,14 +137,33 @@ const backupService = {
       if (code !== 0) {
         console.error(`pg_dump process exited with code ${code}`);
       }
+      if (backupPending) {
+        backupPending = false;
+        console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+        setImmediate(() => {
+          backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+        });
+      }
     });
   },
 
-  triggerAutoBackup: async (force = false) => {
-    if (isBackupRunning) {
-      console.log('Skipping auto-backup: another backup process is already running.');
+  triggerAutoBackup: async (isChangeTrigger = false) => {
+    // If a restore is running, silently ignore any backup requests
+    if (global.isBackupRestoreRunning) {
       return;
     }
+
+    if (isBackupRunning) {
+      if (isChangeTrigger) {
+        backupPending = true;
+        console.log('[AUTO-BACKUP] Backup already running; pending backup marked');
+      } else {
+        console.log('Skipping auto-backup check: another backup process is already running.');
+      }
+      return;
+    }
+
+    console.log('[AUTO-BACKUP] Automatic backup requested');
 
     try {
       isBackupRunning = true;
@@ -150,19 +177,11 @@ const backupService = {
       const filePath = settings.last_backup_file ? path.join(settings.auto_backup_path, settings.last_backup_file) : null;
       const fileExists = filePath && fs.existsSync(filePath);
 
-      // THROTTLE: Only backup once every X minutes (User Defined)
-      // BYPASS if 'force' is true OR if the file is physically missing (Self-Healing)
-      if (!force && fileExists && settings.last_backup_time) {
-        const lastBackup = new Date(settings.last_backup_time);
-        const now = new Date();
-        const diffMins = (now - lastBackup) / (1000 * 60);
-        const interval = settings.auto_backup_interval || 60;
-
-        if (diffMins < interval) {
-          isBackupRunning = false;
-          console.log(`🛡️ Auto-backup skipped: Last backup was only ${Math.round(diffMins)} minutes ago. (Interval: ${interval}m)`);
-          return;
-        }
+      // If this is a check (startup or settings check) and the file already exists, skip creating a new backup
+      if (!isChangeTrigger && fileExists) {
+        isBackupRunning = false;
+        console.log('🛡️ Auto-backup skipped: Backup file already exists and no database changes occurred.');
+        return;
       }
 
       if (!fileExists) {
@@ -187,6 +206,8 @@ const backupService = {
       
       const pgDumpPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_dump') : 'pg_dump';
 
+      console.log('[AUTO-BACKUP] Backup started');
+
       // Use spawn to be quote-safe and pipe stdout directly to the file stream
       const out = fs.createWriteStream(newFilePath);
       const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '--clean', DB_NAME];
@@ -202,6 +223,13 @@ const backupService = {
       child.on('error', (err) => {
         isBackupRunning = false;
         console.error('Auto backup failed to start:', err);
+        if (backupPending) {
+          backupPending = false;
+          console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+          setImmediate(() => {
+            backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+          });
+        }
       });
 
       child.on('close', async (code) => {
@@ -211,8 +239,17 @@ const backupService = {
           if (fs.existsSync(newFilePath)) {
             try { fs.unlinkSync(newFilePath); } catch (e) {}
           }
+          if (backupPending) {
+            backupPending = false;
+            console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+            setImmediate(() => {
+              backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+            });
+          }
           return;
         }
+
+        console.log('[AUTO-BACKUP] Backup completed');
 
         // FTP Upload Logic
         if (settings.ftp_backup_enabled && settings.ftp_host && settings.ftp_username) {
@@ -230,7 +267,7 @@ const backupService = {
             const remoteDir = settings.ftp_path || '/';
             await client.ensureDir(remoteDir);
             await client.uploadFrom(newFilePath, path.join(remoteDir, newFilename).replace(/\\/g, '/'));
-            console.log('FTP upload successful:', newFilename);
+            console.log('[AUTO-BACKUP] FTP upload completed');
           } catch (ftpError) {
             console.error('FTP upload failed:', ftpError);
           } finally {
@@ -260,12 +297,28 @@ const backupService = {
           [newFilename]
         );
         
+        console.log('[AUTO-BACKUP] Backup metadata updated');
         console.log(`Auto backup created successfully: ${newFilename}`);
+
+        if (backupPending) {
+          backupPending = false;
+          console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+          setImmediate(() => {
+            backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+          });
+        }
       });
 
     } catch (error) {
       isBackupRunning = false;
       console.error('Auto backup failed:', error);
+      if (backupPending) {
+        backupPending = false;
+        console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+        setImmediate(() => {
+          backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+        });
+      }
     }
   },
 

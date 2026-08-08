@@ -14,11 +14,16 @@ app.use(express.json());
 // Auto Backup Trigger Middleware
 app.use((req, res, next) => {
   res.on('finish', () => {
+    // Suppress backups completely if a restore is currently running
+    if (global.isBackupRestoreRunning) {
+      return;
+    }
     // Trigger auto backup on successful POST, PUT, DELETE requests
     if (['POST', 'PUT', 'DELETE'].includes(req.method) && res.statusCode >= 200 && res.statusCode < 300) {
       // Avoid triggering when the request is already related to backup
-      if (!req.path.startsWith('/api/backup')) {
-        backupService.triggerAutoBackup().catch(err => console.error('Auto backup trigger error:', err));
+      if (!req.originalUrl.startsWith('/api/backup')) {
+        console.log('[AUTO-BACKUP] Database-changing request completed successfully');
+        backupService.triggerAutoBackup(true).catch(err => console.error('Auto backup trigger error:', err));
       }
     }
   });
@@ -28,7 +33,7 @@ app.use((req, res, next) => {
 
 // Trigger initial self-healing check on startup
 // This ensures that if the server starts and no backup is present, it's created immediately
-backupService.triggerAutoBackup().catch(err => console.error('Startup auto-backup check failed:', err));
+backupService.triggerAutoBackup(false).catch(err => console.error('Startup auto-backup check failed:', err));
 
 
 // Routes
