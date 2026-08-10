@@ -47,6 +47,7 @@ app.use('/api/groups', require('./routes/groupRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/backup', require('./routes/backupRoutes'));
+app.use('/api/party-transactions', require('./routes/partyTransactionRoutes'));
 
 
 // Verify login password

@@ -23,6 +23,18 @@ const CreatePayment = () => {
   const [options, setOptions] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Dynamic outstanding balance state
+  const [outstandingData, setOutstandingData] = useState({
+    openingAmount: 0,
+    totalBilling: 0,
+    totalPayments: 0,
+    totalReturns: 0,
+    totalDiscounts: 0,
+    currentOutstanding: 0
+  });
+  const [isOutstandingLoading, setIsOutstandingLoading] = useState(false);
 
   // Fetch clients and jobbers from the backend API to populate Party Name / Jobber select options
   useEffect(() => {
@@ -67,6 +79,46 @@ const CreatePayment = () => {
     fetchPartiesAndJobbers();
   }, []);
 
+  // Fetch outstanding balance dynamically when party changes
+  useEffect(() => {
+    if (!formData.partyId) {
+      setOutstandingData({
+        openingAmount: 0,
+        totalBilling: 0,
+        totalPayments: 0,
+        totalReturns: 0,
+        totalDiscounts: 0,
+        currentOutstanding: 0
+      });
+      return;
+    }
+
+    const fetchOutstanding = async () => {
+      setIsOutstandingLoading(true);
+      setError('');
+      try {
+        const parts = formData.partyId.split('_');
+        const type = parts[0].toUpperCase(); // 'CLIENT' or 'JOBBER'
+        const id = parts[1];
+
+        const res = await fetch(`${API_BASE_URL}/party-transactions/outstanding?partyType=${type}&partyId=${id}`);
+        const json = await res.json();
+        if (json.success) {
+          setOutstandingData(json.data);
+        } else {
+          setError(json.error || 'Failed to fetch outstanding balance.');
+        }
+      } catch (err) {
+        console.error('Error fetching outstanding:', err);
+        setError('Network error: failed to fetch outstanding.');
+      } finally {
+        setIsOutstandingLoading(false);
+      }
+    };
+
+    fetchOutstanding();
+  }, [formData.partyId]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -76,7 +128,7 @@ const CreatePayment = () => {
     setFormData(prev => ({ ...prev, paymentMode: mode }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError('');
     setSuccess(false);
 
@@ -91,39 +143,55 @@ const CreatePayment = () => {
       return;
     }
 
-    if (amt > 15450) {
-      setError('Amount exceeds the opening pending balance.');
-      return;
+    setIsSubmitting(true);
+
+    try {
+      const parts = formData.partyId.split('_');
+      const partyType = parts[0].toUpperCase(); // 'CLIENT' or 'JOBBER'
+      const partyId = parseInt(parts[1]);
+
+      const payload = {
+        partyType,
+        partyId,
+        transactionType,
+        date: formData.date,
+        amount: amt,
+        paymentMode: ['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType) && transactionType !== 'PAYMENT' ? null : formData.paymentMode,
+        remark: formData.remarks
+      };
+
+      const response = await fetch(`${API_BASE_URL}/party-transactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await response.json();
+      
+      if (json.success) {
+        setSuccess(true);
+        // Redirect to payments lists after success
+        setTimeout(() => {
+          setSuccess(false);
+          navigate('/payment');
+        }, 1500);
+      } else {
+        setError(json.error || 'Failed to save transaction.');
+      }
+    } catch (err) {
+      console.error('Error saving transaction:', err);
+      setError('Network error: failed to connect to server.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Success payload structure for later integration
-    const selectedOption = options.find(opt => opt.id === formData.partyId);
-    const payload = {
-      transactionType,
-      challanNo: formData.challanNo || 'MOCK-CHALLAN',
-      date: formData.date,
-      partyName: selectedOption ? selectedOption.name : '',
-      partyType: selectedOption ? selectedOption.type : '',
-      partyOriginalId: selectedOption ? selectedOption.originalId : null,
-      amount: amt,
-      paymentMode: ['PAYMENT', 'RETURN'].includes(transactionType) ? formData.paymentMode : null,
-      remarks: formData.remarks
-    };
-
-    console.log(`[FRONTEND-ONLY] Saved transaction type ${transactionType}:`, payload);
-    setSuccess(true);
-    
-    // Auto redirect to main payment view after 3 seconds
-    setTimeout(() => {
-      setSuccess(false);
-      navigate('/payment');
-    }, 2500);
   };
 
   const isPartyIdentified = !!formData.partyId;
-  const openingPendingBalance = 15450; // Mock opening pending balance
+  const openingPendingBalance = outstandingData.currentOutstanding;
   const parsedAmount = parseFloat(formData.amount) || 0;
-  const closingBalance = Math.max(0, openingPendingBalance - parsedAmount);
+  const closingBalance = openingPendingBalance - parsedAmount;
 
   // Dynamic header strings based on selected transaction mode
   const getHeaderInfo = () => {
@@ -205,7 +273,7 @@ const CreatePayment = () => {
 
           {success && (
             <div className="text-xs font-bold text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 text-left uppercase tracking-tight animate-in fade-in slide-in-from-top-1 duration-200">
-              🎉 {transactionType} validated and logged successfully (Simulated)! Redirecting...
+              🎉 {transactionType} saved successfully! Redirecting...
             </div>
           )}
 
@@ -218,8 +286,8 @@ const CreatePayment = () => {
                   type="text"
                   name="challanNo"
                   value={formData.challanNo}
-                  onChange={handleInputChange}
-                  className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[12.5px] font-medium outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all placeholder:opacity-30 shadow-sm"
+                  readOnly
+                  className="w-full h-9 px-3 bg-bg-main/50 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-secondary outline-none shadow-sm cursor-not-allowed"
                   placeholder="Auto-Generated"
                 />
               </div>
@@ -248,11 +316,13 @@ const CreatePayment = () => {
 
           {/* Box 2: Payment/Return/Discount Details - High Density Financial Zone */}
           <Card className="p-4 bg-white border-border-soft/60 shadow-sm overflow-hidden min-h-[140px] relative">
-            <div className={`flex flex-col gap-5 transition-all duration-300 ${isPartyIdentified ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
+            <div className={`flex flex-col gap-5 transition-all duration-300 ${isPartyIdentified && !isOutstandingLoading ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
               <div className="flex items-center justify-between border-b border-border-soft/50 pb-3">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[9px] font-bold text-text-primary uppercase tracking-[0.15em]">Opening Pending Amount</span>
-                  <span className="text-lg font-black text-red-500 tracking-tight leading-none">₹{openingPendingBalance.toLocaleString('en-IN')}.00</span>
+                  <span className="text-lg font-black text-red-500 tracking-tight leading-none">
+                    ₹{openingPendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <div className="text-[9px] font-bold text-brand-blue bg-brand-blue/5 px-2.5 py-1 rounded border border-brand-blue/10 uppercase tracking-widest">
                   Real-time Ledger Sync
@@ -299,15 +369,26 @@ const CreatePayment = () => {
                 <div className="col-span-2 flex items-center justify-end">
                   <div className="text-right pr-4 border-r border-border-soft/50 mr-4 h-8 flex flex-col justify-center">
                     <div className="text-[8px] font-bold text-text-primary uppercase tracking-widest opacity-60">Adjustment</div>
-                    <div className="text-xs font-bold text-text-primary leading-none">- ₹{parsedAmount.toLocaleString('en-IN')}</div>
+                    <div className="text-xs font-bold text-text-primary leading-none">- ₹{parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                   </div>
                   <div className="text-right flex flex-col justify-center h-8">
                     <div className="text-[9px] font-bold text-text-primary uppercase tracking-[0.15em] mb-0.5">Closing Balance</div>
-                    <div className="text-base font-black text-text-primary leading-none">₹{closingBalance.toLocaleString('en-IN')}.00</div>
+                    <div className="text-base font-black text-text-primary leading-none">
+                      ₹{closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {isPartyIdentified && isOutstandingLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                <span className="text-[10px] font-bold text-text-primary uppercase tracking-widest flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-brand-blue rounded-full animate-bounce"></div>
+                  Loading outstanding details...
+                </span>
+              </div>
+            )}
 
             {!isPartyIdentified && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-300">
@@ -339,7 +420,7 @@ const CreatePayment = () => {
             <div className="flex-1 flex flex-col gap-2 min-h-[84px]">
               <button 
                 onClick={handleSave}
-                disabled={success}
+                disabled={success || isSubmitting}
                 className="flex-1 flex items-center justify-center bg-brand-blue rounded-lg text-[12px] font-bold text-white hover:bg-brand-blue-hover transition transform active:scale-95 shadow-md shadow-brand-blue/10 uppercase tracking-widest px-4 h-9 disabled:opacity-50"
               >
                 <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

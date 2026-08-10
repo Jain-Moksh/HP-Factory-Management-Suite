@@ -115,6 +115,30 @@ CREATE TABLE purchase_items (
 );
 
 -- =========================
+-- PARTY TRANSACTIONS TABLES
+-- =========================
+
+CREATE TYPE transaction_type_enum AS ENUM ('PAYMENT', 'RETURN', 'DISCOUNT');
+CREATE TYPE party_type_enum AS ENUM ('CLIENT', 'JOBBER');
+
+CREATE TABLE party_transactions (
+    id SERIAL PRIMARY KEY,
+    party_type party_type_enum NOT NULL,
+    party_id INT NOT NULL,
+    transaction_type transaction_type_enum NOT NULL,
+    date DATE NOT NULL,
+    challan_no TEXT NOT NULL,
+    amount NUMERIC NOT NULL CHECK (amount > 0),
+    payment_mode TEXT CHECK (payment_mode IN ('BANK', 'CASH') OR payment_mode IS NULL),
+    remark TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(transaction_type, challan_no)
+);
+
+
+-- =========================
 -- SEARCH INDEXES (Dropdown)
 -- =========================
 
@@ -134,6 +158,9 @@ CREATE INDEX idx_billing_items_item ON billing_items(item_id);
 
 CREATE INDEX idx_purchase_jobber ON purchase(jobber_id);
 CREATE INDEX idx_purchase_items_purchase ON purchase_items(purchase_id);
+
+CREATE INDEX idx_party_tx_party ON party_transactions(party_type, party_id);
+CREATE INDEX idx_party_tx_sequence ON party_transactions(transaction_type, date);
 
 CREATE INDEX idx_billing_date ON billing(date);
 CREATE INDEX idx_purchase_date ON purchase(date);
