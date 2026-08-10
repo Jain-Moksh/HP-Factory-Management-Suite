@@ -131,6 +131,26 @@ const partyTransactionController = {
     }
   },
 
+  getNextChallan: async (req, res) => {
+    try {
+      const { transactionType, date } = req.query;
+
+      if (!transactionType || !['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType)) {
+        return res.status(400).json({ success: false, error: 'Query param transactionType must be PAYMENT, RETURN, or DISCOUNT.' });
+      }
+
+      if (!date || isNaN(Date.parse(date))) {
+        return res.status(400).json({ success: false, error: 'Query param date is invalid or missing.' });
+      }
+
+      const challan_no = await partyTransactionService.getNextChallan(date, transactionType);
+      res.json({ success: true, challan_no });
+    } catch (err) {
+      console.error('Error in partyTransactionController.getNextChallan:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
   getOutstanding: async (req, res) => {
     try {
       const { partyType, partyId } = req.query;

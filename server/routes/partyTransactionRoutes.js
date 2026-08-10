@@ -4,6 +4,7 @@ const controller = require('../controllers/partyTransactionController');
 
 router.get('/', controller.getAll);
 router.get('/outstanding', controller.getOutstanding);
+router.get('/next-challan', controller.getNextChallan);
 router.get('/:id', controller.getById);
 router.post('/', controller.create);
 router.put('/:id', controller.update);

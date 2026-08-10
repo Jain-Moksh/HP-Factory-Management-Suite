@@ -148,6 +148,10 @@ const partyTransactionService = {
     return true;
   },
 
+  getNextChallan: async (date, transactionType) => {
+    return await getFormattedTransactionChallan(date, transactionType, db);
+  },
+
   getOutstanding: async (partyType, partyId) => {
     if (partyType === 'CLIENT') {
       // 1. Fetch Client Master info

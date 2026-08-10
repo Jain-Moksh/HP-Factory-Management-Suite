@@ -12,11 +12,10 @@ const CreatePayment = () => {
   const [transactionType, setTransactionType] = useState('PAYMENT'); // 'PAYMENT', 'RETURN', 'DISCOUNT'
   
   const [formData, setFormData] = useState({
-    challanNo: '',
     date: new Date().toISOString().split('T')[0],
     partyId: '', // client_[id] or jobber_[id]
     amount: '',  // Represents amountPaid, amountReturned, or discountAmount
-    paymentMode: 'Bank', // Bank or Cash (for Payment and Return modes)
+    paymentMode: 'Bank', // Bank or Cash (for Payment mode)
     remarks: ''
   });
 
@@ -24,6 +23,7 @@ const CreatePayment = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [nextChallan, setNextChallan] = useState('');
 
   // Dynamic outstanding balance state
   const [outstandingData, setOutstandingData] = useState({
@@ -119,6 +119,22 @@ const CreatePayment = () => {
     fetchOutstanding();
   }, [formData.partyId]);
 
+  // Fetch next generated/reserved challan number when type or date changes
+  useEffect(() => {
+    const fetchChallan = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/party-transactions/next-challan?transactionType=${transactionType}&date=${formData.date}`);
+        const result = await response.json();
+        if (result.success) {
+          setNextChallan(result.challan_no);
+        }
+      } catch (err) {
+        console.error('Error fetching next challan:', err);
+      }
+    };
+    fetchChallan();
+  }, [transactionType, formData.date]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -156,7 +172,7 @@ const CreatePayment = () => {
         transactionType,
         date: formData.date,
         amount: amt,
-        paymentMode: ['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType) && transactionType !== 'PAYMENT' ? null : formData.paymentMode,
+        paymentMode: transactionType === 'PAYMENT' ? formData.paymentMode : null,
         remark: formData.remarks
       };
 
@@ -282,14 +298,9 @@ const CreatePayment = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Challan No</label>
-                <input 
-                  type="text"
-                  name="challanNo"
-                  value={formData.challanNo}
-                  readOnly
-                  className="w-full h-9 px-3 bg-bg-main/50 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-secondary outline-none shadow-sm cursor-not-allowed"
-                  placeholder="Auto-Generated"
-                />
+                <div className="w-full h-9 px-3 bg-bg-main/50 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary flex items-center shadow-sm select-none">
+                  {nextChallan || 'Loading...'}
+                </div>
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Date</label>
@@ -331,10 +342,10 @@ const CreatePayment = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
                 <div className="flex flex-col gap-1.5 col-span-2">
-                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">
-                    {transactionType === 'PAYMENT' && 'Amount Paid (₹)'}
-                    {transactionType === 'RETURN' && 'Amount Returned (₹)'}
-                    {transactionType === 'DISCOUNT' && 'Discount Amount (₹)'}
+                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5 text-left">
+                    {transactionType === 'PAYMENT' && 'AMOUNT PAID (₹)'}
+                    {transactionType === 'RETURN' && 'RETURN AMOUNT (₹)'}
+                    {transactionType === 'DISCOUNT' && 'DISCOUNT AMOUNT (₹)'}
                   </label>
                   <div className="flex gap-2">
                     <input 
@@ -346,8 +357,8 @@ const CreatePayment = () => {
                       placeholder="0.00"
                     />
                     
-                    {/* Bank / Cash Toggle - only for PAYMENT and RETURN modes */}
-                    {['PAYMENT', 'RETURN'].includes(transactionType) && (
+                    {/* Bank / Cash Toggle - ONLY for PAYMENT mode */}
+                    {transactionType === 'PAYMENT' && (
                       <div className="flex p-0.5 bg-bg-main rounded-lg border border-border-soft h-9 shrink-0">
                         <button 
                           onClick={() => togglePaymentMode('Bank')}
@@ -426,9 +437,9 @@ const CreatePayment = () => {
                 <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                {transactionType === 'PAYMENT' && 'Save Payment'}
-                {transactionType === 'RETURN' && 'Save Return'}
-                {transactionType === 'DISCOUNT' && 'Save Discount'}
+                {transactionType === 'PAYMENT' && 'SAVE PAYMENT'}
+                {transactionType === 'RETURN' && 'SAVE RETURN'}
+                {transactionType === 'DISCOUNT' && 'SAVE DISCOUNT'}
               </button>
               <button 
                 onClick={() => navigate('/payment')}
