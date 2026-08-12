@@ -105,6 +105,19 @@ getNextChallan: async (req, res, next) => {
     } catch (err) {
       next(err);
     }
+  },
+
+  getByChallanNo: async (req, res, next) => {
+    try {
+      const { challanNo } = req.query;
+      const data = await billingService.getByChallanNo(challanNo);
+      if (!data) {
+        return res.status(404).json({ success: false, message: 'Bill not found for this challan number.' });
+      }
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

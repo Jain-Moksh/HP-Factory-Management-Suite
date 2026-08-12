@@ -173,6 +173,12 @@ const purchaseService = {
     } finally {
       client.release();
     }
+  },
+
+  getByChallanNo: async (challanNo) => {
+    const res = await db.query('SELECT id FROM purchase WHERE challan_no = $1', [challanNo]);
+    if (res.rows.length === 0) return null;
+    return await purchaseService.getById(res.rows[0].id);
   }
 };
 

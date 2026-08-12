@@ -266,6 +266,12 @@ const billingService = {
     } finally {
       client.release();
     }
+  },
+
+  getByChallanNo: async (challanNo) => {
+    const res = await db.query('SELECT id FROM billing WHERE challan_no = $1', [challanNo]);
+    if (res.rows.length === 0) return null;
+    return await billingService.getById(res.rows[0].id);
   }
 };
 

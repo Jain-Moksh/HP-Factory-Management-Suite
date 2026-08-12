@@ -6,6 +6,7 @@ router.post('/', billingController.create);
 router.get('/', billingController.getAll);
 router.get('/next-id', billingController.getNextId);
 router.get('/next-challan', billingController.getNextChallan);
+router.get('/by-challan', billingController.getByChallanNo);
 router.get('/:id', billingController.getById);
 router.put('/:id', billingController.update);
 router.delete('/:id', billingController.delete);

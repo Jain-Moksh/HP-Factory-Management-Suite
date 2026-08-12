@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import MonthFilterFooter from '../components/MonthFilterFooter';
+import ClickableChallan from '../components/UI/ClickableChallan';
 import { API_BASE_URL } from '../config';
 
 const ItemStockDetails = () => {
@@ -200,7 +201,9 @@ const ItemStockDetails = () => {
                   <>
                     {filteredTransactions.map((t, idx) => (
                       <tr key={idx} className="hover:bg-bg-main/40 transition-colors">
-                        <td className="px-6 py-3 font-bold text-text-primary uppercase tracking-tight">{t.challan_no}</td>
+                        <td className="px-6 py-3 font-bold text-text-primary uppercase tracking-tight">
+                          <ClickableChallan challanNo={t.challan_no} type={t.type} />
+                        </td>
                         <td className="px-6 py-3 text-text-light font-bold">
                           {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
                         </td>

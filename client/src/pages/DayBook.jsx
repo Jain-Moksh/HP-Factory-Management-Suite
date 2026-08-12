@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import PrintInvoice from '../components/PrintInvoice';
 import PrintCopiesModal from '../components/UI/PrintCopiesModal';
+import ClickableChallan from '../components/UI/ClickableChallan';
 import { API_BASE_URL } from '../config';
 
 const DayBook = () => {
@@ -223,8 +224,8 @@ const DayBook = () => {
                         ) : data.length > 0 ? (
                            data.map((item) => (
                              <tr key={`${item.type}-${item.id}`} className="hover:bg-bg-main/30 transition-colors group/row">
-                                <td className="px-5 py-1 text-[12.5px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight tracking-tight">
-                                   {item.type === 'billing' ? item.challan_no : `${item.challan_no}`}
+                                <td className="px-5 py-1 text-[12.5px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight">
+                                   <ClickableChallan challanNo={item.challan_no} type={item.type} />
                                 </td>
                                 <td className="px-5 py-1 text-center border-r border-border-soft">
                                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${

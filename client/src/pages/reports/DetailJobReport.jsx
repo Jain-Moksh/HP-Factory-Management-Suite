@@ -6,6 +6,7 @@ import MonthFilterFooter from '../../components/MonthFilterFooter';
 import PrintDetailJobReport from '../../components/PrintDetailJobReport';
 import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
 import { useReportState } from '../../hooks/useReportState';
+import ClickableChallan from '../../components/UI/ClickableChallan';
 import { API_BASE_URL } from '../../config';
 
 const DetailJobReport = () => {
@@ -224,7 +225,9 @@ const DetailJobReport = () => {
                     data.map((row, idx) => (
                       <tr key={idx} className="hover:bg-bg-main/30 print:hover:bg-transparent transition-colors duration-75 print:border-b print:border-slate-100">
                         <td className="px-5 py-1.5 text-[12.5px] text-text-primary print:text-slate-700">{row.date}</td>
-                        <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary print:text-slate-800">{row.challan_no}</td>
+                        <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary print:text-slate-800">
+                          <ClickableChallan challanNo={row.challan_no} type="purchase" />
+                        </td>
                         <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue uppercase print:text-slate-800">{row.jobber_name}</td>
                         <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary uppercase print:text-slate-800">{row.item_name}</td>
                         <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary print:text-slate-700">{row.weight}</td>

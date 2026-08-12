@@ -179,11 +179,14 @@ const reportQueries = {
         SELECT
             p.id AS purchase_id,
             p.date,
+            p.challan_no AS challan_no,
+            j.name AS jobber_name,
             pi.id AS purchase_item_id,
             pi.quantity,
             pi.order_index,
             i.name AS item_name
         FROM purchase p
+        JOIN jobbers j ON p.jobber_id = j.id
         JOIN purchase_items pi ON pi.purchase_id = p.id
         JOIN items i ON i.id = pi.item_id
         WHERE p.date BETWEEN $1 AND $2

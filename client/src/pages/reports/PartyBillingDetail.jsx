@@ -6,6 +6,7 @@ import MonthFilterFooter from '../../components/MonthFilterFooter';
 import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
 import PrintGroupPartySalesReport from '../../components/PrintGroupPartySalesReport';
 import { useReportState } from '../../hooks/useReportState';
+import ClickableChallan from '../../components/UI/ClickableChallan';
 import { API_BASE_URL } from '../../config';
 
 const PartyBillingDetail = () => {
@@ -239,7 +240,7 @@ const PartyBillingDetail = () => {
                     data.transactions.map((t, idx) => (
                       <tr key={idx} className="hover:bg-bg-main/30 transition-colors duration-75">
                         <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
-                          {t.challan_no}
+                          <ClickableChallan challanNo={t.challan_no} type="billing" />
                         </td>
                         <td className="px-5 py-1.5 text-center text-[12px] font-bold text-text-primary border-r border-border-soft">
                           {new Date(t.date).toLocaleDateString('en-GB')}
