@@ -17,6 +17,7 @@ const CreatePayment = lazy(() => import('./pages/CreatePayment'));
 const ItemStockDetails = lazy(() => import('./pages/ItemStockDetails'));
 const StockSummary = lazy(() => import('./pages/StockSummary'));
 const TransporterList = lazy(() => import('./pages/master/TransporterList'));
+const PriceList = lazy(() => import('./pages/master/PriceList'));
 
 import { API_BASE_URL } from './config';
 
@@ -173,6 +174,7 @@ function App() {
           <Route path="/master/jobber" element={<JobberList />} />
           <Route path="/master/groups" element={<GroupList />} />
           <Route path="/master/transporters" element={<TransporterList />} />
+          <Route path="/master/price-list" element={<PriceList />} />
           
           {/* Add more routes as needed */}
           </Routes>

@@ -48,6 +48,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { name: 'Jobber List', path: '/master/jobber' },
     { name: 'Group List', path: '/master/groups' },
     { name: 'Transporter List', path: '/master/transporters' },
+    { name: 'Price List', path: '/master/price-list' },
   ];
 
   const navLinkClass = (isActive) => `

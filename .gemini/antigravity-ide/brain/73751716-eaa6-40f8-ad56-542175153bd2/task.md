@@ -1,8 +1,6 @@
 # Tasks
 
-- [x] Database: Run ALTER TABLE migration script on PostgreSQL.
-- [x] Documentation: Update `server/db.md` to document the new `packing` column.
-- [x] Backend: Update `createItem` and `updateItem` queries in `masterQueries.js`.
-- [x] Backend: Update `create` and `update` logic in `masterService.js` to handle `packing`.
-- [x] Frontend: Update state, inputs, and list/edit layouts in `ItemList.jsx`.
-- [x] Verification: Run Vite production build and manually test items CRUD operations.
+- [x] Navigation: Add `Price List` to sidebar items in `Sidebar.jsx`.
+- [x] Routes: Import `PriceList` and add the `/master/price-list` route in `App.jsx`.
+- [x] Component: Implement `PriceList.jsx` page component with category accordion, item selection modal, search-select logic, reordering logic, date-picker persistence, and print formatting.
+- [x] Verification: Run Vite production build and check for errors.
