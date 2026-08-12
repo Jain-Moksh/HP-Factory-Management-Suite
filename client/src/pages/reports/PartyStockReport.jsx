@@ -4,40 +4,73 @@ import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
 import SearchableSelect from '../../components/UI/SearchableSelect';
+import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
 
 const PartyStockReport = () => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState('');
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate();
 
-  // Monthly Filter State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    client_id: '',
+    from: '',
+    to: '',
+    search: '',
+    month: new Date().getMonth(),
+    year: new Date().getFullYear()
+  });
 
-  // Update dates when month/year changes
+  const selectedClient = filters.client_id;
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const searchTerm = filters.search;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
   useEffect(() => {
-    const firstDay = new Date(selectedYear, selectedMonth, 1);
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
-    
-    const formatDate = (date) => {
-      const d = new Date(date);
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-      return [year, month, day].join('-');
-    };
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
 
-    setStartDate(formatDate(firstDay));
-    setEndDate(formatDate(lastDay));
-  }, [selectedMonth, selectedYear]);
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
 
   useEffect(() => {
     fetchClients();
@@ -69,8 +102,9 @@ const PartyStockReport = () => {
     }
   };
 
+  // Fetch report data whenever filters update
   useEffect(() => {
-    if (selectedClient) {
+    if (selectedClient && startDate && endDate) {
       fetchData();
     }
   }, [selectedClient, startDate, endDate]);
@@ -95,7 +129,7 @@ const PartyStockReport = () => {
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Filters Bar - Refactored to match standard FilterBar style */}
+          {/* Filters Bar */}
           <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-4 group">
             <div className="flex items-center gap-2 shrink-0 border-r border-border-soft pr-4">
               <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,7 +142,7 @@ const PartyStockReport = () => {
               <SearchableSelect 
                 options={clients}
                 value={selectedClient}
-                onChange={setSelectedClient}
+                onChange={(val) => setFilter('client_id', val)}
                 placeholder="Select a Party..."
                 className="flex-1 max-w-[320px]"
               />
@@ -117,14 +151,14 @@ const PartyStockReport = () => {
                 <input 
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => setFilter('from', e.target.value)}
                   className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
                 <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
                 <input 
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => setFilter('to', e.target.value)}
                   className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
               </div>
@@ -142,7 +176,7 @@ const PartyStockReport = () => {
             </div>
           </div>
 
-          {/* Quick Search Bar (Optional, only if data exists) */}
+          {/* Quick Search Bar */}
           {data.length > 0 && (
             <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-3">
               <div className="flex-1 relative">
@@ -155,7 +189,7 @@ const PartyStockReport = () => {
                   type="text" 
                   placeholder="Instantly filter the items below..." 
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setFilter('search', e.target.value)}
                   className="w-full h-8 bg-bg-main/20 border-none pl-9 pr-3 text-[12px] font-medium outline-none focus:bg-white transition-all"
                 />
               </div>
@@ -222,8 +256,8 @@ const PartyStockReport = () => {
         <MonthFilterFooter 
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           recordCount={filteredData.length}
         />
       </div>
@@ -232,4 +266,3 @@ const PartyStockReport = () => {
 };
 
 export default PartyStockReport;
-

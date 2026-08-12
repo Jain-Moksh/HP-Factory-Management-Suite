@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const PageHeader = ({ title, subtitle, actions }) => {
+const PageHeader = ({ title, subtitle, actions, backAction }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -23,6 +23,78 @@ const PageHeader = ({ title, subtitle, actions }) => {
     location.pathname.startsWith('/reports') ||
     location.pathname.startsWith('/master');
 
+  const rootPaths = [
+    '/dashboard',
+    '/order-summary',
+    '/stock-summary',
+    '/job-work',
+    '/payment',
+    '/reports',
+    '/day-book',
+    '/utility',
+    '/master/items',
+    '/master/party-list',
+    '/master/jobber',
+    '/master/groups',
+    '/master/transporters'
+  ];
+
+  const isRootPath = rootPaths.includes(location.pathname);
+  const showBackButton = !!backAction || !isRootPath;
+
+  const getFallbackPath = (pathname) => {
+    if (pathname.startsWith('/reports/party-stock-detail')) {
+      return '/reports/party-stock';
+    }
+    if (pathname.startsWith('/reports/job-work-detail')) {
+      return '/reports/job-work';
+    }
+    if (pathname.startsWith('/reports/party-billing-detail')) {
+      return '/reports/party-sales';
+    }
+    if (pathname.startsWith('/reports/')) {
+      return '/reports';
+    }
+    if (pathname.startsWith('/utility/')) {
+      return '/utility';
+    }
+    if (pathname.startsWith('/item-stock-details')) {
+      return '/stock-summary';
+    }
+    if (pathname.startsWith('/create-invoice')) {
+      return '/order-summary';
+    }
+    if (pathname.startsWith('/create-job-work')) {
+      return '/job-work';
+    }
+    if (pathname.startsWith('/create-payment')) {
+      return '/payment';
+    }
+    return '/dashboard';
+  };
+
+  const handleBack = () => {
+    // If browser history has a valid previous page in the current session
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+      return;
+    }
+
+    // Fallback path deduction based on pathname
+    const fallbackPath = getFallbackPath(location.pathname);
+    
+    if (backAction) {
+      const actionStr = backAction.toString();
+      if (actionStr.includes('-1') || actionStr.includes('goBack')) {
+        navigate(fallbackPath);
+      } else {
+        backAction();
+      }
+    } else {
+      navigate(fallbackPath);
+    }
+  };
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     // Dispatch custom event for pages to listen to
@@ -36,15 +108,34 @@ const PageHeader = ({ title, subtitle, actions }) => {
 
   return (
     <div className="bg-white border-b border-border-soft h-14 flex items-center justify-between px-6 sticky top-0 z-40 w-full mb-6 py-2 shadow-sm">
-      <div className="flex flex-col select-none text-left">
-        <h1 className="text-base font-bold text-text-primary tracking-tight leading-none mb-1.5 uppercase">
-          {title}
-        </h1>
-        {subtitle && (
-          <span className="text-[10px] uppercase font-bold text-text-light tracking-widest leading-none">
-            {subtitle}
-          </span>
+      <div className="flex items-center gap-3.5 select-none text-left">
+        {showBackButton && (
+          <button
+            onClick={handleBack}
+            className="p-1.5 hover:bg-slate-100 rounded-lg text-text-light hover:text-brand-blue transition-all duration-200 group flex items-center justify-center shrink-0 border border-transparent hover:border-border-soft"
+            title="Back"
+            aria-label="Go Back"
+          >
+            <svg 
+              className="w-4 h-4 stroke-[2.5]" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         )}
+        <div className="flex flex-col">
+          <h1 className="text-base font-bold text-text-primary tracking-tight leading-none mb-1.5 uppercase">
+            {title}
+          </h1>
+          {subtitle && (
+            <span className="text-[10px] uppercase font-bold text-text-light tracking-widest leading-none">
+              {subtitle}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

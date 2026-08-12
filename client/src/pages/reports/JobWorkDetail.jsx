@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
+import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
 
 const JobWorkDetail = () => {
@@ -18,41 +19,83 @@ const JobWorkDetail = () => {
   const [data, setData] = useState(null);
   const [jobber, setJobber] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [startDate, setStartDate] = useState(fromDate);
-  const [endDate, setEndDate] = useState(toDate);
 
-  // Monthly Filter State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Parse custom month/year initial state from fromDate URL parameter
+  const getInitialMonthYear = () => {
+    if (fromDate) {
+      const fromD = new Date(fromDate);
+      if (!isNaN(fromD.getTime())) {
+        return { month: fromD.getMonth(), year: fromD.getFullYear() };
+      }
+    }
+    return { month: new Date().getMonth(), year: new Date().getFullYear() };
+  };
 
-  // Update dates when month/year changes
+  const initialMonthYear = getInitialMonthYear();
+
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    from: fromDate,
+    to: toDate,
+    month: initialMonthYear.month,
+    year: initialMonthYear.year
+  });
+
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
   useEffect(() => {
-    const firstDay = new Date(selectedYear, selectedMonth, 1);
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
-    
-    const formatDate = (date) => {
-      const d = new Date(date);
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-      return [year, month, day].join('-');
-    };
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
 
-    setStartDate(formatDate(firstDay));
-    setEndDate(formatDate(lastDay));
-  }, [selectedMonth, selectedYear]);
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
 
   const fetchData = async () => {
+    if (!startDate || !endDate) return;
     setIsLoading(true);
     try {
-      // 1. Fetch Jobber Details
       const jobberRes = await fetch(`${API_BASE_URL}/jobbers/${jobberId}`);
       const jobberResult = await jobberRes.json();
       if (jobberResult.success) setJobber(jobberResult.data);
 
-      // 2. Fetch Transaction Detail
       const transRes = await fetch(`${API_BASE_URL}/reports/job-work-detail?jobber_id=${jobberId}&item_id=${itemId}&from=${startDate}&to=${endDate}`);
       const transResult = await transRes.json();
       if (transResult.success) setData(transResult.data);
@@ -65,7 +108,9 @@ const JobWorkDetail = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    if (jobberId && itemId && startDate && endDate) {
+      fetchData();
+    }
   }, [jobberId, itemId, startDate, endDate]);
 
   // Listen for global refresh event
@@ -109,14 +154,14 @@ const JobWorkDetail = () => {
                   <input 
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => setFilter('from', e.target.value)}
                     className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
                   />
                   <span className="text-[10px] text-text-light opacity-40 font-bold uppercase">to</span>
                   <input 
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(e) => setFilter('to', e.target.value)}
                     className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
                   />
                 </div>
@@ -143,7 +188,7 @@ const JobWorkDetail = () => {
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Purchase No</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Date</th>
-                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider">Quantity Received</th>
+                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10">Quantity Received</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
@@ -165,7 +210,7 @@ const JobWorkDetail = () => {
                         <td className="px-5 py-1.5 text-center text-[12px] font-bold text-text-primary border-r border-border-soft">
                           {new Date(t.date).toLocaleDateString('en-GB')}
                         </td>
-                        <td className="px-5 py-1.5 text-right text-[13px] font-bold text-brand-blue tracking-tight">
+                        <td className="px-5 py-1.5 text-right text-[13px] font-bold text-brand-blue px-10 tracking-tight">
                           {parseFloat(t.quantity).toLocaleString()} 
                         </td>
                       </tr>
@@ -182,7 +227,7 @@ const JobWorkDetail = () => {
                   <tfoot>
                     <tr className="bg-bg-main/50 font-bold border-t-2 border-border-soft">
                       <td colSpan="2" className="px-5 py-2 text-right text-[10px] text-text-light uppercase tracking-widest font-black">Accumulative Item Total:</td>
-                      <td className="px-5 py-2 text-right text-[15px] font-black text-brand-blue tracking-tight">
+                      <td className="px-5 py-2 text-right text-[15px] font-black text-brand-blue px-10 tracking-tight">
                         {parseFloat(data.total_quantity).toLocaleString()}
                       </td>
                     </tr>
@@ -205,8 +250,8 @@ const JobWorkDetail = () => {
         <MonthFilterFooter 
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           recordCount={data?.transactions?.length || 0}
         />
       </div>

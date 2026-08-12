@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
+import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
 
 const PartyStockDetail = () => {
@@ -10,7 +11,7 @@ const PartyStockDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Extract date range from URL if present
+  // Extract initial date range from URL if present
   const queryParams = new URLSearchParams(location.search);
   const fromDate = queryParams.get('from') || '';
   const toDate = queryParams.get('to') || '';
@@ -18,47 +19,88 @@ const PartyStockDetail = () => {
   const [data, setData] = useState(null);
   const [client, setClient] = useState(null);
   const [item, setItem] = useState(null);
-  const [startDate, setStartDate] = useState(fromDate);
-  const [endDate, setEndDate] = useState(toDate);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Monthly Filter State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Parse custom month/year initial state from fromDate URL parameter
+  const getInitialMonthYear = () => {
+    if (fromDate) {
+      const fromD = new Date(fromDate);
+      if (!isNaN(fromD.getTime())) {
+        return { month: fromD.getMonth(), year: fromD.getFullYear() };
+      }
+    }
+    return { month: new Date().getMonth(), year: new Date().getFullYear() };
+  };
 
-  // Update dates when month/year changes
+  const initialMonthYear = getInitialMonthYear();
+
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    from: fromDate,
+    to: toDate,
+    month: initialMonthYear.month,
+    year: initialMonthYear.year
+  });
+
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
   useEffect(() => {
-    const firstDay = new Date(selectedYear, selectedMonth, 1);
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
-    
-    const formatDate = (date) => {
-      const d = new Date(date);
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-      return [year, month, day].join('-');
-    };
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
 
-    setStartDate(formatDate(firstDay));
-    setEndDate(formatDate(lastDay));
-  }, [selectedMonth, selectedYear]);
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
 
   const fetchData = async () => {
+    if (!startDate || !endDate) return;
     setIsLoading(true);
     try {
-      // 1. Fetch Client Details
       const clientRes = await fetch(`${API_BASE_URL}/clients/${clientId}`);
       const clientResult = await clientRes.json();
       if (clientResult.success) setClient(clientResult.data);
 
-      // 2. Fetch Item Details
       const itemRes = await fetch(`${API_BASE_URL}/items/${itemId}`);
       const itemResult = await itemRes.json();
       if (itemResult.success) setItem(itemResult.data);
 
-      // 3. Fetch Transaction Detail
       const transRes = await fetch(`${API_BASE_URL}/reports/party-stock-detail?client_id=${clientId}&item_id=${itemId}&from=${startDate}&to=${endDate}`);
       const transResult = await transRes.json();
       if (transResult.success) setData(transResult.data);
@@ -71,7 +113,9 @@ const PartyStockDetail = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    if (clientId && itemId && startDate && endDate) {
+      fetchData();
+    }
   }, [clientId, itemId, startDate, endDate]);
 
   // Listen for global refresh event
@@ -109,20 +153,20 @@ const PartyStockDetail = () => {
             <div className="flex-1 flex items-center gap-6">
               <div className="flex items-center gap-2 bg-bg-main/30 px-3 py-1 rounded-lg border border-divider-soft/50">
                 <svg className="w-3 h-3 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
                 </svg>
                 <div className="flex items-center gap-2">
                   <input 
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => setFilter('from', e.target.value)}
                     className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
                   />
                   <span className="text-[10px] text-text-light opacity-40 font-bold uppercase">to</span>
                   <input 
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(e) => setFilter('to', e.target.value)}
                     className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
                   />
                 </div>
@@ -141,7 +185,7 @@ const PartyStockDetail = () => {
             </div>
           </div>
 
-          {/* Ledger Table - Matches BillingTable style */}
+          {/* Ledger Table */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -217,8 +261,8 @@ const PartyStockDetail = () => {
         <MonthFilterFooter 
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           recordCount={data?.transactions?.length || 0}
         />
       </div>

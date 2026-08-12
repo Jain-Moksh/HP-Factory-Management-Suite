@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
 import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
 import PrintGroupPartySalesReport from '../../components/PrintGroupPartySalesReport';
+import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
 
 const PartyBillingDetail = () => {
@@ -18,14 +19,80 @@ const PartyBillingDetail = () => {
   const initialTo = queryParams.get('to') || '';
 
   const [data, setData] = useState(null);
-  const [startDate, setStartDate] = useState(initialFrom);
-  const [endDate, setEndDate] = useState(initialTo);
   const [isLoading, setIsLoading] = useState(true);
 
   // Printing State
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedPaperSize, setSelectedPaperSize] = useState('A5');
+
+  // Parse custom month/year initial state from fromDate URL parameter
+  const getInitialMonthYear = () => {
+    if (initialFrom) {
+      const fromD = new Date(initialFrom);
+      if (!isNaN(fromD.getTime())) {
+        return { month: fromD.getMonth(), year: fromD.getFullYear() };
+      }
+    }
+    return { month: new Date().getMonth(), year: new Date().getFullYear() };
+  };
+
+  const initialMonthYear = getInitialMonthYear();
+
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    from: initialFrom,
+    to: initialTo,
+    month: initialMonthYear.month,
+    year: initialMonthYear.year
+  });
+
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
+  useEffect(() => {
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
+
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
 
   // Print lifecycle: trigger window.print() after component mounts
   useEffect(() => {
@@ -39,7 +106,7 @@ const PartyBillingDetail = () => {
       
       const timer = setTimeout(() => {
         window.print();
-      }, 1500); // 1.5s for portal mounting
+      }, 1500);
 
       return () => {
         clearTimeout(timer);
@@ -48,30 +115,8 @@ const PartyBillingDetail = () => {
     }
   }, [isPrinting]);
 
-  // Monthly Filter State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  // Update dates when month/year changes
-  useEffect(() => {
-    const firstDay = new Date(selectedYear, selectedMonth, 1);
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
-    
-    const formatDate = (date) => {
-      const d = new Date(date);
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-      return [year, month, day].join('-');
-    };
-
-    setStartDate(formatDate(firstDay));
-    setEndDate(formatDate(lastDay));
-  }, [selectedMonth, selectedYear]);
-
   const fetchData = async () => {
+    if (!startDate || !endDate) return;
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/reports/party-billing-detail?client_id=${clientId}&from=${startDate}&to=${endDate}`);
@@ -87,7 +132,9 @@ const PartyBillingDetail = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    if (clientId && startDate && endDate) {
+      fetchData();
+    }
   }, [clientId, startDate, endDate]);
 
   // Listen for global refresh event
@@ -105,79 +152,69 @@ const PartyBillingDetail = () => {
     setIsPrinting(true);
   };
 
+  const actions = [
+    {
+      label: 'Print Bill list',
+      onClick: handlePrintRequest,
+      icon: (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+      )
+    }
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24">
         <PageHeader 
           title="Party Billing Details" 
           subtitle="COMPLETE TRANSACTION HISTORY FOR SELECTED PARTY"
+          actions={actions}
           backAction={() => navigate(-1)}
         />
 
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Standardized Filter Bar */}
-          <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-4 group">
-            <div className="flex items-center gap-4 shrink-0 border-r border-border-soft pr-4">
-              <div className="w-8 h-8 bg-brand-blue/10 rounded flex items-center justify-center text-brand-blue font-bold text-[10px]">
-                {data?.client_name ? data.client_name.substring(0, 2).toUpperCase() : '??'}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[12px] font-black text-text-primary uppercase tracking-tight leading-none mb-0.5">
-                  {data?.client_name || 'Loading...'}
-                </span>
-                <span className="text-[9px] font-bold text-brand-blue uppercase tracking-widest opacity-70">Client Ledger</span>
-              </div>
-            </div>
-
-            <div className="flex-1 flex items-center gap-6">
-              <div className="flex items-center gap-2 bg-bg-main/30 px-3 py-1 rounded-lg border border-divider-soft/50">
-                <svg className="w-3 h-3 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          {/* Filters Bar */}
+          <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center justify-between group print:hidden">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 shrink-0 border-r border-border-soft pr-4">
+                <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
-                  />
-                  <span className="text-[10px] text-text-light opacity-40 font-bold uppercase">to</span>
-                  <input 
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-6 bg-transparent text-[11px] font-bold text-text-primary uppercase outline-none"
-                  />
-                </div>
+                <span className="text-[11px] font-bold text-text-primary uppercase tracking-tight whitespace-nowrap">Filter History</span>
               </div>
-
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={fetchData}
-                  disabled={isLoading}
-                  className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition shadow-lg shadow-brand-blue/20 flex items-center gap-2 active:scale-95 disabled:opacity-50"
-                >
-                  <svg className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {isLoading ? 'Updating...' : 'Refresh'}
-                </button>
-
-                <button 
-                  onClick={handlePrintRequest}
-                  disabled={!data || data.transactions.length === 0}
-                  className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-lg transition flex items-center gap-2 active:scale-95 disabled:opacity-50"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                  Print Individual Report
-                </button>
+              
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setFilter('from', e.target.value)}
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                />
+                <span className="text-[11px] text-text-light opacity-40 font-bold">TO</span>
+                <input 
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setFilter('to', e.target.value)}
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                />
               </div>
             </div>
+            
+            <button 
+              onClick={fetchData}
+              disabled={isLoading}
+              className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 active:scale-95 disabled:opacity-50"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              Set Filter
+            </button>
           </div>
 
-          {/* Billing Ledger Table */}
+          {/* Ledger Table */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -185,7 +222,7 @@ const PartyBillingDetail = () => {
                   <tr className="bg-table-header text-white">
                     <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Challan No</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Date</th>
-                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10">Amount</th>
+                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10">Total Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-soft">
@@ -194,7 +231,7 @@ const PartyBillingDetail = () => {
                       <td colSpan="3" className="px-6 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-brand-blue animate-pulse font-bold text-[13px]">
                           <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
-                          <span>FETCHING BILLING DATA...</span>
+                          <span>LOADING BILL LIST...</span>
                         </div>
                       </td>
                     </tr>
@@ -248,8 +285,8 @@ const PartyBillingDetail = () => {
         <MonthFilterFooter 
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           recordCount={data?.transactions?.length || 0}
         />
       </div>

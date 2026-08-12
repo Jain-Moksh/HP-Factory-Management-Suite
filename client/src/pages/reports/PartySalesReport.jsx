@@ -6,44 +6,76 @@ import MonthFilterFooter from '../../components/MonthFilterFooter';
 import SearchableSelect from '../../components/UI/SearchableSelect';
 import PrintPartySalesReport from '../../components/PrintPartySalesReport';
 import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
+import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
 
 const PartySalesReport = () => {
+  const navigate = useNavigate();
   const [parties, setParties] = useState([]);
-  const [selectedPartyId, setSelectedPartyId] = useState('all');
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedPaperSize, setSelectedPaperSize] = useState('A4');
-  const navigate = useNavigate();
 
-  // Monthly Filter State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    party_id: 'all',
+    from: '',
+    to: '',
+    month: new Date().getMonth(),
+    year: new Date().getFullYear()
+  });
 
-  // Update dates when month/year changes
+  const selectedPartyId = filters.party_id;
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
   useEffect(() => {
-    const firstDay = new Date(selectedYear, selectedMonth, 1);
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
-    
-    const formatDate = (date) => {
-      const d = new Date(date);
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-      return [year, month, day].join('-');
-    };
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
 
-    setStartDate(formatDate(firstDay));
-    setEndDate(formatDate(lastDay));
-  }, [selectedMonth, selectedYear]);
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
 
-  // Print lifecycle: trigger window.print() after component mounts
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  // Print lifecycle
   useEffect(() => {
     if (isPrinting) {
       const handleAfterPrint = () => {
@@ -55,7 +87,7 @@ const PartySalesReport = () => {
       
       const timer = setTimeout(() => {
         window.print();
-      }, 1500); // 1.5s for portal mounting
+      }, 1500);
 
       return () => {
         clearTimeout(timer);
@@ -71,7 +103,6 @@ const PartySalesReport = () => {
         const response = await fetch(`${API_BASE_URL}/clients`);
         const result = await response.json();
         if (result.success) {
-          // Add "All Parties" option at the top
           const allOption = { id: 'all', name: '--- ALL PARTIES ---' };
           setParties([allOption, ...result.data]);
         }
@@ -83,6 +114,7 @@ const PartySalesReport = () => {
   }, []);
 
   const fetchData = async () => {
+    if (!startDate || !endDate) return;
     setIsLoading(true);
     try {
       const clientIdParam = (selectedPartyId === 'all' || !selectedPartyId) ? '' : selectedPartyId;
@@ -100,7 +132,9 @@ const PartySalesReport = () => {
 
   // Fetch data when party or dates change
   useEffect(() => {
-    fetchData();
+    if (startDate && endDate) {
+      fetchData();
+    }
   }, [selectedPartyId, startDate, endDate]);
 
   // Listen for global refresh event
@@ -126,17 +160,30 @@ const PartySalesReport = () => {
     setIsPrinting(true);
   };
 
+  const actions = [
+    {
+      label: 'Print Report',
+      onClick: handlePrintRequest,
+      icon: (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+      )
+    }
+  ];
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24">
         <PageHeader 
-          title="Party Wise Sales Report" 
-          subtitle="AGGREGATED SALES REVENUE PER CLIENT PARTY" 
+          title="Party Sales Report" 
+          subtitle="TOTAL SALES REVENUE PER CLIENT" 
+          actions={actions}
           backAction={() => navigate('/reports')}
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Standardized Filter Bar */}
+          {/* Filters Bar */}
           <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-4 group">
             <div className="flex items-center gap-2 shrink-0 border-r border-border-soft pr-4">
               <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,58 +192,45 @@ const PartySalesReport = () => {
               <span className="text-[11px] font-bold text-text-primary uppercase tracking-tight whitespace-nowrap">Filter Report</span>
             </div>
 
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <SearchableSelect 
-                  options={parties}
-                  value={selectedPartyId}
-                  onChange={setSelectedPartyId}
-                  placeholder="Select a Party..."
-                  className="flex-1 max-w-[320px]"
+            <div className="flex-1 flex items-center gap-4">
+              <SearchableSelect 
+                options={parties}
+                value={selectedPartyId}
+                onChange={(val) => setFilter('party_id', val)}
+                placeholder="Select a Party..."
+                className="flex-1 max-w-[320px]"
+              />
+
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setFilter('from', e.target.value)}
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
-
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
-                  />
-                  <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
-                  <input 
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
-                  />
-                </div>
-
-                <button 
-                  onClick={fetchData}
-                  disabled={isLoading}
-                  className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 disabled:opacity-50 active:scale-95"
-                >
-                  <svg className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {isLoading ? 'Wait...' : 'Refresh'}
-                </button>
+                <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
+                <input 
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setFilter('to', e.target.value)}
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                />
               </div>
 
               <button 
-                onClick={handlePrintRequest}
-                disabled={data.length === 0}
-                className="border-2 border-brand-blue/20 hover:border-brand-blue/40 text-brand-blue text-[12.5px] font-bold px-4 py-1.5 rounded transition flex items-center gap-1.5 active:scale-95 disabled:opacity-50 ml-4"
+                onClick={fetchData}
+                disabled={isLoading}
+                className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[12.5px] font-bold px-4 py-1.5 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 disabled:opacity-50 disable:hover:bg-brand-blue active:scale-95"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
-                Print Report
+                {isLoading ? 'Wait...' : 'Set Filter'}
               </button>
             </div>
           </div>
 
-          {/* Table Implementation */}
+          {/* Table Container */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
              <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
@@ -269,8 +303,8 @@ const PartySalesReport = () => {
         <MonthFilterFooter 
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           recordCount={data.length}
         />
       </div>

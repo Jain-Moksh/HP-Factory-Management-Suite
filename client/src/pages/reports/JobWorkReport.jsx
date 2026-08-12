@@ -4,39 +4,71 @@ import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
 import SearchableSelect from '../../components/UI/SearchableSelect';
+import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
 
 const JobWorkReport = () => {
+  const navigate = useNavigate();
   const [jobbers, setJobbers] = useState([]);
-  const [selectedJobberId, setSelectedJobberId] = useState('');
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const navigate = useNavigate();
 
-  // Monthly Filter State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    jobber_id: '',
+    from: '',
+    to: '',
+    month: new Date().getMonth(),
+    year: new Date().getFullYear()
+  });
 
-  // Update dates when month/year changes
+  const selectedJobberId = filters.jobber_id;
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
   useEffect(() => {
-    const firstDay = new Date(selectedYear, selectedMonth, 1);
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
-    
-    const formatDate = (date) => {
-      const d = new Date(date);
-      let month = '' + (d.getMonth() + 1);
-      let day = '' + d.getDate();
-      const year = d.getFullYear();
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-      return [year, month, day].join('-');
-    };
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
 
-    setStartDate(formatDate(firstDay));
-    setEndDate(formatDate(lastDay));
-  }, [selectedMonth, selectedYear]);
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
 
   // Fetch jobbers on mount
   useEffect(() => {
@@ -55,7 +87,7 @@ const JobWorkReport = () => {
   }, []);
 
   const fetchData = async () => {
-    if (!selectedJobberId) return;
+    if (!selectedJobberId || !startDate || !endDate) return;
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/reports/job-work-summary?jobber_id=${selectedJobberId}&from=${startDate}&to=${endDate}`);
@@ -72,7 +104,7 @@ const JobWorkReport = () => {
 
   // Fetch data when jobber or dates change
   useEffect(() => {
-    if (selectedJobberId) {
+    if (selectedJobberId && startDate && endDate) {
       fetchData();
     }
   }, [selectedJobberId, startDate, endDate]);
@@ -101,7 +133,7 @@ const JobWorkReport = () => {
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Standardized Filter Bar */}
+          {/* Filters Bar */}
           <div className="bg-white border border-border-soft rounded-xl px-4 py-2 shadow-sm flex items-center gap-4 group">
             <div className="flex items-center gap-2 shrink-0 border-r border-border-soft pr-4">
               <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +146,7 @@ const JobWorkReport = () => {
               <SearchableSelect 
                 options={jobbers}
                 value={selectedJobberId}
-                onChange={setSelectedJobberId}
+                onChange={(val) => setFilter('jobber_id', val)}
                 placeholder="Select a Jobber..."
                 className="flex-1 max-w-[320px]"
               />
@@ -123,14 +155,14 @@ const JobWorkReport = () => {
                 <input 
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => setFilter('from', e.target.value)}
                   className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
                 <span className="text-[11px] text-text-light opacity-40 font-bold uppercase">to</span>
                 <input 
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => setFilter('to', e.target.value)}
                   className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
               </div>
@@ -148,24 +180,30 @@ const JobWorkReport = () => {
             </div>
           </div>
 
-          {/* Table Implementation */}
+          {/* Table Container */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-table-header text-white">
                         <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
-                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10 w-64">Total Received Quantity</th>
+                        <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-64">Total Quantity (Inward)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-soft">
                         {isLoading ? (
                           <tr>
-                            <td colSpan="2" className="px-6 py-20 text-center">
-                                <div className="flex flex-col items-center gap-3">
-                                  <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
-                                  <span className="text-[13px] font-medium text-text-light">Extracting job work data...</span>
-                                </div>
+                            <td colSpan="2" className="px-6 py-10 text-center">
+                              <div className="flex items-center justify-center gap-2 text-brand-blue animate-pulse font-bold text-[13px]">
+                                <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                                <span>PULLING REPORT DATA...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : !selectedJobberId ? (
+                          <tr>
+                            <td colSpan="2" className="px-6 py-12 text-center text-text-light italic text-[12px] opacity-60">
+                              Please select a jobber from the filters above to generate the report.
                             </td>
                           </tr>
                         ) : data.length > 0 ? (
@@ -173,21 +211,23 @@ const JobWorkReport = () => {
                              <tr 
                                key={row.item_id} 
                                onClick={() => handleRowClick(row.item_id)}
-                               className="hover:bg-bg-main/30 cursor-pointer transition-colors"
+                               className="hover:bg-bg-main/30 cursor-pointer transition-colors duration-75 group"
                              >
-                                <td className="px-5 py-1.5 text-[13px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight">
-                                   {row.item_name}
+                                <td className="px-5 py-1.5 font-bold text-[12.5px] text-text-primary border-r border-border-soft uppercase tracking-tight">
+                                   <div className="flex items-center gap-2">
+                                     <div className="w-1.5 h-3 bg-brand-blue/30 rounded-full group-hover:bg-brand-blue transition-colors"></div>
+                                     {row.item_name}
+                                   </div>
                                 </td>
-                                <td className="px-5 py-1.5 text-right text-[14px] font-bold text-brand-blue px-10">
-                                   {parseFloat(row.total_quantity).toLocaleString()} 
-                                   <span className="ml-1 text-[10px] font-bold text-text-light uppercase tracking-tighter opacity-70 italic">{row.unit}</span>
+                                <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue">
+                                  {row.total_quantity} <span className="text-[10px] font-bold text-text-light uppercase ml-0.5 opacity-60">{row.unit}</span>
                                 </td>
                              </tr>
                            ))
                         ) : (
                            <tr>
-                              <td colSpan="2" className="px-6 py-12 text-center italic text-text-light text-[12px] opacity-60">
-                                 Please select a jobber from the filters above to generate the report.
+                              <td colSpan="2" className="px-6 py-10 text-center italic text-text-light text-[12px]">
+                                 No records found for the selected parameters.
                               </td>
                            </tr>
                         )}
@@ -196,9 +236,9 @@ const JobWorkReport = () => {
                       <tfoot>
                         <tr className="bg-bg-main/50 border-t-2 border-border-soft">
                           <td className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70">
-                             Net Jobber Volume:
+                             Report Total:
                           </td>
-                          <td className="px-5 py-3 text-right text-[16px] font-black text-brand-blue px-10">
+                          <td className="px-5 py-3 text-center text-[15px] font-black text-brand-blue">
                              {totalQuantity.toLocaleString()}
                           </td>
                         </tr>
@@ -207,23 +247,13 @@ const JobWorkReport = () => {
                 </table>
              </div>
           </div>
-
-          <div className="bg-bg-main/30 border border-border-soft rounded-lg p-3 flex items-start gap-3">
-            <svg className="w-4 h-4 text-brand-blue mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-[11px] text-text-light leading-snug font-medium italic">
-              This report aggregates inward production volumes from the selected jobber. 
-              Click on any item to view a detailed transaction ledger for that specific item.
-            </p>
-          </div>
         </div>
 
         <MonthFilterFooter 
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
           recordCount={data.length}
         />
       </div>
