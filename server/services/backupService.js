@@ -470,7 +470,7 @@ const backupService = {
 
       // Step 6: Log final record counts
       console.log('[RESTORE] 📊 Querying final record counts...');
-      const tables = ['items', 'clients', 'jobbers', 'transporters', 'billing', 'billing_items', 'purchase', 'purchase_items', 'groups', 'group_members'];
+      const tables = ['items', 'clients', 'jobbers', 'transporters', 'billing', 'billing_items', 'purchase', 'purchase_items', 'groups', 'group_members', 'price_lists', 'price_list_categories', 'price_list_items'];
       const counts = await Promise.all(tables.map(t => db.query('SELECT COUNT(*) FROM ' + t).then(res => `${t}: ${res.rows[0].count}`).catch(err => `${t}: Error (${err.message})`)));
       console.log('[RESTORE] 📊 Final record counts:', counts.join(', '));
 

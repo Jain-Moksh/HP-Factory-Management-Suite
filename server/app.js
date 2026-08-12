@@ -48,6 +48,7 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/backup', require('./routes/backupRoutes'));
 app.use('/api/party-transactions', require('./routes/partyTransactionRoutes'));
+app.use('/api/price-list', require('./routes/priceListRoutes'));
 
 
 // Verify login password

@@ -21,27 +21,9 @@ const MOCK_ITEMS = [
 ];
 
 const PriceList = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState('');
   const [allItems, setAllItems] = useState([]);
-  const [categories, setCategories] = useState([
-    {
-      id: 'cat-1',
-      name: 'ELECTRICAL ITEMS',
-      expanded: true,
-      items: [
-        { id: 101, name: 'ELECTRICAL WIRE 1.5MM', rate: 120.00, unit: 'DOZ' },
-        { id: 102, name: 'LED BULB 9W', rate: 85.00, unit: 'PCS' }
-      ]
-    },
-    {
-      id: 'cat-2',
-      name: 'PLUMBING ITEMS',
-      expanded: false,
-      items: [
-        { id: 106, name: 'CPVC BALL VALVE 1 INCH', rate: 150.00, unit: 'PCS' }
-      ]
-    }
-  ]);
+  const [categories, setCategories] = useState([]);
 
   // --- Category Modal State ---
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -54,23 +36,49 @@ const PriceList = () => {
   const [selectedItemIds, setSelectedItemIds] = useState(new Set());
   const [itemSearchTerm, setItemSearchTerm] = useState('');
 
-  // --- Fetch items on mount ---
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/items`);
-        const result = await response.json();
-        if (result.success && result.data && result.data.length > 0) {
-          setAllItems(result.data);
-        } else {
-          setAllItems(MOCK_ITEMS);
-        }
-      } catch (err) {
-        console.warn('Unable to connect to backend, falling back to mock item data');
+  // --- Fetch Price List ---
+  const fetchPriceList = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/price-list`);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setSelectedDate(result.data.date);
+        
+        // Preserve the expanded state of categories if they already exist
+        setCategories(prev => {
+          return result.data.categories.map((cat, idx) => {
+            const existing = prev.find(p => p.id === cat.id);
+            return {
+              ...cat,
+              expanded: existing ? existing.expanded : (idx === 0)
+            };
+          });
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch price list data:', err);
+    }
+  };
+
+  // --- Fetch Available Items ---
+  const fetchAvailableItems = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/price-list/available-items`);
+      const result = await response.json();
+      if (result.success) {
+        setAllItems(result.data);
+      } else {
         setAllItems(MOCK_ITEMS);
       }
-    };
-    fetchItems();
+    } catch (err) {
+      console.warn('Unable to connect to backend, falling back to mock item data');
+      setAllItems(MOCK_ITEMS);
+    }
+  };
+
+  useEffect(() => {
+    fetchPriceList();
+    fetchAvailableItems();
   }, []);
 
   // --- Global set of all assigned item IDs across all categories ---
@@ -109,7 +117,7 @@ const PriceList = () => {
     setIsCategoryModalOpen(true);
   };
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     const trimmedName = newCategoryName.trim().toUpperCase();
     if (!trimmedName) {
       setCategoryError('Category name cannot be empty');
@@ -124,15 +132,22 @@ const PriceList = () => {
       return;
     }
 
-    const newCategory = {
-      id: `cat-${Date.now()}`,
-      name: trimmedName,
-      expanded: true,
-      items: []
-    };
-
-    setCategories(prev => [...prev, newCategory]);
-    setIsCategoryModalOpen(false);
+    try {
+      const response = await fetch(`${API_BASE_URL}/price-list/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category_name: trimmedName })
+      });
+      const result = await response.json();
+      if (result.success) {
+        await fetchPriceList();
+        setIsCategoryModalOpen(false);
+      } else {
+        setCategoryError(result.message || 'Failed to create category');
+      }
+    } catch (err) {
+      setCategoryError('Network error while saving category');
+    }
   };
 
   const toggleCategoryCollapse = (id) => {
@@ -141,10 +156,37 @@ const PriceList = () => {
     );
   };
 
-  const handleDeleteCategory = (id, e) => {
+  const handleDeleteCategory = async (id, e) => {
     e.stopPropagation(); // Avoid collapse toggling
     if (window.confirm('Are you sure you want to delete this category? All its item assignments will be cleared.')) {
-      setCategories(prev => prev.filter(cat => cat.id !== id));
+      try {
+        const response = await fetch(`${API_BASE_URL}/price-list/categories/${id}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (result.success) {
+          await fetchPriceList();
+          await fetchAvailableItems();
+        } else {
+          alert(result.message || 'Failed to delete category');
+        }
+      } catch (err) {
+        alert('Network error while deleting category');
+      }
+    }
+  };
+
+  // --- Date Picker Handler ---
+  const handleDateChange = async (newDate) => {
+    setSelectedDate(newDate);
+    try {
+      await fetch(`${API_BASE_URL}/price-list/date`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: newDate })
+      });
+    } catch (err) {
+      console.error('Failed to save price list date to backend:', err);
     }
   };
 
@@ -174,63 +216,89 @@ const PriceList = () => {
     });
   };
 
-  const handleSaveItemSelection = () => {
-    setCategories(prev =>
-      prev.map(cat => {
-        if (cat.id !== activeCategoryId) return cat;
-
-        // Construct new list of items from selector, preserving the order of newly checked items
-        const newItemsList = [];
-        
-        // Retain existing items if they are still checked (maintaining order)
-        cat.items.forEach(existingItem => {
-          if (selectedItemIds.has(existingItem.id)) {
-            newItemsList.push(existingItem);
-          }
-        });
-
-        // Add newly selected items at the end
-        allItems.forEach(item => {
-          if (selectedItemIds.has(item.id) && !newItemsList.some(i => i.id === item.id)) {
-            newItemsList.push(item);
-          }
-        });
-
-        return { ...cat, items: newItemsList };
-      })
-    );
-    setIsItemModalOpen(false);
+  const handleSaveItemSelection = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/price-list/categories/${activeCategoryId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemIds: Array.from(selectedItemIds) })
+      });
+      const result = await response.json();
+      if (result.success) {
+        await fetchPriceList();
+        await fetchAvailableItems();
+        setIsItemModalOpen(false);
+      } else {
+        alert(result.message || 'Failed to add items');
+      }
+    } catch (err) {
+      alert('Network error while adding items');
+    }
   };
 
-  const handleRemoveItem = (categoryId, itemId, e) => {
+  const handleRemoveItem = async (categoryId, itemId, e) => {
     e.stopPropagation();
-    setCategories(prev =>
-      prev.map(cat => {
-        if (cat.id !== categoryId) return cat;
-        return { ...cat, items: cat.items.filter(item => item.id !== itemId) };
-      })
-    );
+    try {
+      const response = await fetch(`${API_BASE_URL}/price-list/items/${itemId}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      if (result.success) {
+        await fetchPriceList();
+        await fetchAvailableItems();
+      } else {
+        alert(result.message || 'Failed to remove item');
+      }
+    } catch (err) {
+      alert('Network error while removing item');
+    }
   };
 
   // --- Reordering Logic ---
-  const handleMoveItem = (categoryId, index, direction, e) => {
+  const handleMoveItem = async (categoryId, index, direction, e) => {
     e.stopPropagation();
-    setCategories(prev =>
-      prev.map(cat => {
-        if (cat.id !== categoryId) return cat;
-        const newItems = [...cat.items];
-        const targetIndex = index + direction;
+    
+    // 1. Calculate swapped list locally first
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
 
-        if (targetIndex >= 0 && targetIndex < newItems.length) {
-          // Swap items
-          const temp = newItems[index];
-          newItems[index] = newItems[targetIndex];
-          newItems[targetIndex] = temp;
+    const newItems = [...category.items];
+    const targetIndex = index + direction;
+
+    if (targetIndex >= 0 && targetIndex < newItems.length) {
+      // Swap items locally
+      const temp = newItems[index];
+      newItems[index] = newItems[targetIndex];
+      newItems[targetIndex] = temp;
+
+      // Update state locally for instant UI update
+      setCategories(prev =>
+        prev.map(cat => cat.id === categoryId ? { ...cat, items: newItems } : cat)
+      );
+
+      // 2. Prepare orders payload and send to backend
+      const orders = newItems.map((item, idx) => ({
+        itemId: item.id,
+        order: idx + 1
+      }));
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/price-list/categories/${categoryId}/items/order`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orders })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          // Revert back on failure
+          await fetchPriceList();
+          alert(result.message || 'Failed to save reorder position');
         }
-
-        return { ...cat, items: newItems };
-      })
-    );
+      } catch (err) {
+        console.error('Network error during reordering:', err);
+        await fetchPriceList();
+      }
+    }
   };
 
   // --- Printing Handler ---
@@ -320,7 +388,7 @@ const PriceList = () => {
                 <input 
                   type="date"
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(e) => handleDateChange(e.target.value)}
                   className="h-8 px-3 bg-bg-main border border-border-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
                 />
               </div>

@@ -211,6 +211,41 @@ CREATE TABLE backup_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- =========================
+-- PRICE LIST SYSTEM TABLES
+-- =========================
+
+CREATE TABLE price_lists (
+    id INT PRIMARY KEY CHECK (id = 1),
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO price_lists (id, date) VALUES (1, CURRENT_DATE) ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE price_list_categories (
+    id SERIAL PRIMARY KEY,
+    price_list_id INT NOT NULL DEFAULT 1 REFERENCES price_lists(id) ON DELETE CASCADE,
+    category_name TEXT NOT NULL,
+    display_order INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (price_list_id, category_name)
+);
+
+CREATE TABLE price_list_items (
+    id SERIAL PRIMARY KEY,
+    price_list_category_id INT NOT NULL REFERENCES price_list_categories(id) ON DELETE CASCADE,
+    item_id INT NOT NULL UNIQUE REFERENCES items(id) ON DELETE CASCADE,
+    display_order INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_price_list_categories_list ON price_list_categories(price_list_id);
+CREATE INDEX idx_price_list_items_category ON price_list_items(price_list_category_id);
+
 -- =============================================
 -- DATABASE DATE PRECISION (TIMEZONES)
 -- =============================================
