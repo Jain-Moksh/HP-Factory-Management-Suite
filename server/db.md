@@ -10,7 +10,8 @@ CREATE TABLE items (
     open_stock NUMERIC DEFAULT 0,
     conversion NUMERIC,
     unit TEXT,
-    min_stock NUMERIC DEFAULT 0
+    min_stock NUMERIC DEFAULT 0,
+    packing TEXT DEFAULT ''
 );
 
 CREATE TABLE clients (

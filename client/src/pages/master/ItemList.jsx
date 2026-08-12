@@ -16,7 +16,8 @@ const ItemList = () => {
     unit: 'DOZ',
     conversion: '1',
     open_stock: '',
-    min_stock: ''
+    min_stock: '',
+    packing: ''
   });
 
   // --- List State ---
@@ -105,7 +106,8 @@ const ItemList = () => {
           open_stock: openingStockVal,
           conversion: parseFloat(formData.conversion) || 1,
           unit: formData.unit,
-          min_stock: parseFloat(formData.min_stock) || 0
+          min_stock: parseFloat(formData.min_stock) || 0,
+          packing: formData.packing
         })
       });
 
@@ -130,7 +132,8 @@ const ItemList = () => {
       unit: 'DOZ',
       conversion: '1',
       open_stock: '',
-      min_stock: ''
+      min_stock: '',
+      packing: ''
     });
   };
 
@@ -144,7 +147,8 @@ const ItemList = () => {
       conversion: item.conversion,
       stock: item.stock,
       open_stock: item.open_stock,
-      min_stock: item.min_stock
+      min_stock: item.min_stock,
+      packing: item.packing || ''
     });
   };
 
@@ -170,7 +174,8 @@ const ItemList = () => {
           open_stock: parseFloat(editFormData.open_stock) || 0,
           conversion: parseFloat(editFormData.conversion) || 1,
           unit: editFormData.unit,
-          min_stock: parseFloat(editFormData.min_stock) || 0
+          min_stock: parseFloat(editFormData.min_stock) || 0,
+          packing: editFormData.packing
         })
       });
 
@@ -255,6 +260,7 @@ const ItemList = () => {
                     <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Rate</th>
                     <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Unit</th>
                     <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Conv.</th>
+                    <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight">Packing</th>
                     <th className="px-4 py-2 border-r border-border-soft w-32 text-center uppercase tracking-tight leading-tight">Opening <br /> Stock</th>
                     <th className="px-4 py-2 w-32 text-center uppercase tracking-tight leading-tight">Min <br /> Stock</th>
                   </tr>
@@ -304,6 +310,16 @@ const ItemList = () => {
                         onChange={handleInputChange}
                         className="w-full h-10 px-2 bg-transparent outline-none text-[13px] font-medium text-center"
                         placeholder="1"
+                      />
+                    </td>
+                    <td className="p-0 border-r border-border-soft">
+                      <input 
+                        type="text"
+                        name="packing"
+                        value={formData.packing}
+                        onChange={handleInputChange}
+                        className="w-full h-10 px-2 bg-transparent outline-none text-[13px] font-medium text-center"
+                        placeholder="e.g. 10 PCS"
                       />
                     </td>
                     {/* Opening Stock */}
@@ -378,6 +394,7 @@ const ItemList = () => {
                     <th className="px-5 py-2 text-center border-r border-white/10 w-24 text-[10.5px] uppercase font-bold tracking-wider">Conv.</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Live <br /> Stock</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Opening <br /> Stock</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Packing</th>
                     <th className="px-5 py-2 text-center border-r border-white/10 w-28 text-[10.5px] uppercase font-bold tracking-wider leading-tight">Min <br /> Stock</th>
                     <th className="px-4 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider w-20">Action</th>
                   </tr>
@@ -469,6 +486,20 @@ const ItemList = () => {
                           />
                         ) : (item.open_stock || 0)}
                       </td>
+                      {/* Packing Cell */}
+                      <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary border-r border-border-soft">
+                        {editingId === item.id ? (
+                          <input 
+                            type="text"
+                            name="packing"
+                            value={editFormData.packing || ''}
+                            onChange={handleEditChange}
+                            onKeyDown={(e) => handleKeyDown(e, item.id)}
+                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
+                            placeholder="—"
+                          />
+                        ) : (item.packing || '—')}
+                      </td>
                       <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary border-r border-border-soft">
                         {editingId === item.id ? (
                           <input 
@@ -528,14 +559,14 @@ const ItemList = () => {
                   ))}
                   {filteredItems.length === 0 && !isLoading && (
                     <tr>
-                      <td colSpan="8" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
+                      <td colSpan="9" className="px-6 py-10 text-center text-text-primary italic text-[13px]">
                         {items.length === 0 ? "No items found in master. Add a new item to get started." : "No items match your search."}
                       </td>
                     </tr>
                   )}
                   {isLoading && (
                     <tr>
-                      <td colSpan="8" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
+                      <td colSpan="9" className="px-6 py-10 text-center text-brand-blue animate-pulse font-bold text-[13px]">
                         Loading master data...
                       </td>
                     </tr>

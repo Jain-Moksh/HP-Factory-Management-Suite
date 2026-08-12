@@ -3,8 +3,8 @@ const masterQueries = {
     getAllItems: 'SELECT * FROM items ORDER BY name ASC',
     searchItems: 'SELECT * FROM items WHERE name ILIKE $1 ORDER BY name ASC',
     getItemById: 'SELECT * FROM items WHERE id = $1',
-    createItem: 'INSERT INTO items (name, rate, stock, open_stock, conversion, unit, min_stock) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-    updateItem: 'UPDATE items SET name = $1, rate = $2, stock = $3, open_stock = $4, conversion = $5, unit = $6, min_stock = $7 WHERE id = $8 RETURNING *',
+    createItem: 'INSERT INTO items (name, rate, stock, open_stock, conversion, unit, min_stock, packing) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+    updateItem: 'UPDATE items SET name = $1, rate = $2, stock = $3, open_stock = $4, conversion = $5, unit = $6, min_stock = $7, packing = $8 WHERE id = $9 RETURNING *',
 
     // Clients
     getAllClients: 'SELECT * FROM clients ORDER BY name ASC',

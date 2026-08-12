@@ -34,7 +34,7 @@ const masterService = {
     switch (table) {
       case 'items':
         queryKey = 'createItem';
-        params = [clean.name, clean.rate, clean.stock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock];
+        params = [clean.name, clean.rate, clean.stock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, clean.packing];
         break;
       case 'clients':
         queryKey = 'createClient';
@@ -78,7 +78,7 @@ const masterService = {
         const difference = newOpenStock - oldOpenStock;
         const updatedStock = currentStock + difference;
 
-        params = [clean.name, clean.rate, updatedStock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, id];
+        params = [clean.name, clean.rate, updatedStock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, clean.packing, id];
         break;
       case 'clients':
         queryKey = 'updateClient';
