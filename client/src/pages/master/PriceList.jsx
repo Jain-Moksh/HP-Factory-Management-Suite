@@ -40,6 +40,76 @@ const PriceList = () => {
   const [selectedItemIds, setSelectedItemIds] = useState(new Set());
   const [itemSearchTerm, setItemSearchTerm] = useState('');
 
+  // --- Helper to format printing short date D/M/YY (e.g. 9/3/26) ---
+  const formattedPrintDate = useMemo(() => {
+    if (!selectedDate) return '';
+    const parts = selectedDate.split('-');
+    if (parts.length !== 3) return selectedDate;
+    const yearShort = parts[0].slice(-2);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    return `${day}/${month}/${yearShort}`;
+  }, [selectedDate]);
+
+  // --- Dynamic pagination calculator for print preview sheets ---
+  const printPages = useMemo(() => {
+    if (categories.length === 0) return [];
+    
+    const pages = [];
+    let currentPageItems = [];
+    let currentRowsCount = 0;
+    const MAX_ROWS = 43; // Target row count per A4 sheet
+
+    categories.forEach(cat => {
+      // 1 row for category header
+      // If category has items, we must guarantee the header fits with at least 1 item.
+      const neededRows = 1 + (cat.items.length > 0 ? 1 : 0);
+      
+      if (currentRowsCount + neededRows > MAX_ROWS) {
+        pages.push(currentPageItems);
+        currentPageItems = [];
+        currentRowsCount = 0;
+      }
+
+      // Add Category Separator
+      currentPageItems.push({
+        type: 'category',
+        name: cat.name,
+        isContinuation: false
+      });
+      currentRowsCount += 1;
+
+      cat.items.forEach((item, idx) => {
+        if (currentRowsCount >= MAX_ROWS) {
+          pages.push(currentPageItems);
+          currentPageItems = [];
+          currentRowsCount = 0;
+
+          // Repeat Category Header on next page as continuation
+          currentPageItems.push({
+            type: 'category',
+            name: cat.name,
+            isContinuation: true
+          });
+          currentRowsCount += 1;
+        }
+
+        currentPageItems.push({
+          type: 'item',
+          data: item,
+          srNo: idx + 1
+        });
+        currentRowsCount += 1;
+      });
+    });
+
+    if (currentPageItems.length > 0) {
+      pages.push(currentPageItems);
+    }
+
+    return pages;
+  }, [categories]);
+
   // --- Fetch Price List ---
   const fetchPriceList = async () => {
     try {
@@ -372,50 +442,99 @@ const PriceList = () => {
       {/* Dynamic Printing Media Styles */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body * {
-            visibility: hidden;
-          }
-          #print-area, #print-area * {
-            visibility: visible;
-          }
-          #print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white !important;
-            padding: 0;
-            margin: 0;
-          }
-          .no-print {
+          /* Hide screen UI and headers */
+          body > #root, .no-print, #print-area, aside, header {
             display: none !important;
           }
-          .print-header {
-            display: block !important;
-            border-bottom: 2px solid #000;
-            padding-bottom: 12px;
-            margin-bottom: 24px;
+          
+          /* Hide scrollbars, set background to white */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
           }
-          .print-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
+
+          .price-list-print-container {
+            display: block !important;
+            width: 210mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
             background: white !important;
           }
-          .print-table {
-            width: 100%;
-            border-collapse: collapse;
+
+          .print-page {
+            width: 210mm !important;
+            height: 295mm !important;
+            padding: 8mm 12mm !important;
+            box-sizing: border-box !important;
+            page-break-after: always !important;
+            background: white !important;
+            position: relative !important;
+            font-family: 'Arial', sans-serif !important;
+            color: black !important;
           }
-          .print-table th, .print-table td {
-            border: 1px solid #cbd5e1;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #000 !important;
+
+          .print-header-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-bottom: 5px !important;
           }
-          .print-table th {
-            background-color: #f1f5f9 !important;
-            font-weight: bold;
+
+          .print-header-table td {
+            border: none !important;
+            padding: 2px 0 !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            color: black !important;
+            font-style: italic !important;
+          }
+
+          .print-header-table .company-name {
+            font-size: 17px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            text-transform: uppercase !important;
+            font-style: italic !important;
+          }
+
+          .print-main-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+
+          .print-main-table th, .print-main-table td {
+            border: 1.5px solid black !important;
+            padding: 2px 5px !important;
+            font-size: 10px !important;
+            color: black !important;
+            height: 21px !important;
+            box-sizing: border-box !important;
+            vertical-align: middle !important;
+          }
+
+          .print-main-table th {
+            font-weight: bold !important;
+            text-transform: uppercase !important;
+            background-color: transparent !important;
+          }
+
+          .print-main-table td.category-row {
+            height: 24px !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            text-transform: uppercase !important;
+            border-left: 1.5px solid black !important;
+            border-right: 1.5px solid black !important;
+          }
+        }
+
+        @media screen {
+          .price-list-print-container {
+            display: none !important;
           }
         }
       `}} />
@@ -808,6 +927,80 @@ const PriceList = () => {
           </div>
         </div>
       </Modal>
+      {/* Price List Redesigned Print Pages */}
+      <div className="price-list-print-container">
+        {printPages.map((page, pageIdx) => (
+          <div key={pageIdx} className="print-page">
+            
+            {/* Header: Date | Company Name | Page X of Y */}
+            <table className="print-header-table">
+              <tbody>
+                <tr>
+                  <td style={{ width: '25%', textAlign: 'left' }}>
+                    {formattedPrintDate}
+                  </td>
+                  <td className="company-name" style={{ width: '50%', textAlign: 'center' }}>
+                    HEMANT PLAST
+                  </td>
+                  <td style={{ width: '25%', textAlign: 'right' }}>
+                    Page {pageIdx + 1} of {printPages.length}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Main Table */}
+            <table className="print-main-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '8%', textAlign: 'center' }}>SR. NO</th>
+                  <th style={{ width: '60%', textAlign: 'left' }}>ITEM NAME</th>
+                  <th style={{ width: '16%', textAlign: 'center' }}>
+                    RATE<br/>
+                    <span style={{ fontSize: '9px', fontWeight: 'normal', textTransform: 'none' }}>(In Doz)</span>
+                  </th>
+                  <th style={{ width: '16%', textAlign: 'center' }}>PARCEL PACKING</th>
+                </tr>
+              </thead>
+              <tbody>
+                {page.map((row, rowIdx) => {
+                  if (row.type === 'category') {
+                    return (
+                      <tr key={rowIdx}>
+                        <td 
+                          colSpan="4" 
+                          className="category-row"
+                        >
+                          {row.name} {row.isContinuation ? '(Continued)' : ''}
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    const item = row.data;
+                    return (
+                      <tr key={rowIdx}>
+                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          {row.srNo}
+                        </td>
+                        <td style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>
+                          {item.name}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          {item.rate || ''}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          {item.packing || ''}
+                        </td>
+                      </tr>
+                    );
+                  }
+                })}
+              </tbody>
+            </table>
+
+          </div>
+        ))}
+      </div>
     </Layout>
   );
 };
