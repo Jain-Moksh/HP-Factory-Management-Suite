@@ -442,25 +442,23 @@ const PriceList = () => {
       {/* Dynamic Printing Media Styles */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          /* Hide screen UI and headers */
-          body > #root, .no-print, #print-area, aside, header {
-            display: none !important;
+          /* Hide all screen elements */
+          body * {
+            visibility: hidden !important;
           }
           
-          /* Hide scrollbars, set background to white */
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
+          /* Show print container elements */
+          .price-list-print-container, .price-list-print-container * {
+            visibility: visible !important;
           }
 
           .price-list-print-container {
             display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 210mm !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
             padding: 0 !important;
             background: white !important;
           }
