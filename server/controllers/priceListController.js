@@ -84,6 +84,19 @@ const priceListController = {
     }
   },
 
+  reorderCategories: async (req, res, next) => {
+    try {
+      const { orders } = req.body;
+      if (!Array.isArray(orders)) {
+        return res.status(400).json({ success: false, message: 'orders array is required' });
+      }
+      await priceListService.reorderCategories(orders);
+      res.json({ success: true, message: 'Categories reordered successfully' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   getAvailableItems: async (req, res, next) => {
     try {
       const data = await priceListService.getAvailableItems();

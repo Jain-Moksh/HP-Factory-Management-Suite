@@ -9,6 +9,7 @@ router.put('/date', priceListController.updateDate);
 // Category Actions
 router.post('/categories', priceListController.createCategory);
 router.delete('/categories/:id', priceListController.deleteCategory);
+router.put('/categories/order', priceListController.reorderCategories);
 
 // Item Assignments in Categories
 router.get('/available-items', priceListController.getAvailableItems);

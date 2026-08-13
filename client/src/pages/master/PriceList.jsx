@@ -30,6 +30,10 @@ const PriceList = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [categoryError, setCategoryError] = useState('');
 
+  // --- Category drag reordering state ---
+  const [draggedCategoryId, setDraggedCategoryId] = useState(null);
+  const [categoryDragId, setCategoryDragId] = useState(null);
+
   // --- Item Selector Modal State ---
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
@@ -173,6 +177,63 @@ const PriceList = () => {
       } catch (err) {
         alert('Network error while deleting category');
       }
+    }
+  };
+
+  const handleMoveCategory = (draggedId, targetId) => {
+    const reordered = [...categories];
+    const draggedIdx = reordered.findIndex(c => c.id === draggedId);
+    const targetIdx = reordered.findIndex(c => c.id === targetId);
+    if (draggedIdx !== -1 && targetIdx !== -1) {
+      const [dragged] = reordered.splice(draggedIdx, 1);
+      reordered.splice(targetIdx, 0, dragged);
+      
+      setCategories(reordered);
+      
+      const orders = reordered.map((cat, idx) => ({
+        categoryId: cat.id,
+        order: idx + 1
+      }));
+      
+      persistCategoryOrder(orders);
+    }
+  };
+
+  const handleMoveCategoryIndex = (index, direction, e) => {
+    e.stopPropagation();
+    const reordered = [...categories];
+    const targetIdx = index + direction;
+    if (targetIdx >= 0 && targetIdx < reordered.length) {
+      const temp = reordered[index];
+      reordered[index] = reordered[targetIdx];
+      reordered[targetIdx] = temp;
+      
+      setCategories(reordered);
+      
+      const orders = reordered.map((cat, idx) => ({
+        categoryId: cat.id,
+        order: idx + 1
+      }));
+      
+      persistCategoryOrder(orders);
+    }
+  };
+
+  const persistCategoryOrder = async (orders) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/price-list/categories/order`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orders })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        await fetchPriceList();
+        alert(result.message || 'Failed to update category order');
+      }
+    } catch (err) {
+      console.error('Failed to save category order:', err);
+      await fetchPriceList();
     }
   };
 
@@ -439,8 +500,32 @@ const PriceList = () => {
                 </div>
               </div>
             ) : (
-              categories.map(cat => (
-                <div key={cat.id} className="print-card bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
+              categories.map((cat, idx) => (
+                <div 
+                  key={cat.id} 
+                  draggable={categoryDragId === cat.id}
+                  onDragStart={(e) => {
+                    setDraggedCategoryId(cat.id);
+                    e.dataTransfer.setData('text/plain', cat.id);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const droppedId = e.dataTransfer.getData('text/plain') || draggedCategoryId;
+                    if (droppedId && droppedId !== cat.id) {
+                      handleMoveCategory(droppedId, cat.id);
+                    }
+                    setDraggedCategoryId(null);
+                    setCategoryDragId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedCategoryId(null);
+                    setCategoryDragId(null);
+                  }}
+                  className="print-card bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden"
+                >
                   
                   {/* Category Header Card */}
                   <div 
@@ -448,6 +533,36 @@ const PriceList = () => {
                     className="px-5 py-3.5 bg-slate-50 border-b border-border-soft flex items-center justify-between cursor-pointer select-none hover:bg-slate-100/50 transition-colors duration-150"
                   >
                     <div className="flex items-center gap-3">
+                      {/* Drag Handle ☰ */}
+                      <span 
+                        className="cursor-grab hover:text-brand-blue text-text-light mr-1 font-bold text-lg select-none no-print"
+                        onMouseDown={() => setCategoryDragId(cat.id)}
+                        onMouseUp={() => setCategoryDragId(null)}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        ☰
+                      </span>
+
+                      {/* Category Reordering Arrow Buttons */}
+                      <div className="flex items-center gap-1 mr-2 no-print">
+                        <button
+                          disabled={idx === 0}
+                          onClick={(e) => handleMoveCategoryIndex(idx, -1, e)}
+                          className="w-5 h-5 rounded border border-border-soft bg-white text-slate-500 hover:bg-slate-100 flex items-center justify-center text-[10px] font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-all"
+                          title="Move Up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          disabled={idx === categories.length - 1}
+                          onClick={(e) => handleMoveCategoryIndex(idx, 1, e)}
+                          className="w-5 h-5 rounded border border-border-soft bg-white text-slate-500 hover:bg-slate-100 flex items-center justify-center text-[10px] font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-all"
+                          title="Move Down"
+                        >
+                          ▼
+                        </button>
+                      </div>
+
                       <span className="text-text-secondary text-[11px] font-bold no-print">
                         {cat.expanded ? '▼' : '▶'}
                       </span>
@@ -492,6 +607,7 @@ const PriceList = () => {
                             <tr className="bg-slate-50/50 border-b border-border-soft text-[10px] uppercase font-bold text-text-secondary no-print">
                               <th className="px-5 py-2 w-12 text-center">Pos</th>
                               <th className="px-5 py-2">Item Name</th>
+                              <th className="px-5 py-2 w-32 text-center">Packaging</th>
                               <th className="px-5 py-2 w-36 text-center">Unit</th>
                               <th className="px-5 py-2 w-44 text-right">Rate (₹)</th>
                               <th className="px-5 py-2 w-28 text-center">Reorder</th>
@@ -500,6 +616,7 @@ const PriceList = () => {
                             <tr className="hidden print:table-row">
                               <th className="px-5 py-2 text-left">Pos</th>
                               <th className="px-5 py-2 text-left">Item Name</th>
+                              <th className="px-5 py-2 text-center">Packaging</th>
                               <th className="px-5 py-2 text-center">Unit</th>
                               <th className="px-5 py-2 text-right">Rate</th>
                             </tr>
@@ -520,6 +637,11 @@ const PriceList = () => {
                                 <td className="px-5 py-2 font-bold uppercase tracking-tight border-r border-border-soft">
                                   <span className="no-print mr-2 text-text-light opacity-50">☰</span>
                                   {item.name}
+                                </td>
+
+                                {/* Packaging */}
+                                <td className="px-5 py-2 text-center border-r border-border-soft text-[11px] font-bold text-text-secondary uppercase">
+                                  {item.packing || '-'}
                                 </td>
 
                                 {/* Unit */}
@@ -676,7 +798,7 @@ const PriceList = () => {
                         {item.name}
                       </div>
                       <div className="text-[10.5px] font-black text-brand-blue text-right shrink-0">
-                        ₹{parseFloat(item.rate || 0).toLocaleString()} / {item.unit}
+                        ₹{parseFloat(item.rate || 0).toLocaleString()} / {item.unit} {item.packing ? `(${item.packing})` : ''}
                       </div>
                     </div>
                   </label>

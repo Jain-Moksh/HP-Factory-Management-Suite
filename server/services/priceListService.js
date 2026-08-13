@@ -32,6 +32,7 @@ const priceListService = {
           name: item.name,
           rate: Number(item.rate),
           unit: item.unit,
+          packing: item.packing,
           display_order: item.display_order
         }))
       });
@@ -143,6 +144,26 @@ const priceListService = {
       // orders: Array of { itemId, order }
       for (const entry of orders) {
         await client.query(queries.updateItemOrder, [entry.order, categoryId, entry.itemId]);
+      }
+
+      await client.query('COMMIT');
+      return { success: true };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
+  reorderCategories: async (orders) => {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // orders: Array of { categoryId, order }
+      for (const entry of orders) {
+        await client.query(queries.updateCategoryOrder, [entry.order, entry.categoryId]);
       }
 
       await client.query('COMMIT');

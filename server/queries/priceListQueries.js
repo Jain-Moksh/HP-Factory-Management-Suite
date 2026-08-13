@@ -9,6 +9,7 @@ const priceListQueries = {
             i.name,
             i.rate,
             i.unit,
+            i.packing,
             pli.display_order
         FROM price_list_items pli
         JOIN items i ON pli.item_id = i.id
@@ -20,6 +21,7 @@ const priceListQueries = {
     getNextCategoryOrder: 'SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM price_list_categories WHERE price_list_id = 1',
     createCategory: 'INSERT INTO price_list_categories (price_list_id, category_name, display_order) VALUES (1, $1, $2) RETURNING *',
     deleteCategory: 'DELETE FROM price_list_categories WHERE id = $1 RETURNING *',
+    updateCategoryOrder: 'UPDATE price_list_categories SET display_order = $1 WHERE id = $2 AND price_list_id = 1 RETURNING *',
     
     checkItemAssigned: 'SELECT price_list_category_id FROM price_list_items WHERE item_id = $1',
     clearCategoryItems: 'DELETE FROM price_list_items WHERE price_list_category_id = $1',
