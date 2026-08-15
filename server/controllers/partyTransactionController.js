@@ -170,6 +170,27 @@ const partyTransactionController = {
       console.error('Error in partyTransactionController.getOutstanding:', err);
       res.status(500).json({ success: false, error: err.message });
     }
+  },
+
+  getHistory: async (req, res) => {
+    try {
+      const { partyType, partyId, from, to } = req.query;
+
+      if (!partyType || !['CLIENT', 'JOBBER'].includes(partyType)) {
+        return res.status(400).json({ success: false, error: 'Query param partyType must be CLIENT or JOBBER.' });
+      }
+
+      const id = parseInt(partyId);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, error: 'Query param partyId is invalid or missing.' });
+      }
+
+      const historyData = await partyTransactionService.getHistory(partyType, id, from, to);
+      res.json({ success: true, data: historyData });
+    } catch (err) {
+      console.error('Error in partyTransactionController.getHistory:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
   }
 };
 

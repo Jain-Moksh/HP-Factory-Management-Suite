@@ -219,6 +219,141 @@ const partyTransactionService = {
     } else {
       throw new Error(`Invalid party type: ${partyType}`);
     }
+  },
+
+  getHistory: async (partyType, partyId, from, to) => {
+    // 1. Calculate dynamic date defaults in server local time
+    const today = new Date();
+    const prevMonthFirstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    
+    const formatDate = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const defaultFrom = formatDate(prevMonthFirstDay);
+    const defaultTo = formatDate(today);
+
+    const finalFrom = from || defaultFrom;
+    const finalTo = to || defaultTo;
+
+    if (partyType === 'CLIENT') {
+      const clientRes = await db.query('SELECT name, balance FROM clients WHERE id = $1', [partyId]);
+      if (clientRes.rows.length === 0) {
+        throw new Error(`Client ID ${partyId} not found.`);
+      }
+      const clientName = clientRes.rows[0].name;
+      const masterOpening = parseFloat(clientRes.rows[0].balance) || 0;
+
+      // Calculate pre-range balance (reconciled outstanding before finalFrom)
+      const preBillingRes = await db.query(
+        'SELECT COALESCE(SUM(grand_total), 0) AS total FROM billing WHERE client_id = $1 AND date < $2',
+        [partyId, finalFrom]
+      );
+      const preTxRes = await db.query(
+        `SELECT 
+            COALESCE(SUM(CASE WHEN transaction_type = 'PAYMENT' THEN amount ELSE 0 END), 0) AS total_payments,
+            COALESCE(SUM(CASE WHEN transaction_type = 'RETURN' THEN amount ELSE 0 END), 0) AS total_returns,
+            COALESCE(SUM(CASE WHEN transaction_type = 'DISCOUNT' THEN amount ELSE 0 END), 0) AS total_discounts
+         FROM party_transactions
+         WHERE party_type = 'CLIENT' AND party_id = $1 AND date < $2`,
+        [partyId, finalFrom]
+      );
+
+      const preBilling = parseFloat(preBillingRes.rows[0].total) || 0;
+      const prePayments = parseFloat(preTxRes.rows[0].total_payments) || 0;
+      const preReturns = parseFloat(preTxRes.rows[0].total_returns) || 0;
+      const preDiscounts = parseFloat(preTxRes.rows[0].total_discounts) || 0;
+
+      const rangeOpeningAmount = masterOpening + preBilling - prePayments - preReturns - preDiscounts;
+
+      // Fetch history records within the range
+      const historyRes = await db.query(queries.getClientHistory, [partyId, finalFrom, finalTo]);
+      const rows = historyRes.rows.map(r => ({
+        challan_no: r.challan_no,
+        transaction_type: r.transaction_type,
+        date: r.date,
+        amount: parseFloat(r.amount) || 0
+      }));
+
+      // Prepend range opening balance
+      rows.unshift({
+        challan_no: '—',
+        transaction_type: `OPENING BALANCE (AS OF ${finalFrom})`,
+        date: '—',
+        amount: rangeOpeningAmount
+      });
+
+      const calculatedOutstanding = rangeOpeningAmount + rows.reduce((sum, r) => {
+        if (r.transaction_type.startsWith('OPENING BALANCE')) return 0;
+        if (r.transaction_type === 'BILLING') {
+          return sum + r.amount;
+        } else {
+          return sum - r.amount;
+        }
+      }, 0);
+
+      return {
+        partyName: clientName,
+        currentOutstanding: calculatedOutstanding,
+        history: rows
+      };
+    } else if (partyType === 'JOBBER') {
+      const jobberRes = await db.query('SELECT name FROM jobbers WHERE id = $1', [partyId]);
+      if (jobberRes.rows.length === 0) {
+        throw new Error(`Jobber ID ${partyId} not found.`);
+      }
+      const jobberName = jobberRes.rows[0].name;
+
+      // Calculate pre-range balance (outstanding before finalFrom, starting with zero baseline)
+      const preTxRes = await db.query(
+        `SELECT 
+            COALESCE(SUM(CASE WHEN transaction_type = 'PAYMENT' THEN amount ELSE 0 END), 0) AS total_payments,
+            COALESCE(SUM(CASE WHEN transaction_type = 'RETURN' THEN amount ELSE 0 END), 0) AS total_returns,
+            COALESCE(SUM(CASE WHEN transaction_type = 'DISCOUNT' THEN amount ELSE 0 END), 0) AS total_discounts
+         FROM party_transactions
+         WHERE party_type = 'JOBBER' AND party_id = $1 AND date < $2`,
+        [partyId, finalFrom]
+      );
+
+      const prePayments = parseFloat(preTxRes.rows[0].total_payments) || 0;
+      const preReturns = parseFloat(preTxRes.rows[0].total_returns) || 0;
+      const preDiscounts = parseFloat(preTxRes.rows[0].total_discounts) || 0;
+
+      const rangeOpeningAmount = 0 - prePayments - preReturns - preDiscounts;
+
+      // Fetch history records within the range
+      const historyRes = await db.query(queries.getJobberHistory, [partyId, finalFrom, finalTo]);
+      const rows = historyRes.rows.map(r => ({
+        challan_no: r.challan_no,
+        transaction_type: r.transaction_type,
+        date: r.date,
+        amount: parseFloat(r.amount) || 0
+      }));
+
+      // Prepend range opening balance
+      rows.unshift({
+        challan_no: '—',
+        transaction_type: `OPENING BALANCE (AS OF ${finalFrom})`,
+        date: '—',
+        amount: rangeOpeningAmount
+      });
+
+      const calculatedOutstanding = rangeOpeningAmount - rows.reduce((sum, r) => {
+        if (r.transaction_type.startsWith('OPENING BALANCE')) return 0;
+        return sum + r.amount;
+      }, 0);
+
+      return {
+        partyName: jobberName,
+        currentOutstanding: calculatedOutstanding,
+        history: rows
+      };
+    } else {
+      throw new Error(`Invalid party type: ${partyType}`);
+    }
   }
 };
 

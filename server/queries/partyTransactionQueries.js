@@ -64,6 +64,48 @@ const partyTransactionQueries = {
             COALESCE(SUM(CASE WHEN transaction_type = 'DISCOUNT' THEN amount ELSE 0 END), 0) as total_discounts
         FROM party_transactions
         WHERE party_type = 'JOBBER' AND party_id = $1
+    `,
+    getClientHistory: `
+        SELECT 
+            'BILLING' AS transaction_type,
+            challan_no,
+            date::TEXT,
+            amount,
+            created_at
+        FROM (
+            SELECT 
+                challan_no,
+                date,
+                grand_total AS amount,
+                created_at
+            FROM billing
+            WHERE client_id = $1
+              AND date >= $2 AND date <= $3
+            
+            UNION ALL
+            
+            SELECT 
+                challan_no,
+                date,
+                amount,
+                created_at
+            FROM party_transactions
+            WHERE party_type = 'CLIENT' AND party_id = $1
+              AND date >= $2 AND date <= $3
+        ) combined_history
+        ORDER BY date ASC, created_at ASC
+    `,
+    getJobberHistory: `
+        SELECT 
+            transaction_type,
+            challan_no,
+            date::TEXT,
+            amount,
+            created_at
+        FROM party_transactions
+        WHERE party_type = 'JOBBER' AND party_id = $1
+          AND date >= $2 AND date <= $3
+        ORDER BY date ASC, created_at ASC
     `
 };
 
