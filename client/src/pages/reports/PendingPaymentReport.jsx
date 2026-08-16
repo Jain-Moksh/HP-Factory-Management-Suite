@@ -37,8 +37,7 @@ const PendingPaymentReport = () => {
           setParties([allOption, ...clientsJson.data]);
         }
         if (groupsJson.success) {
-          const allOption = { id: 'all', name: '--- ALL GROUPS ---' };
-          setGroups([allOption, ...groupsJson.data]);
+          setGroups(groupsJson.data);
         }
       } catch (err) {
         console.error('Error fetching dropdown options:', err);
