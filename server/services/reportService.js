@@ -110,6 +110,14 @@ const reportService = {
     }, {});
 
     return Object.values(grouped);
+  },
+
+  getPendingPaymentReport: async (clientId, groupId) => {
+    const result = await db.query(queries.getPendingPaymentReport, [
+      clientId && clientId !== 'all' ? parseInt(clientId) : null,
+      groupId && groupId !== 'all' ? parseInt(groupId) : null
+    ]);
+    return result.rows;
   }
 };
 

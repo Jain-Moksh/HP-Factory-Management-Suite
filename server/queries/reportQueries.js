@@ -243,6 +243,54 @@ const reportQueries = {
             AND ($2::DATE IS NULL OR b.date >= $2)
             AND ($3::DATE IS NULL OR b.date <= $3)
         ORDER BY c.name ASC, b.date ASC
+    `,
+    getPendingPaymentReport: `
+        SELECT 
+            c.id AS client_id,
+            c.name AS client_name,
+            COALESCE(c.balance, 0) AS opening_balance,
+            COALESCE(b.total_billing, 0) AS total_billing,
+            COALESCE(pt.total_payments, 0) AS total_payments,
+            COALESCE(pt.total_returns, 0) AS total_returns,
+            COALESCE(pt.total_discounts, 0) AS total_discounts,
+            (
+                COALESCE(c.balance, 0) + 
+                COALESCE(b.total_billing, 0) - 
+                COALESCE(pt.total_payments, 0) - 
+                COALESCE(pt.total_returns, 0) - 
+                COALESCE(pt.total_discounts, 0)
+            ) AS pending_amount
+        FROM clients c
+        LEFT JOIN (
+            SELECT client_id, SUM(grand_total) AS total_billing
+            FROM billing
+            GROUP BY client_id
+        ) b ON c.id = b.client_id
+        LEFT JOIN (
+            SELECT 
+                party_id,
+                SUM(CASE WHEN transaction_type = 'PAYMENT' THEN amount ELSE 0 END) AS total_payments,
+                SUM(CASE WHEN transaction_type = 'RETURN' THEN amount ELSE 0 END) AS total_returns,
+                SUM(CASE WHEN transaction_type = 'DISCOUNT' THEN amount ELSE 0 END) AS total_discounts
+            FROM party_transactions
+            WHERE party_type = 'CLIENT'
+            GROUP BY party_id
+        ) pt ON c.id = pt.party_id
+        WHERE ($1::INT IS NULL OR c.id = $1)
+          AND ($2::INT IS NULL OR c.id IN (
+              SELECT member_id 
+              FROM group_members 
+              WHERE member_type = 'client' AND group_id = $2
+          ))
+        GROUP BY c.id, c.name, c.balance, b.total_billing, pt.total_payments, pt.total_returns, pt.total_discounts
+        HAVING (
+            COALESCE(c.balance, 0) + 
+            COALESCE(b.total_billing, 0) - 
+            COALESCE(pt.total_payments, 0) - 
+            COALESCE(pt.total_returns, 0) - 
+            COALESCE(pt.total_discounts, 0)
+        ) > 0
+        ORDER BY pending_amount DESC, c.name ASC
     `
 };
 

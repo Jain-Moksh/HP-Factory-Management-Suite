@@ -154,6 +154,16 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getPendingPaymentReport: async (req, res, next) => {
+    try {
+      const { client_id, group_id } = req.query;
+      const data = await reportService.getPendingPaymentReport(client_id, group_id);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

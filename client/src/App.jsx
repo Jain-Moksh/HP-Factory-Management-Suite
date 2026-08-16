@@ -33,6 +33,7 @@ const JobWorkDetail = lazy(() => import('./pages/reports/JobWorkDetail'));
 const DetailJobReport = lazy(() => import('./pages/reports/DetailJobReport'));
 const JobSummaryReport = lazy(() => import('./pages/reports/JobSummaryReport'));
 const ItemSoldSummary = lazy(() => import('./pages/reports/ItemSoldSummary'));
+const PendingPaymentReport = lazy(() => import('./pages/reports/PendingPaymentReport'));
 const DayBook = lazy(() => import('./pages/DayBook'));
 const Utility = lazy(() => import('./pages/Utility'));
 const BackupManager = lazy(() => import('./pages/utility/BackupManager'));
@@ -163,6 +164,7 @@ function App() {
           <Route path="/reports/detail-job-report" element={<DetailJobReport />} />
           <Route path="/reports/job-summary" element={<JobSummaryReport />} />
           <Route path="/reports/item-sold-summary" element={<ItemSoldSummary />} />
+          <Route path="/reports/pending-payment" element={<PendingPaymentReport />} />
           <Route path="/day-book" element={<DayBook />} />
           <Route path="/utility" element={<Utility />} />
           <Route path="/utility/backup" element={<BackupManager />} />

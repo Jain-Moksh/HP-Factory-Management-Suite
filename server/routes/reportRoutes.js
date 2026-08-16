@@ -16,5 +16,6 @@ router.get('/detail-job-report', reportController.getDetailJobReport);
 router.get('/job-summary', reportController.getJobSummaryReport);
 router.get('/item-sold-summary', reportController.getItemSoldSummary);
 router.get('/group-sales-print', reportController.getGroupSalesPrint);
+router.get('/pending-payment', reportController.getPendingPaymentReport);
 
 module.exports = router;
