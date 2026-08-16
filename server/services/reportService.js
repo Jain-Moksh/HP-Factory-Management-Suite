@@ -162,7 +162,7 @@ const reportService = {
           challan_no,
           date,
           grand_total AS amount,
-          remark,
+          short_remark AS remark,
           NULL AS payment_mode,
           created_at
         FROM billing
