@@ -147,17 +147,23 @@ const reportService = {
     // 4. Fetch chronological transactions within period
     const historyQuery = `
       SELECT 
+        id,
         transaction_type,
         challan_no,
         date::TEXT,
         amount,
+        remark,
+        payment_mode,
         created_at
       FROM (
         SELECT 
+          id,
           'BILLING' AS transaction_type,
           challan_no,
           date,
           grand_total AS amount,
+          remark,
+          NULL AS payment_mode,
           created_at
         FROM billing
         WHERE client_id = $1 AND date >= $2 AND date <= $3
@@ -165,10 +171,13 @@ const reportService = {
         UNION ALL
         
         SELECT 
+          id,
           transaction_type::TEXT,
           challan_no,
           date,
           amount,
+          remark,
+          payment_mode,
           created_at
         FROM party_transactions
         WHERE party_type = 'CLIENT' AND party_id = $1 AND date >= $2 AND date <= $3
@@ -191,7 +200,9 @@ const reportService = {
       date: fromDate,
       credit: 0,
       debit: 0,
-      closing_balance: openingBalance
+      closing_balance: openingBalance,
+      payment_mode: null,
+      remark: null
     });
 
     for (let i = 0; i < historyRows.length; i++) {
@@ -215,13 +226,15 @@ const reportService = {
       }
 
       ledger.push({
-        id: `${type}-${i}-${row.created_at}`,
+        id: `${type}-${row.id}-${row.created_at}`,
         challan_no: row.challan_no || '—',
         transaction_type: type,
         date: row.date,
         credit,
         debit,
-        closing_balance: runningBalance
+        closing_balance: runningBalance,
+        payment_mode: row.payment_mode || null,
+        remark: row.remark || null
       });
     }
 

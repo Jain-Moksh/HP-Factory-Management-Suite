@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
@@ -22,6 +23,7 @@ const PartyLedgerDetail = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [selectedTx, setSelectedTx] = useState(null);
 
   // Printing State
   const [isPrinting, setIsPrinting] = useState(false);
@@ -309,6 +311,13 @@ const PartyLedgerDetail = () => {
                         <td className="px-5 py-1.5 font-bold text-[12px] text-text-primary border-r border-border-soft uppercase tracking-tight">
                           {row.transaction_type === 'BILLING' ? (
                             <ClickableChallan challanNo={row.challan_no} type="billing" />
+                          ) : row.transaction_type !== 'OPENING BALANCE' && row.challan_no && row.challan_no !== '—' ? (
+                            <span
+                              onClick={() => setSelectedTx(row)}
+                              className="text-brand-blue hover:text-brand-blue-hover hover:underline cursor-pointer font-bold tracking-tight uppercase select-none transition-colors"
+                            >
+                              {row.challan_no}
+                            </span>
                           ) : (
                             row.challan_no
                           )}
@@ -406,6 +415,95 @@ const PartyLedgerDetail = () => {
         selectedSize={selectedPaperSize}
         setSelectedSize={setSelectedPaperSize}
       />
+
+      {/* View Transaction Detail Modal Portal */}
+      {selectedTx && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 transition-opacity animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] cursor-pointer" 
+            onClick={() => setSelectedTx(null)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 text-left">
+            
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[11px] ${
+                  selectedTx.transaction_type === 'PAYMENT' ? 'bg-green-100 text-green-700' :
+                  selectedTx.transaction_type === 'REPLACE' ? 'bg-amber-100 text-amber-700' :
+                  'bg-blue-100 text-brand-blue'
+                }`}>
+                  {selectedTx.transaction_type === 'PAYMENT' ? 'PY' : selectedTx.transaction_type === 'REPLACE' ? 'RP' : 'DS'}
+                </div>
+                <div>
+                  <h3 className="text-[13px] font-black text-slate-800 uppercase tracking-wider leading-none mb-1">
+                    {selectedTx.transaction_type} Entry details
+                  </h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                    Challan No: {selectedTx.challan_no}
+                  </p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setSelectedTx(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 flex flex-col gap-4 text-[12px] text-slate-600">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</span>
+                  <span className="font-bold text-slate-800">
+                    {new Date(selectedTx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</span>
+                  <span className="font-bold text-brand-blue">
+                    ₹{(selectedTx.debit || selectedTx.credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                {selectedTx.transaction_type === 'PAYMENT' && (
+                  <div className="flex flex-col col-span-2">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payment Mode</span>
+                    <span className="px-2 py-0.5 bg-slate-200 border border-slate-300 rounded font-black text-slate-800 text-[10px] uppercase tracking-wider inline-block w-fit mt-1">
+                      {selectedTx.payment_mode || 'CASH'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col gap-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Remarks Log</span>
+                <p className="font-bold text-slate-700 italic">
+                  {selectedTx.remark ? `"${selectedTx.remark}"` : 'No remarks recorded'}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedTx(null)}
+                className="px-5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold uppercase rounded-lg active:scale-95 transition-all text-[11px] tracking-widest cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </Layout>
   );
 };
