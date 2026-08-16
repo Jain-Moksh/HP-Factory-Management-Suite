@@ -164,6 +164,18 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getPartyLedgerDetail: async (req, res, next) => {
+    try {
+      const { client_id, from, to } = req.query;
+      if (!client_id) return res.status(400).json({ success: false, message: "client_id is required" });
+      if (!from || !to) return res.status(400).json({ success: false, message: "from and to dates are required" });
+      const data = await reportService.getPartyLedgerDetail(client_id, from, to);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

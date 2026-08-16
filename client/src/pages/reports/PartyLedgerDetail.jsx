@@ -1,0 +1,380 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import Layout from '../../components/Layout';
+import PageHeader from '../../components/PageHeader';
+import MonthFilterFooter from '../../components/MonthFilterFooter';
+import PrintOptionsModal from '../../components/UI/PrintOptionsModal';
+import PrintPartyLedgerDetail from '../../components/PrintPartyLedgerDetail';
+import ClickableChallan from '../../components/UI/ClickableChallan';
+import { useReportState } from '../../hooks/useReportState';
+import { API_BASE_URL } from '../../config';
+
+const PartyLedgerDetail = () => {
+  const { clientId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract date range from URL if present
+  const queryParams = new URLSearchParams(location.search);
+  const initialFrom = queryParams.get('from') || '';
+  const initialTo = queryParams.get('to') || '';
+
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Printing State
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedPaperSize, setSelectedPaperSize] = useState('A4');
+
+  // Parse custom month/year initial state from fromDate URL parameter
+  const getInitialMonthYear = () => {
+    if (initialFrom) {
+      const fromD = new Date(initialFrom);
+      if (!isNaN(fromD.getTime())) {
+        return { month: fromD.getMonth(), year: fromD.getFullYear() };
+      }
+    }
+    return { month: new Date().getMonth(), year: new Date().getFullYear() };
+  };
+
+  const initialMonthYear = getInitialMonthYear();
+
+  // Synchronized state hook
+  const [filters, setFilter, setFiltersObject] = useReportState({
+    from: initialFrom,
+    to: initialTo,
+    month: initialMonthYear.month,
+    year: initialMonthYear.year
+  });
+
+  const startDate = filters.from;
+  const endDate = filters.to;
+  const selectedMonth = filters.month;
+  const selectedYear = filters.year;
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    return [year, month, day].join('-');
+  };
+
+  // Set default dates only on first mount if they don't exist in URL
+  useEffect(() => {
+    if (!filters.from || !filters.to) {
+      const firstDay = new Date(filters.year, filters.month, 1);
+      const lastDay = new Date(filters.year, filters.month + 1, 0);
+      setFiltersObject({
+        from: formatDate(firstDay),
+        to: formatDate(lastDay)
+      });
+    }
+  }, []);
+
+  const handleMonthChange = (month) => {
+    const firstDay = new Date(filters.year, month, 1);
+    const lastDay = new Date(filters.year, month + 1, 0);
+    setFiltersObject({
+      month,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  const handleYearChange = (year) => {
+    const firstDay = new Date(year, filters.month, 1);
+    const lastDay = new Date(year, filters.month + 1, 0);
+    setFiltersObject({
+      year,
+      from: formatDate(firstDay),
+      to: formatDate(lastDay)
+    });
+  };
+
+  // Print lifecycle
+  useEffect(() => {
+    if (isPrinting) {
+      const handleAfterPrint = () => {
+        setIsPrinting(false);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      const timer = setTimeout(() => {
+        window.print();
+      }, 1500);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+    }
+  }, [isPrinting]);
+
+  const fetchData = async () => {
+    if (!startDate || !endDate) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/reports/party-ledger-detail?client_id=${clientId}&from=${startDate}&to=${endDate}`
+      );
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+      }
+    } catch (err) {
+      console.error('Error fetching party ledger detail:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (clientId && startDate && endDate) {
+      fetchData();
+    }
+  }, [clientId, startDate, endDate]);
+
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchData);
+    return () => window.removeEventListener('app-refresh', fetchData);
+  }, [clientId, startDate, endDate]);
+
+  const handlePrintRequest = () => {
+    setShowPrintModal(true);
+  };
+
+  const executePrint = () => {
+    setShowPrintModal(false);
+    setIsPrinting(true);
+  };
+
+  // Compute Ledger Totals for the visible rows
+  const ledgerTotals = useMemo(() => {
+    if (!data || !data.ledger) return { credit: 0, debit: 0 };
+    return data.ledger.reduce(
+      (sums, row) => {
+        sums.credit += parseFloat(row.credit) || 0;
+        sums.debit += parseFloat(row.debit) || 0;
+        return sums;
+      },
+      { credit: 0, debit: 0 }
+    );
+  }, [data]);
+
+  const actions = [
+    {
+      label: 'Print Ledger',
+      onClick: handlePrintRequest,
+      icon: (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+      )
+    }
+  ];
+
+  return (
+    <Layout>
+      <div className="flex flex-col min-h-screen relative pb-24">
+        <PageHeader 
+          title="Party Ledger Statement" 
+          subtitle={data?.client_name ? `DETAILED LEDGER STATEMENT FOR ${data.client_name}` : 'DETAILED LEDGER STATEMENT'}
+          actions={actions}
+          backAction={() => navigate('/reports/party-ledger')}
+        />
+
+        <div className="px-6 flex flex-col gap-4 w-full">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+            <div className="bg-white border border-border-soft rounded-xl p-4 shadow-sm flex flex-col justify-center">
+              <span className="text-[10px] font-black text-text-light uppercase tracking-widest leading-none mb-1.5 opacity-60">Opening Balance (Start of Period)</span>
+              <span className="text-xl font-black text-slate-800">
+                ₹{(data?.opening_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="bg-white border border-border-soft rounded-xl p-4 shadow-sm flex flex-col justify-center">
+              <span className="text-[10px] font-black text-text-light uppercase tracking-widest leading-none mb-1.5 opacity-60">Closing Balance (As of End Date)</span>
+              <span className="text-xl font-black text-brand-blue">
+                ₹{(data?.closing_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="bg-white border border-border-soft rounded-xl px-4 py-2.5 shadow-sm flex items-center justify-between group print:hidden">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 shrink-0 border-r border-border-soft pr-4">
+                <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span className="text-[11px] font-bold text-text-primary uppercase tracking-tight whitespace-nowrap">Filter History</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <input 
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setFilter('from', e.target.value)}
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                />
+                <span className="text-[11px] text-text-light opacity-40 font-bold">TO</span>
+                <input 
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setFilter('to', e.target.value)}
+                  className="h-8 px-2 bg-bg-main/50 border border-divider-soft rounded text-[11px] font-bold text-text-primary uppercase outline-none focus:border-brand-blue transition-all"
+                />
+              </div>
+            </div>
+            
+            <button 
+              onClick={fetchData}
+              disabled={isLoading}
+              className="bg-brand-blue hover:bg-brand-blue-hover text-white text-[11.5px] font-black uppercase tracking-widest px-4 h-8 rounded transition shadow-lg flex items-center gap-1.5 shadow-brand-blue/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              Set Filter
+            </button>
+          </div>
+
+          {/* Ledger Table */}
+          <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-table-header text-white">
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-[24%]">Challan No</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-[16%]">Challan Type</th>
+                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-[18%]">Date</th>
+                    <th className="px-5 py-2 text-right border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-[14%]">Credit</th>
+                    <th className="px-5 py-2 text-right border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider w-[14%]">Debit</th>
+                    <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider w-[14%]">Closing Bal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-soft">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-20 text-center">
+                        <div className="flex items-center justify-center gap-2 text-brand-blue animate-pulse font-bold text-[13px]">
+                          <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                          <span className="uppercase tracking-widest">LOADING LEDGER TRANSACTIONS...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : data && data.ledger.length > 0 ? (
+                    data.ledger.map((row) => (
+                      <tr key={row.id} className="hover:bg-bg-main/30 transition-colors duration-75">
+                        <td className="px-5 py-1.5 font-bold text-[12px] text-text-primary border-r border-border-soft uppercase tracking-tight">
+                          {row.transaction_type === 'BILLING' ? (
+                            <ClickableChallan challanNo={row.challan_no} type="billing" />
+                          ) : (
+                            row.challan_no
+                          )}
+                        </td>
+                        <td className="px-5 py-1.5 text-center border-r border-border-soft">
+                          <span className={`px-2 py-0.5 rounded text-[9px] tracking-wider font-extrabold uppercase ${
+                            row.transaction_type === 'OPENING BALANCE' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
+                            row.transaction_type === 'BILLING' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                            row.transaction_type === 'PAYMENT' ? 'bg-green-50 text-green-700 border border-green-200' :
+                            row.transaction_type === 'REPLACE' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            row.transaction_type === 'DISCOUNT' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            'bg-slate-50 text-slate-700 border border-slate-200'
+                          }`}>
+                            {row.transaction_type}
+                          </span>
+                        </td>
+                        <td className="px-5 py-1.5 text-center text-[12px] font-bold text-text-primary border-r border-border-soft">
+                          {row.date && row.date !== '—' && row.transaction_type !== 'OPENING BALANCE' ? new Date(row.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : row.date}
+                        </td>
+                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-brand-blue border-r border-border-soft">
+                          {row.credit > 0 ? `₹${parseFloat(row.credit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                        </td>
+                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-brand-blue border-r border-border-soft">
+                          {row.debit > 0 ? `₹${parseFloat(row.debit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                        </td>
+                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-brand-blue">
+                          ₹{parseFloat(row.closing_balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center italic text-text-light text-[12px] opacity-60">
+                        No transactions found for this period.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                {data && data.ledger.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-bg-main/50 border-t-2 border-border-soft">
+                      <td colSpan="3" className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft">
+                        Totals / Closing Bal:
+                      </td>
+                      <td className="px-5 py-3 text-right text-[14px] font-black text-brand-blue border-r border-border-soft">
+                        ₹{ledgerTotals.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-5 py-3 text-right text-[14px] font-black text-brand-blue border-r border-border-soft">
+                        ₹{ledgerTotals.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-5 py-3 text-right text-[15px] font-black text-brand-blue">
+                        ₹{data.closing_balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-bg-main/30 border border-border-soft rounded-lg p-3 flex items-start gap-3">
+            <svg className="w-4 h-4 text-brand-blue mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-[11px] text-text-light leading-snug font-medium italic">
+              This statement lists all billing credits, payment debits, replaces, and discount items chronologically. 
+              Clicking a billing challan number displays its complete itemized outwards layout details in a modal view.
+            </p>
+          </div>
+        </div>
+
+        <MonthFilterFooter 
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={handleMonthChange}
+          onYearChange={handleYearChange}
+          recordCount={data?.ledger?.length || 0}
+        />
+      </div>
+
+      {isPrinting && data && (
+        <PrintPartyLedgerDetail 
+          data={data.ledger} 
+          clientName={data.client_name} 
+          startDate={startDate} 
+          endDate={endDate} 
+          paperSize={selectedPaperSize}
+        />
+      )}
+
+      <PrintOptionsModal 
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        onPrint={executePrint}
+        selectedSize={selectedPaperSize}
+        setSelectedSize={setSelectedPaperSize}
+      />
+    </Layout>
+  );
+};
+
+export default PartyLedgerDetail;

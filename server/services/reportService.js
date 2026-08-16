@@ -118,6 +118,119 @@ const reportService = {
       groupId && groupId !== 'all' ? parseInt(groupId) : null
     ]);
     return result.rows;
+  },
+
+  getPartyLedgerDetail: async (clientId, fromDate, toDate) => {
+    // 1. Get client name and static opening balance
+    const clientRes = await db.query('SELECT name, balance FROM clients WHERE id = $1', [clientId]);
+    if (clientRes.rows.length === 0) throw new Error('Client not found');
+    const clientName = clientRes.rows[0].name;
+    const staticBalance = parseFloat(clientRes.rows[0].balance) || 0;
+
+    // 2. Fetch billing total before fromDate
+    const billingBeforeRes = await db.query(
+      'SELECT COALESCE(SUM(grand_total), 0) as total FROM billing WHERE client_id = $1 AND date < $2',
+      [clientId, fromDate]
+    );
+    const totalBillingBefore = parseFloat(billingBeforeRes.rows[0].total) || 0;
+
+    // 3. Fetch transaction totals before fromDate
+    const txBeforeRes = await db.query(
+      "SELECT COALESCE(SUM(amount), 0) as total FROM party_transactions WHERE party_type = 'CLIENT' AND party_id = $1 AND date < $2 AND transaction_type IN ('PAYMENT', 'RETURN', 'DISCOUNT')",
+      [clientId, fromDate]
+    );
+    const totalTxBefore = parseFloat(txBeforeRes.rows[0].total) || 0;
+
+    // Calculate dynamic opening balance as of fromDate
+    const openingBalance = staticBalance + totalBillingBefore - totalTxBefore;
+
+    // 4. Fetch chronological transactions within period
+    const historyQuery = `
+      SELECT 
+        transaction_type,
+        challan_no,
+        date::TEXT,
+        amount,
+        created_at
+      FROM (
+        SELECT 
+          'BILLING' AS transaction_type,
+          challan_no,
+          date,
+          grand_total AS amount,
+          created_at
+        FROM billing
+        WHERE client_id = $1 AND date >= $2 AND date <= $3
+        
+        UNION ALL
+        
+        SELECT 
+          transaction_type::TEXT,
+          challan_no,
+          date,
+          amount,
+          created_at
+        FROM party_transactions
+        WHERE party_type = 'CLIENT' AND party_id = $1 AND date >= $2 AND date <= $3
+      ) combined
+      ORDER BY date ASC, created_at ASC
+    `;
+
+    const historyRes = await db.query(historyQuery, [clientId, fromDate, toDate]);
+    const historyRows = historyRes.rows;
+
+    // 5. Construct chronological ledger rows with running closing balance
+    let runningBalance = openingBalance;
+    const ledger = [];
+
+    // Push the starting Opening Balance row
+    ledger.push({
+      id: 'opening-bal',
+      challan_no: '—',
+      transaction_type: 'OPENING BALANCE',
+      date: fromDate,
+      credit: 0,
+      debit: 0,
+      closing_balance: openingBalance
+    });
+
+    for (let i = 0; i < historyRows.length; i++) {
+      const row = historyRows[i];
+      const amount = parseFloat(row.amount) || 0;
+      let credit = 0;
+      let debit = 0;
+
+      // Map RETURN to REPLACE for UI consistency
+      let type = row.transaction_type;
+      if (type === 'RETURN') {
+        type = 'REPLACE';
+      }
+
+      if (type === 'BILLING') {
+        credit = amount;
+        runningBalance += amount;
+      } else {
+        debit = amount;
+        runningBalance -= amount;
+      }
+
+      ledger.push({
+        id: `${type}-${i}-${row.created_at}`,
+        challan_no: row.challan_no || '—',
+        transaction_type: type,
+        date: row.date,
+        credit,
+        debit,
+        closing_balance: runningBalance
+      });
+    }
+
+    return {
+      client_name: clientName,
+      opening_balance: openingBalance,
+      closing_balance: runningBalance,
+      ledger
+    };
   }
 };
 

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { PAPER_CONFIG } from '../constants/printSettings';
 import { getBasePrintCSS, getReportTableCSS } from '../utils/printUtils';
 
-const PrintPendingPaymentReport = ({ data, clientName, groupName, paperSize = 'A4' }) => {
+const PrintPendingPaymentReport = ({ data, clientName, groupName, paperSize = 'A4', title = 'Pending Payment Report' }) => {
   const config = PAPER_CONFIG[paperSize] || PAPER_CONFIG.A4;
 
   const totalPending = data.reduce((sum, row) => sum + (parseFloat(row.pending_amount) || 0), 0);
@@ -96,7 +96,7 @@ const PrintPendingPaymentReport = ({ data, clientName, groupName, paperSize = 'A
         
         {/* Header */}
         <div className="report-header">
-          <div className="report-title">Pending Payment Report</div>
+          <div className="report-title">{title}</div>
           <div className="date-section">
             <div className="date-info">
               <span>CLIENT :</span> {clientName}
