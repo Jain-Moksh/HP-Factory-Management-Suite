@@ -10,7 +10,7 @@ import { API_BASE_URL } from '../config';
 const CreatePayment = () => {
   const navigate = useNavigate();
 
-  const [transactionType, setTransactionType] = useState('PAYMENT'); // 'PAYMENT', 'RETURN', 'DISCOUNT'
+  const [transactionType, setTransactionType] = useState('PAYMENT'); // 'PAYMENT', 'REPLACE', 'DISCOUNT'
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -282,10 +282,10 @@ const CreatePayment = () => {
           title: "Create Payment",
           subtitle: "RECORD NEW JOBBER PAYMENT AND TRACK PENDING SETTLEMENTS"
         };
-      case 'RETURN':
+      case 'REPLACE':
         return {
-          title: "Create Return",
-          subtitle: "RECORD JOBBER GOODS RETURN AND OUTSTANDING SETTLEMENTS"
+          title: "Create Replace",
+          subtitle: "RECORD JOBBER GOODS REPLACE AND OUTSTANDING SETTLEMENTS"
         };
       case 'DISCOUNT':
         return {
@@ -325,13 +325,13 @@ const CreatePayment = () => {
             </button>
             <button 
               onClick={() => {
-                setTransactionType('RETURN');
+                setTransactionType('REPLACE');
                 setError('');
                 setSuccess(false);
               }}
-              className={`flex-1 py-1.5 rounded-lg text-[10.5px] font-bold uppercase tracking-widest transition-all ${transactionType === 'RETURN' ? 'bg-white text-brand-blue shadow-sm border border-border-soft/30' : 'text-text-primary hover:text-brand-blue'}`}
+              className={`flex-1 py-1.5 rounded-lg text-[10.5px] font-bold uppercase tracking-widest transition-all ${transactionType === 'REPLACE' ? 'bg-white text-brand-blue shadow-sm border border-border-soft/30' : 'text-text-primary hover:text-brand-blue'}`}
             >
-              Return
+              Replace
             </button>
             <button 
               onClick={() => {
@@ -418,7 +418,7 @@ const CreatePayment = () => {
                 <div className="flex flex-col gap-1.5 col-span-2">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5 text-left">
                     {transactionType === 'PAYMENT' && 'AMOUNT PAID (₹)'}
-                    {transactionType === 'RETURN' && 'RETURN AMOUNT (₹)'}
+                    {transactionType === 'REPLACE' && 'REPLACE AMOUNT (₹)'}
                     {transactionType === 'DISCOUNT' && 'DISCOUNT AMOUNT (₹)'}
                   </label>
                   <div className="flex gap-2">
@@ -490,7 +490,7 @@ const CreatePayment = () => {
             <div className="flex-[3] relative group">
               <label className="absolute -top-2 left-3 px-1.5 bg-[#f8fafc] text-[9px] font-bold text-text-primary uppercase tracking-widest group-focus-within:text-brand-blue transition-colors z-10">
                 {transactionType === 'PAYMENT' && 'Internal Payment Remarks'}
-                {transactionType === 'RETURN' && 'Internal Return Remarks'}
+                {transactionType === 'REPLACE' && 'Internal Replace Remarks'}
                 {transactionType === 'DISCOUNT' && 'Internal Discount Remarks'}
               </label>
               <textarea 
@@ -512,7 +512,7 @@ const CreatePayment = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
                 {transactionType === 'PAYMENT' && 'SAVE PAYMENT'}
-                {transactionType === 'RETURN' && 'SAVE RETURN'}
+                {transactionType === 'REPLACE' && 'SAVE REPLACE'}
                 {transactionType === 'DISCOUNT' && 'SAVE DISCOUNT'}
               </button>
               <button 
@@ -624,7 +624,7 @@ const CreatePayment = () => {
                                   <span className={`px-2 py-0.5 rounded text-[9.5px] tracking-wider font-extrabold uppercase ${
                                     row.transaction_type === 'BILLING' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                                     row.transaction_type === 'PAYMENT' ? 'bg-green-50 text-green-700 border border-green-200' :
-                                    row.transaction_type === 'RETURN' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                    row.transaction_type === 'REPLACE' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                                     row.transaction_type === 'DISCOUNT' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                                     'bg-slate-50 text-slate-700 border border-slate-200'
                                   }`}>

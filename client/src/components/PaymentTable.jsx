@@ -31,7 +31,7 @@ const PaymentTable = ({ data = [], loading = false, onDelete }) => {
                 <td className="px-5 py-1.5 border-x border-border-soft text-[10px] font-bold uppercase text-center">
                   <span className={`px-2 py-0.5 rounded text-[9.5px] tracking-wider font-extrabold ${
                     row.transaction_type === 'PAYMENT' ? 'bg-green-50 text-green-700 border border-green-200' :
-                    row.transaction_type === 'RETURN' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    row.transaction_type === 'REPLACE' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                     'bg-blue-50 text-blue-700 border border-blue-200'
                   }`}>
                     {row.transaction_type}

@@ -115,7 +115,7 @@ const Payment = () => {
       <div className="flex flex-col min-h-screen relative pb-16">
         <PageHeader 
           title="Payment & Adjustments" 
-          subtitle="MANAGE AND TRACK ALL PARTY PAYMENTS, RETURNS AND DISCOUNTS" 
+          subtitle="MANAGE AND TRACK ALL PARTY PAYMENTS, REPLACES AND DISCOUNTS" 
           actions={paymentActions}
         />
         
@@ -177,7 +177,7 @@ const Payment = () => {
                 >
                   <option value="ALL">ALL TYPES</option>
                   <option value="PAYMENT">PAYMENT</option>
-                  <option value="RETURN">RETURN</option>
+                  <option value="REPLACE">REPLACE</option>
                   <option value="DISCOUNT">DISCOUNT</option>
                 </select>
               </div>

@@ -1,5 +1,35 @@
 const partyTransactionService = require('../services/partyTransactionService');
 
+const mapTxTypeResponse = (tx) => {
+  if (!tx) return tx;
+  if (Array.isArray(tx)) {
+    return tx.map(mapTxTypeResponse);
+  }
+  const cloned = { ...tx };
+  if (cloned.transaction_type === 'RETURN') {
+    cloned.transaction_type = 'REPLACE';
+  }
+  if (cloned.transactionType === 'RETURN') {
+    cloned.transactionType = 'REPLACE';
+  }
+  return cloned;
+};
+
+const mapHistoryData = (data) => {
+  if (!data) return data;
+  const cloned = { ...data };
+  if (Array.isArray(cloned.history)) {
+    cloned.history = cloned.history.map(row => {
+      const clonedRow = { ...row };
+      if (clonedRow.transaction_type === 'RETURN') {
+        clonedRow.transaction_type = 'REPLACE';
+      }
+      return clonedRow;
+    });
+  }
+  return cloned;
+};
+
 const partyTransactionController = {
   create: async (req, res) => {
     try {
@@ -14,8 +44,8 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Invalid or missing partyId.' });
       }
 
-      if (!transactionType || !['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType)) {
-        return res.status(400).json({ success: false, error: 'Invalid or missing transactionType (must be PAYMENT, RETURN, or DISCOUNT).' });
+      if (!transactionType || !['PAYMENT', 'REPLACE', 'DISCOUNT'].includes(transactionType)) {
+        return res.status(400).json({ success: false, error: 'Invalid or missing transactionType (must be PAYMENT, REPLACE, or DISCOUNT).' });
       }
 
       if (!date || isNaN(Date.parse(date))) {
@@ -33,18 +63,21 @@ const partyTransactionController = {
         }
       }
 
+      // Map REPLACE to RETURN for database / service consistency
+      const mappedTxType = transactionType === 'REPLACE' ? 'RETURN' : transactionType;
+
       // 2. Call service layer
       const tx = await partyTransactionService.create({
         partyType,
         partyId: parseInt(partyId),
-        transactionType,
+        transactionType: mappedTxType,
         date,
         amount: parsedAmount,
         paymentMode: transactionType === 'PAYMENT' ? paymentMode.toUpperCase() : null,
         remark: remark || ''
       });
 
-      res.status(201).json({ success: true, data: tx });
+      res.status(201).json({ success: true, data: mapTxTypeResponse(tx) });
     } catch (err) {
       console.error('Error in partyTransactionController.create:', err);
       res.status(500).json({ success: false, error: err.message });
@@ -54,7 +87,7 @@ const partyTransactionController = {
   getAll: async (req, res) => {
     try {
       const list = await partyTransactionService.getAll();
-      res.json({ success: true, data: list });
+      res.json({ success: true, data: mapTxTypeResponse(list) });
     } catch (err) {
       console.error('Error in partyTransactionController.getAll:', err);
       res.status(500).json({ success: false, error: err.message });
@@ -73,7 +106,7 @@ const partyTransactionController = {
         return res.status(404).json({ success: false, error: 'Transaction not found.' });
       }
 
-      res.json({ success: true, data: tx });
+      res.json({ success: true, data: mapTxTypeResponse(tx) });
     } catch (err) {
       console.error('Error in partyTransactionController.getById:', err);
       res.status(500).json({ success: false, error: err.message });
@@ -105,7 +138,7 @@ const partyTransactionController = {
         remark: remark || ''
       });
 
-      res.json({ success: true, data: tx });
+      res.json({ success: true, data: mapTxTypeResponse(tx) });
     } catch (err) {
       console.error('Error in partyTransactionController.update:', err);
       res.status(500).json({ success: false, error: err.message });
@@ -135,15 +168,16 @@ const partyTransactionController = {
     try {
       const { transactionType, date } = req.query;
 
-      if (!transactionType || !['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType)) {
-        return res.status(400).json({ success: false, error: 'Query param transactionType must be PAYMENT, RETURN, or DISCOUNT.' });
+      if (!transactionType || !['PAYMENT', 'REPLACE', 'DISCOUNT'].includes(transactionType)) {
+        return res.status(400).json({ success: false, error: 'Query param transactionType must be PAYMENT, REPLACE, or DISCOUNT.' });
       }
 
       if (!date || isNaN(Date.parse(date))) {
         return res.status(400).json({ success: false, error: 'Query param date is invalid or missing.' });
       }
 
-      const challan_no = await partyTransactionService.getNextChallan(date, transactionType);
+      const mappedType = transactionType === 'REPLACE' ? 'RETURN' : transactionType;
+      const challan_no = await partyTransactionService.getNextChallan(date, mappedType);
       res.json({ success: true, challan_no });
     } catch (err) {
       console.error('Error in partyTransactionController.getNextChallan:', err);
@@ -186,7 +220,7 @@ const partyTransactionController = {
       }
 
       const historyData = await partyTransactionService.getHistory(partyType, id, from, to);
-      res.json({ success: true, data: historyData });
+      res.json({ success: true, data: mapHistoryData(historyData) });
     } catch (err) {
       console.error('Error in partyTransactionController.getHistory:', err);
       res.status(500).json({ success: false, error: err.message });
