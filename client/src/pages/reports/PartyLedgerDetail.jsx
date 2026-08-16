@@ -206,21 +206,7 @@ const PartyLedgerDetail = () => {
         />
 
         <div className="px-6 flex flex-col gap-4 w-full">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
-            <div className="bg-white border border-border-soft rounded-xl p-4 shadow-sm flex flex-col justify-center">
-              <span className="text-[10px] font-black text-text-light uppercase tracking-widest leading-none mb-1.5 opacity-60">Opening Balance (Start of Period)</span>
-              <span className="text-xl font-black text-slate-800">
-                ₹{(data?.opening_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div className="bg-white border border-border-soft rounded-xl p-4 shadow-sm flex flex-col justify-center">
-              <span className="text-[10px] font-black text-text-light uppercase tracking-widest leading-none mb-1.5 opacity-60">Closing Balance (As of End Date)</span>
-              <span className="text-xl font-black text-brand-blue">
-                ₹{(data?.closing_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
+
 
           {/* Filters Bar */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm p-4 flex flex-wrap items-center gap-6 print:hidden">
