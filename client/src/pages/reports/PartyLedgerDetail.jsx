@@ -206,8 +206,6 @@ const PartyLedgerDetail = () => {
         />
 
         <div className="px-6 flex flex-col gap-4 w-full">
-
-
           {/* Filters Bar */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm p-4 flex flex-wrap items-center gap-6 print:hidden">
             <div className="flex items-center gap-3 pr-6 border-r border-border-soft">
