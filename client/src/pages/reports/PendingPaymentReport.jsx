@@ -102,9 +102,6 @@ const PendingPaymentReport = () => {
     return data.reduce((sum, row) => sum + (parseFloat(row.pending_amount) || 0), 0);
   }, [data]);
 
-  const handleRowClick = (clientId) => {
-    navigate(`/reports/party-billing-detail/${clientId}`);
-  };
 
   const handlePrintRequest = () => {
     setShowPrintModal(true);
@@ -230,8 +227,7 @@ const PendingPaymentReport = () => {
                            data.map((row) => (
                              <tr 
                                key={row.client_id} 
-                               onClick={() => handleRowClick(row.client_id)}
-                               className="hover:bg-bg-main/30 cursor-pointer transition-colors"
+                               className="hover:bg-bg-main/10 transition-colors"
                              >
                                 <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary border-r border-border-soft uppercase tracking-tight">
                                    {row.client_name}
