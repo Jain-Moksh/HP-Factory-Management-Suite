@@ -67,13 +67,14 @@ const partyTransactionQueries = {
     `,
     getClientHistory: `
         SELECT 
-            'BILLING' AS transaction_type,
+            transaction_type,
             challan_no,
             date::TEXT,
             amount,
             created_at
         FROM (
             SELECT 
+                'BILLING'::TEXT AS transaction_type,
                 challan_no,
                 date,
                 grand_total AS amount,
@@ -85,6 +86,7 @@ const partyTransactionQueries = {
             UNION ALL
             
             SELECT 
+                transaction_type::TEXT,
                 challan_no,
                 date,
                 amount,
