@@ -70,7 +70,7 @@ const ItemSoldSummary = () => {
     if (!startDate || !endDate) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/item-sales-summary?from=${startDate}&to=${endDate}`);
+      const response = await fetch(`${API_BASE_URL}/reports/item-sold-summary?from=${startDate}&to=${endDate}`);
       const result = await response.json();
       if (result.success) {
         setData(result.data);
