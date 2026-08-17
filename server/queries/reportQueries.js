@@ -198,20 +198,31 @@ const reportQueries = {
             pi.id ASC;
     `,
 
-    // 13. Job Summary Report (Aggregate by jobber and item for a period)
     getJobSummaryReport: `
         SELECT 
-            j.name AS jobber_name, 
-            i.name AS item_name, 
-            SUM(pi.quantity) AS total_quantity
-        FROM purchase p
-        JOIN jobbers j ON p.jobber_id = j.id
-        JOIN purchase_items pi ON p.id = pi.purchase_id
-        JOIN items i ON pi.item_id = i.id
-        WHERE ($1::DATE IS NULL OR p.date >= $1)
-          AND ($2::DATE IS NULL OR p.date <= $2)
-        GROUP BY j.name, i.name
-        ORDER BY j.name ASC, i.name ASC;
+            i.name AS item_name,
+            COALESCE(p_sub.inward_qty, 0) AS inward_pcs,
+            COALESCE(b_sub.outward_qty, 0) AS outward_pcs,
+            0 AS loss_pcs,
+            (COALESCE(p_sub.inward_qty, 0) - COALESCE(b_sub.outward_qty, 0)) AS pending_pcs
+        FROM items i
+        LEFT JOIN (
+            SELECT pi.item_id, SUM(pi.quantity) AS inward_qty
+            FROM purchase_items pi
+            JOIN purchase p ON pi.purchase_id = p.id
+            WHERE ($1::DATE IS NULL OR p.date >= $1)
+              AND ($2::DATE IS NULL OR p.date <= $2)
+            GROUP BY pi.item_id
+        ) p_sub ON i.id = p_sub.item_id
+        LEFT JOIN (
+            SELECT bi.item_id, SUM(bi.quantity) AS outward_qty
+            FROM billing_items bi
+            JOIN billing b ON bi.billing_id = b.id
+            WHERE ($1::DATE IS NULL OR b.date >= $1)
+              AND ($2::DATE IS NULL OR b.date <= $2)
+            GROUP BY bi.item_id
+        ) b_sub ON i.id = b_sub.item_id
+        ORDER BY i.name ASC;
     `,
 
     // 14. Item Sold Summary Report (Aggregate by item for a period)
