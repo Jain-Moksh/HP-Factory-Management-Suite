@@ -32,13 +32,14 @@ const partyTransactionQueries = {
     `,
     updateTransaction: `
         UPDATE party_transactions SET 
-            date = $1, 
-            amount = $2, 
-            payment_mode = $3, 
-            remark = $4,
-            challan_no = $5,
+            transaction_type = $1,
+            date = $2, 
+            amount = $3, 
+            payment_mode = $4, 
+            remark = $5,
+            challan_no = $6,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = $6 
+        WHERE id = $7 
         RETURNING *
     `,
     deleteTransaction: `

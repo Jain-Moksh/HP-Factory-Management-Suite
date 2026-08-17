@@ -102,7 +102,7 @@ const partyTransactionService = {
     try {
       await client.query('BEGIN');
 
-      const { date, amount, paymentMode, remark } = txData;
+      const { transactionType, date, amount, paymentMode, remark } = txData;
 
       // 1. Fetch existing transaction record
       const oldTxRes = await client.query('SELECT * FROM party_transactions WHERE id = $1', [id]);
@@ -111,19 +111,20 @@ const partyTransactionService = {
       }
       const oldTx = oldTxRes.rows[0];
 
-      // 2. Re-evaluate Challan No if date shifted
+      // 2. Re-evaluate Challan No if date shifted or type changed
       let final_challan_no = oldTx.challan_no;
       const oldDateData = getMonthAndFY(oldTx.date);
       const newDateData = getMonthAndFY(date);
 
-      if (oldDateData.monthNum !== newDateData.monthNum || oldDateData.fyRange !== newDateData.fyRange) {
+      if (oldTx.transaction_type !== transactionType || oldDateData.monthNum !== newDateData.monthNum || oldDateData.fyRange !== newDateData.fyRange) {
         await client.query('LOCK TABLE party_transactions IN SHARE ROW EXCLUSIVE MODE');
-        final_challan_no = await getFormattedTransactionChallan(date, oldTx.transaction_type, client, id);
+        final_challan_no = await getFormattedTransactionChallan(date, transactionType, client, id);
       }
 
       // 3. Update transaction record
-      const finalPaymentMode = oldTx.transaction_type === 'PAYMENT' ? toUpperCase(paymentMode) : null;
+      const finalPaymentMode = transactionType === 'PAYMENT' ? toUpperCase(paymentMode) : null;
       const updateRes = await client.query(queries.updateTransaction, [
+        transactionType,
         date,
         amount,
         finalPaymentMode,

@@ -5,7 +5,8 @@ const SearchableSelect = ({
   value = '', 
   onChange, 
   placeholder = "Search...", 
-  className = "" 
+  className = "",
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,10 +42,11 @@ const SearchableSelect = ({
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
       <div 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`
           relative w-full h-8 px-3 bg-bg-main/50 border border-divider-soft rounded flex items-center gap-2 transition-all
           ${isOpen ? 'border-brand-blue ring-1 ring-brand-blue/10 bg-white shadow-sm' : 'hover:bg-bg-main/80'}
+          ${disabled ? 'opacity-60 cursor-not-allowed bg-slate-100/50' : 'cursor-pointer'}
           ${className}
         `}
       >

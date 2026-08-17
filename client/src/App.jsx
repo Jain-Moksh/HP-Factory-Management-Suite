@@ -153,6 +153,7 @@ function App() {
           <Route path="/create-job-work/:id" element={<CreateJobWork />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/create-payment" element={<CreatePayment />} />
+          <Route path="/create-payment/:id" element={<CreatePayment />} />
           
           {/* Reports Routes */}
           <Route path="/reports" element={<ReportsDashboard />} />

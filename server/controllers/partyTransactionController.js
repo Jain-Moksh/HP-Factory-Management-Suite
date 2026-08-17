@@ -120,7 +120,11 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Invalid transaction ID.' });
       }
 
-      const { date, amount, paymentMode, remark } = req.body;
+      const { transactionType, date, amount, paymentMode, remark } = req.body;
+
+      if (!transactionType || !['PAYMENT', 'REPLACE', 'DISCOUNT'].includes(transactionType)) {
+        return res.status(400).json({ success: false, error: 'Invalid or missing transactionType (must be PAYMENT, REPLACE, or DISCOUNT).' });
+      }
 
       if (!date || isNaN(Date.parse(date))) {
         return res.status(400).json({ success: false, error: 'Invalid or missing date.' });
@@ -131,10 +135,20 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Amount must be a valid number greater than 0.' });
       }
 
+      if (transactionType === 'PAYMENT') {
+        if (!paymentMode || !['BANK', 'CASH'].includes(paymentMode.toUpperCase())) {
+          return res.status(400).json({ success: false, error: 'paymentMode must be BANK or CASH for PAYMENT transaction types.' });
+        }
+      }
+
+      // Map REPLACE to RETURN for database / service consistency
+      const mappedTxType = transactionType === 'REPLACE' ? 'RETURN' : transactionType;
+
       const tx = await partyTransactionService.update(id, {
+        transactionType: mappedTxType,
         date,
         amount: parsedAmount,
-        paymentMode: paymentMode ? paymentMode.toUpperCase() : null,
+        paymentMode: transactionType === 'PAYMENT' ? paymentMode.toUpperCase() : null,
         remark: remark || ''
       });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
@@ -9,6 +9,12 @@ import { API_BASE_URL } from '../config';
 
 const CreatePayment = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
+
+  const [originalTransactionType, setOriginalTransactionType] = useState('');
+  const [originalDate, setOriginalDate] = useState('');
+  const [originalChallanNo, setOriginalChallanNo] = useState('');
 
   const [transactionType, setTransactionType] = useState('PAYMENT'); // 'PAYMENT', 'REPLACE', 'DISCOUNT'
   
@@ -87,6 +93,45 @@ const CreatePayment = () => {
     
     fetchPartiesAndJobbers();
   }, []);
+
+  // Fetch existing transaction details in Edit Mode
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchTransaction = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/party-transactions/${id}`);
+          const result = await response.json();
+          if (result.success) {
+            const tx = result.data;
+            setTransactionType(tx.transaction_type);
+            setOriginalTransactionType(tx.transaction_type);
+            setOriginalDate(tx.date);
+            setOriginalChallanNo(tx.challan_no);
+
+            // Capitalize paymentMode to match Toggle casing (e.g. BANK -> Bank)
+            let initialPaymentMode = 'Bank';
+            if (tx.payment_mode) {
+              initialPaymentMode = tx.payment_mode.charAt(0).toUpperCase() + tx.payment_mode.slice(1).toLowerCase();
+            }
+
+            setFormData({
+              date: tx.date,
+              partyId: `${tx.party_type.toLowerCase()}_${tx.party_id}`,
+              amount: tx.amount.toString(),
+              paymentMode: initialPaymentMode,
+              remarks: tx.remark || ''
+            });
+          } else {
+            setError(result.error || 'Failed to fetch transaction details.');
+          }
+        } catch (err) {
+          console.error('Error fetching transaction:', err);
+          setError('Network error: failed to fetch transaction details.');
+        }
+      };
+      fetchTransaction();
+    }
+  }, [id, isEditMode]);
 
   // Fetch outstanding balance dynamically when party changes
   useEffect(() => {
@@ -241,8 +286,14 @@ const CreatePayment = () => {
         remark: formData.remarks
       };
 
-      const response = await fetch(`${API_BASE_URL}/party-transactions`, {
-        method: 'POST',
+      const url = isEditMode 
+        ? `${API_BASE_URL}/party-transactions/${id}`
+        : `${API_BASE_URL}/party-transactions`;
+
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -259,7 +310,7 @@ const CreatePayment = () => {
           navigate('/payment');
         }, 1500);
       } else {
-        setError(json.error || 'Failed to save transaction.');
+        setError(json.error || `Failed to ${isEditMode ? 'update' : 'save'} transaction.`);
       }
     } catch (err) {
       console.error('Error saving transaction:', err);
@@ -274,33 +325,43 @@ const CreatePayment = () => {
   const parsedAmount = parseFloat(formData.amount) || 0;
   const closingBalance = openingPendingBalance - parsedAmount;
 
-  // Dynamic header strings based on selected transaction mode
   const getHeaderInfo = () => {
+    const prefix = isEditMode ? "Edit" : "Create";
     switch (transactionType) {
       case 'PAYMENT':
         return {
-          title: "Create Payment",
-          subtitle: "RECORD NEW JOBBER PAYMENT AND TRACK PENDING SETTLEMENTS"
+          title: `${prefix} Payment`,
+          subtitle: isEditMode 
+            ? "MODIFY EXISTING TRANSACTION DETAILS AND BALANCES" 
+            : "RECORD NEW JOBBER PAYMENT AND TRACK PENDING SETTLEMENTS"
         };
       case 'REPLACE':
         return {
-          title: "Create Replace",
-          subtitle: "RECORD JOBBER GOODS REPLACE AND OUTSTANDING SETTLEMENTS"
+          title: `${prefix} Replace`,
+          subtitle: isEditMode 
+            ? "MODIFY EXISTING REPLACE TRANSACTION AND BALANCES"
+            : "RECORD JOBBER GOODS REPLACE AND OUTSTANDING SETTLEMENTS"
         };
       case 'DISCOUNT':
         return {
-          title: "Create Discount",
-          subtitle: "RECORD PARTY DISCOUNT AND ADJUST BALANCES"
+          title: `${prefix} Discount`,
+          subtitle: isEditMode 
+            ? "MODIFY EXISTING DISCOUNT ADJUSTMENT AND BALANCES"
+            : "RECORD PARTY DISCOUNT AND ADJUST BALANCES"
         };
       default:
         return {
-          title: "Create Payment",
+          title: `${prefix} Payment`,
           subtitle: "RECORD NEW JOBBER PAYMENT AND TRACK PENDING SETTLEMENTS"
         };
     }
   };
 
   const headerInfo = getHeaderInfo();
+
+  const displayedChallan = isEditMode && transactionType === originalTransactionType && formData.date === originalDate
+    ? originalChallanNo
+    : nextChallan;
 
   return (
     <Layout>
@@ -354,7 +415,7 @@ const CreatePayment = () => {
 
           {success && (
             <div className="text-xs font-bold text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 text-left uppercase tracking-tight animate-in fade-in slide-in-from-top-1 duration-200">
-              🎉 {transactionType} saved successfully! Redirecting...
+              🎉 {transactionType} {isEditMode ? 'updated' : 'saved'} successfully! Redirecting...
             </div>
           )}
 
@@ -364,7 +425,7 @@ const CreatePayment = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Challan No</label>
                 <div className="w-full h-9 px-3 bg-bg-main/50 border border-border-soft rounded-lg text-[12.5px] font-bold text-text-primary flex items-center shadow-sm select-none">
-                  {nextChallan || 'Loading...'}
+                  {displayedChallan || 'Loading...'}
                 </div>
               </div>
               <div className="flex flex-col gap-1">
@@ -385,6 +446,7 @@ const CreatePayment = () => {
                   onChange={(val) => setFormData(prev => ({ ...prev, partyId: val }))}
                   placeholder="Search Party / Jobber Database..."
                   className="w-full"
+                  disabled={isEditMode}
                 />
               </div>
             </div>
@@ -511,9 +573,9 @@ const CreatePayment = () => {
                 <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                {transactionType === 'PAYMENT' && 'SAVE PAYMENT'}
-                {transactionType === 'REPLACE' && 'SAVE REPLACE'}
-                {transactionType === 'DISCOUNT' && 'SAVE DISCOUNT'}
+                {transactionType === 'PAYMENT' && (isEditMode ? 'UPDATE PAYMENT' : 'SAVE PAYMENT')}
+                {transactionType === 'REPLACE' && (isEditMode ? 'UPDATE REPLACE' : 'SAVE REPLACE')}
+                {transactionType === 'DISCOUNT' && (isEditMode ? 'UPDATE DISCOUNT' : 'SAVE DISCOUNT')}
               </button>
               <button 
                 onClick={() => navigate('/payment')}

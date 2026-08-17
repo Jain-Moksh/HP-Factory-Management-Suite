@@ -110,6 +110,10 @@ const Payment = () => {
     }
   ];
 
+  const handleEdit = (id) => {
+    navigate(`/create-payment/${id}`);
+  };
+
   return (
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-16">
@@ -204,7 +208,7 @@ const Payment = () => {
             </div>
           </div>
 
-          <PaymentTable data={filteredPayments} loading={isLoading} onDelete={handleDelete} />
+          <PaymentTable data={filteredPayments} loading={isLoading} onDelete={handleDelete} onEdit={handleEdit} />
         </div>
 
         <MonthFilterFooter 
