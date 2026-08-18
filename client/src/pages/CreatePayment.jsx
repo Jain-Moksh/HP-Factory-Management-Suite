@@ -22,7 +22,7 @@ const CreatePayment = () => {
     date: new Date().toISOString().split('T')[0],
     partyId: '', // client_[id] or jobber_[id]
     amount: '',  // Represents amountPaid, amountReturned, or discountAmount
-    paymentMode: 'Bank', // Bank or Cash (for Payment mode)
+    paymentMode: 'Cash', // Bank or Cash (for Payment mode)
     remarks: ''
   });
 
@@ -68,7 +68,7 @@ const CreatePayment = () => {
         if (clientsJson.success && Array.isArray(clientsJson.data)) {
           clientOptions = clientsJson.data.map(c => ({
             id: `client_${c.id}`,
-            name: `${c.name} [CLIENT]`,
+            name: c.name,
             shortform: c.shortform || '',
             type: 'client',
             originalId: c.id
@@ -78,7 +78,7 @@ const CreatePayment = () => {
         if (jobbersJson.success && Array.isArray(jobbersJson.data)) {
           jobberOptions = jobbersJson.data.map(j => ({
             id: `jobber_${j.id}`,
-            name: `${j.name} [JOBBER]`,
+            name: j.name,
             shortform: '',
             type: 'jobber',
             originalId: j.id
@@ -109,7 +109,7 @@ const CreatePayment = () => {
             setOriginalChallanNo(tx.challan_no);
 
             // Capitalize paymentMode to match Toggle casing (e.g. BANK -> Bank)
-            let initialPaymentMode = 'Bank';
+            let initialPaymentMode = 'Cash';
             if (tx.payment_mode) {
               initialPaymentMode = tx.payment_mode.charAt(0).toUpperCase() + tx.payment_mode.slice(1).toLowerCase();
             }
@@ -471,9 +471,6 @@ const CreatePayment = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[9px] font-bold text-brand-blue bg-brand-blue/5 px-2.5 py-1 rounded border border-brand-blue/10 uppercase tracking-widest">
-                  Real-time Ledger Sync
-                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
@@ -497,16 +494,16 @@ const CreatePayment = () => {
                     {transactionType === 'PAYMENT' && (
                       <div className="flex p-0.5 bg-bg-main rounded-lg border border-border-soft h-9 shrink-0">
                         <button 
-                          onClick={() => togglePaymentMode('Bank')}
-                          className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Bank' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
-                        >
-                          Bank
-                        </button>
-                        <button 
                           onClick={() => togglePaymentMode('Cash')}
                           className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Cash' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
                         >
                           Cash
+                        </button>
+                        <button 
+                          onClick={() => togglePaymentMode('Bank')}
+                          className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Bank' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
+                        >
+                          Bank
                         </button>
                       </div>
                     )}
@@ -690,7 +687,7 @@ const CreatePayment = () => {
                                     row.transaction_type === 'DISCOUNT' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                                     'bg-slate-50 text-slate-700 border border-slate-200'
                                   }`}>
-                                    {row.transaction_type}
+                                    {row.transaction_type === 'BILLING' ? 'SALES' : row.transaction_type}
                                   </span>
                                 </td>
                                 <td className="px-4 py-2.5 text-center font-bold text-slate-600">

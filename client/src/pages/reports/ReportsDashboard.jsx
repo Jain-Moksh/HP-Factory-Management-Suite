@@ -22,7 +22,7 @@ const ReportsDashboard = () => {
           color: 'bg-orange-500'
         },
         {
-          title: 'Detail Job',
+          title: 'Job Summary Report',
           description: 'Detailed inward stock movement report from Job Work entries.',
           icon: (
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +33,7 @@ const ReportsDashboard = () => {
           color: 'bg-rose-500'
         },
         {
-          title: 'Job Summary',
+          title: 'Detailed Job Report',
           description: 'Aggregated view of production quantities grouped by jobber and item for any period.',
           icon: (
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

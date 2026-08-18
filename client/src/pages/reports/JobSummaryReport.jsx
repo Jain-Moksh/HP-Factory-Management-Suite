@@ -130,14 +130,6 @@ const JobSummaryReport = () => {
     }
   }, [isPrinting]);
 
-  const reportTotals = useMemo(() => {
-    let totInward = 0;
-    data.forEach(row => {
-      totInward += parseFloat(row.inward_pcs) || 0;
-    });
-    return { totInward };
-  }, [data]);
-
   const handleItemClick = (itemId) => {
     navigate(`/item-stock-details/${itemId}`);
   };
@@ -158,7 +150,7 @@ const JobSummaryReport = () => {
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24 text-text-primary">
         <PageHeader 
-          title="Job Summary Report" 
+          title="Detailed Job Report" 
           subtitle="AGGREGATED LEDGER FOR INWARD / OUTWARD QUANTITIES" 
           actions={actions}
           backAction={() => navigate('/reports')}
@@ -255,14 +247,6 @@ const JobSummaryReport = () => {
                     </tr>
                   )}
                 </tbody>
-                {data.length > 0 && (
-                  <tfoot>
-                    <tr className="bg-bg-main/50 border-t-2 border-border-soft print:bg-white print:border-t-2 print:border-slate-900">
-                      <td colSpan="2" className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft print:text-black">Report Total:</td>
-                      <td className="px-5 py-3 text-right text-[13px] font-black text-slate-800 print:text-black">{reportTotals.totInward.toLocaleString('en-IN')}</td>
-                    </tr>
-                  </tfoot>
-                )}
               </table>
             </div>
           </div>

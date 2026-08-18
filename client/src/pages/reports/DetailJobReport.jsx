@@ -134,14 +134,6 @@ const DetailJobReport = () => {
     setIsPrinting(true);
   };
 
-  const reportTotals = useMemo(() => {
-    let totQty = 0;
-    data.forEach(row => {
-      totQty += parseFloat(row.total_quantity) || 0;
-    });
-    return { totQty };
-  }, [data]);
-
   const handleJobberClick = (jobberId) => {
     navigate(`/reports/job-work?jobber_id=${jobberId}&from=${startDate}&to=${endDate}`);
   };
@@ -166,7 +158,7 @@ const DetailJobReport = () => {
     <Layout>
       <div className="flex flex-col min-h-screen relative pb-24 text-text-primary">
         <PageHeader 
-          title="Detail Job Report" 
+          title="Job Summary Report" 
           subtitle="DETAILED INWARD STOCK MOVEMENT FROM JOB WORK ENTRIES" 
           actions={actions}
           backAction={() => navigate('/reports')}
@@ -270,14 +262,6 @@ const DetailJobReport = () => {
                     </tr>
                   )}
                 </tbody>
-                {data.length > 0 && (
-                  <tfoot>
-                    <tr className="bg-bg-main/50 border-t-2 border-border-soft print:bg-white print:border-t-2 print:border-slate-900">
-                      <td colSpan="2" className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft print:text-black">Report Total:</td>
-                      <td className="px-5 py-3 text-right text-[13px] font-black text-slate-800 print:text-black">{reportTotals.totQty.toLocaleString('en-IN')}</td>
-                    </tr>
-                  </tfoot>
-                )}
               </table>
             </div>
           </div>

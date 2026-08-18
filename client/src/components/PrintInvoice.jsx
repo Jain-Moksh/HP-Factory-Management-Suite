@@ -130,7 +130,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     .bill-table td { 
       border-right: 1px solid #000; 
       padding: 0.8mm 1.5mm; 
-      font-size: 10px; 
+      font-size: 12px; 
       height: 5.3mm; 
       vertical-align: top; 
       word-wrap: break-word; 
@@ -302,31 +302,31 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                           ₹{fmt(data.itemsSubtotal)}
                         </span>
                       </div>
-                      {parseFloat(data.transport) > 0 && (
+                      {Math.abs(parseFloat(data.transport)) > 0 && (
                         <div className="t-row">
                           <span className="t-label">Transport</span>
                           <span className="t-val">₹{fmt(data.transport)}</span>
                         </div>
                       )}
-                      {parseFloat(data.packing) > 0 && (
+                      {Math.abs(parseFloat(data.packing)) > 0 && (
                         <div className="t-row">
                           <span className="t-label">Packing</span>
                           <span className="t-val">₹{fmt(data.packing)}</span>
                         </div>
                       )}
-                      {parseFloat(data.extraDiscountAmount) > 0 && (
+                      {Math.abs(parseFloat(data.extraDiscountAmount)) > 0 && (
                         <div className="t-row">
                           <span className="t-label">Discount</span>
                           <span className="t-val">
-                            (-) ₹{fmt(data.extraDiscountAmount)}
+                            {parseFloat(data.extraDiscountAmount) > 0 ? "(-) " : ""}₹{fmt(Math.abs(data.extraDiscountAmount))}
                           </span>
                         </div>
                       )}
-                      {parseFloat(data.adjustmentAmount) > 0 && (
+                      {Math.abs(parseFloat(data.adjustmentAmount)) > 0 && (
                         <div className="t-row">
                           <span className="t-label">Adjustment</span>
                           <span className="t-val">
-                            (+) ₹{fmt(data.adjustmentAmount)}
+                            {parseFloat(data.adjustmentAmount) > 0 ? "(+) " : ""}₹{fmt(data.adjustmentAmount)}
                           </span>
                         </div>
                       )}

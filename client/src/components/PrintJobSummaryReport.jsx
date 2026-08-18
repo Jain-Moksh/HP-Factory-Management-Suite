@@ -53,17 +53,13 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
     .font-bold { font-weight: 900; }
   `;
 
-  // Calculate totals inline
-  const totals = data.reduce((acc, row) => {
-    acc.inward += parseFloat(row.inward_pcs) || 0;
-    return acc;
-  }, { inward: 0 });
+
 
   const portalContent = (
     <div className="print-container">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="print-report-container">
-        
+
         {/* Date Section */}
         <div className="date-section">
           <div className="date-info">
@@ -88,7 +84,7 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
               data.map((row, index) => {
                 const showDate = index === 0 || row.date !== data[index - 1].date;
                 return (
-                  <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
+                  <tr key={index} style={{ borderBottom: '1px solid #000' }}>
                     <td style={{ textAlign: 'left', padding: '3px 0', width: '25%' }}>
                       {showDate ? (row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—') : ''}
                     </td>
@@ -109,14 +105,7 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
               </tr>
             )}
           </tbody>
-          {data.length > 0 && (
-            <tfoot>
-              <tr style={{ borderTop: '2px solid #000', fontWeight: '900' }}>
-                <td colSpan="2" style={{ textAlign: 'right', padding: '5px 10px 5px 0' }}>Report Total:</td>
-                <td className="text-right font-bold" style={{ padding: '5px 0' }}>{totals.inward.toLocaleString('en-IN')}</td>
-              </tr>
-            </tfoot>
-          )}
+
         </table>
 
       </div>

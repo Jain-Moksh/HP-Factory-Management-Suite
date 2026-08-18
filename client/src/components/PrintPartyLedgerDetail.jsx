@@ -138,7 +138,7 @@ const PrintPartyLedgerDetail = ({ data, clientName, startDate, endDate, paperSiz
                       {row.challan_no}
                     </td>
                     <td className="col-type text-center uppercase">
-                      {row.transaction_type}
+                      {row.transaction_type === 'BILLING' ? 'SALES' : row.transaction_type}
                     </td>
                     <td className="col-date text-center">
                       {row.date && row.date !== '—' && row.transaction_type !== 'OPENING BALANCE' ? new Date(row.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : row.date}
