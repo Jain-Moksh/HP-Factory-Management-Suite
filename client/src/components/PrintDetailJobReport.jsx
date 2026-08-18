@@ -59,9 +59,9 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
     }
 
     /* Column Widths - Optimized for borderless view */
-    .col-date { width: 15%; }
-    .col-item { width: 67%; }
-    .col-qty  { width: 18%; text-align: right; }
+    .col-jobber { width: 40%; }
+    .col-item { width: 45%; }
+    .col-qty  { width: 15%; text-align: right; }
 
     .text-right { text-align: right !important; }
     .font-bold { font-weight: 900; }
@@ -70,6 +70,12 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
       border-bottom: 1px solid #e0e0e0 !important;
     }
   `;
+
+  // Calculate totals inline
+  const totals = data.reduce((acc, row) => {
+    acc.quantity += parseFloat(row.total_quantity) || 0;
+    return acc;
+  }, { quantity: 0 });
 
   const portalContent = (
     <div className="print-container">
@@ -89,26 +95,26 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
         {/* Data List (Using borderless table for alignment) */}
         <table className="report-table">
           <thead>
-            <tr>
-              <th className="col-date">Date</th>
-              <th className="col-item">Item Name</th>
-              <th className="col-qty text-right">Inward Qty</th>
+            <tr style={{ borderBottom: '2px solid #000' }}>
+              <th className="col-jobber" style={{ textAlign: 'left', padding: '4px 10px' }}>JOBBER NAME</th>
+              <th className="col-item" style={{ textAlign: 'left', padding: '4px 10px' }}>ITEM NAME</th>
+              <th className="col-qty text-right" style={{ padding: '4px 10px' }}>TOTAL QTY</th>
             </tr>
           </thead>
           <tbody>
             {data.length > 0 ? (
               data.map((row, index) => {
-                const isFirstOfDate = index === 0 || new Date(row.date).toLocaleDateString('en-GB') !== new Date(data[index - 1].date).toLocaleDateString('en-GB');
+                const showJobberName = index === 0 || row.jobber_name !== data[index - 1].jobber_name;
                 return (
-                  <tr key={row.purchase_item_id || index}>
-                    <td className="col-date">
-                      {isFirstOfDate ? new Date(row.date).toLocaleDateString('en-GB') : ''}
+                  <tr key={index}>
+                    <td className="col-jobber" style={{ textTransform: 'uppercase', padding: '6px 10px' }}>
+                      {showJobberName ? row.jobber_name : ''}
                     </td>
-                    <td className="col-item" style={{ textTransform: 'uppercase' }}>
+                    <td className="col-item" style={{ textTransform: 'uppercase', padding: '6px 10px' }}>
                       {row.item_name}
                     </td>
-                    <td className="col-qty font-bold text-right">
-                      {parseFloat(row.quantity).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
+                    <td className="col-qty font-bold text-right" style={{ padding: '6px 10px' }}>
+                      {parseFloat(row.total_quantity || 0).toLocaleString('en-IN')}
                     </td>
                   </tr>
                 );
@@ -121,6 +127,14 @@ const PrintDetailJobReport = ({ data, startDate, endDate, paperSize = 'A4' }) =>
               </tr>
             )}
           </tbody>
+          {data.length > 0 && (
+            <tfoot>
+              <tr style={{ borderTop: '2px solid #000', fontWeight: '900' }}>
+                <td colSpan="2" style={{ textAlign: 'right', padding: '5px 10px' }}>Report Total:</td>
+                <td className="text-right font-bold" style={{ padding: '5px 10px' }}>{totals.quantity.toLocaleString('en-IN')}</td>
+              </tr>
+            </tfoot>
+          )}
         </table>
 
       </div>

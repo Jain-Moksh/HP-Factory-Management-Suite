@@ -131,15 +131,16 @@ const JobSummaryReport = () => {
   }, [isPrinting]);
 
   const reportTotals = useMemo(() => {
-    let totInward = 0, totOutward = 0, totLoss = 0, totPending = 0;
+    let totInward = 0;
     data.forEach(row => {
       totInward += parseFloat(row.inward_pcs) || 0;
-      totOutward += parseFloat(row.outward_pcs) || 0;
-      totLoss += parseFloat(row.loss_pcs) || 0;
-      totPending += parseFloat(row.pending_pcs) || 0;
     });
-    return { totInward, totOutward, totLoss, totPending };
+    return { totInward };
   }, [data]);
+
+  const handleItemClick = (itemId) => {
+    navigate(`/item-stock-details/${itemId}`);
+  };
 
   const actions = [
     {
@@ -208,18 +209,16 @@ const JobSummaryReport = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse print:text-[11px]">
                 <thead>
-                  <tr className="bg-table-header text-white print:bg-slate-100 print:text-slate-800 print:border-b-2 print:border-slate-300">
-                    <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Inward Pcs</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Outward Pcs</th>
-                    <th className="px-5 py-2 text-center border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Loss Pcs</th>
-                    <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider">Pending Pcs</th>
+                  <tr className="bg-table-header text-white print:bg-white print:text-slate-800 print:border-b-2 print:border-slate-900">
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[11px] uppercase font-black tracking-wider w-36 print:text-black">Date</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[11px] uppercase font-black tracking-wider print:text-black">Item Name</th>
+                    <th className="px-5 py-2 text-right text-[11px] uppercase font-black tracking-wider w-36 print:text-black">Inward Qty</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft print:divide-y-0 print:divide-slate-200">
+                <tbody className="divide-y divide-border-soft print:divide-y print:divide-slate-200">
                   {isLoading ? (
                     <tr className="print:hidden">
-                      <td colSpan="5" className="px-6 py-12 text-center">
+                      <td colSpan="3" className="px-6 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-brand-blue animate-pulse font-bold text-[13px]">
                           <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                           <span>PULLING JOB SUMMARY...</span>
@@ -227,18 +226,30 @@ const JobSummaryReport = () => {
                       </td>
                     </tr>
                   ) : data.length > 0 ? (
-                    data.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-bg-main/30 print:hover:bg-transparent transition-colors duration-75 print:border-b print:border-slate-100">
-                        <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary uppercase border-r border-border-soft print:text-slate-800">{row.item_name}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-slate-700 border-r border-border-soft">{row.inward_pcs}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-slate-700 border-r border-border-soft">{row.outward_pcs}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-red-500 border-r border-border-soft">{row.loss_pcs}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-brand-blue">{row.pending_pcs}</td>
-                      </tr>
-                    ))
+                    data.map((row, idx) => {
+                      const showDate = idx === 0 || row.date !== data[idx - 1].date;
+                      return (
+                        <tr key={idx} className="hover:bg-bg-main/30 print:hover:bg-transparent transition-colors duration-75 print:border-b print:border-slate-100">
+                          <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary border-r border-border-soft print:text-black">
+                            {showDate ? (row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—') : ''}
+                          </td>
+                          <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue uppercase border-r border-border-soft print:text-black">
+                            <span 
+                              onClick={() => handleItemClick(row.item_id)}
+                              className="hover:underline cursor-pointer text-brand-blue hover:text-brand-blue-hover"
+                            >
+                              {row.item_name}
+                            </span>
+                          </td>
+                          <td className="px-5 py-1.5 text-right text-[13px] font-black text-slate-700 print:text-black">
+                            {parseFloat(row.inward_pcs || 0).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center italic text-text-light text-[12.5px] opacity-60">
+                      <td colSpan="3" className="px-6 py-12 text-center italic text-text-light text-[12.5px] opacity-60">
                         No summary records found for this period.
                       </td>
                     </tr>
@@ -246,12 +257,9 @@ const JobSummaryReport = () => {
                 </tbody>
                 {data.length > 0 && (
                   <tfoot>
-                    <tr className="bg-bg-main/50 border-t-2 border-border-soft print:bg-slate-50 print:border-t-2 print:border-slate-300">
-                      <td className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft">Report Total:</td>
-                      <td className="px-5 py-3 text-center text-[13px] font-bold text-slate-800 border-r border-border-soft">{reportTotals.totInward.toLocaleString()}</td>
-                      <td className="px-5 py-3 text-center text-[13px] font-bold text-slate-800 border-r border-border-soft">{reportTotals.totOutward.toLocaleString()}</td>
-                      <td className="px-5 py-3 text-center text-[13px] font-bold text-red-500 border-r border-border-soft">{reportTotals.totLoss.toLocaleString()}</td>
-                      <td className="px-5 py-3 text-center text-[14px] font-black text-brand-blue">{reportTotals.totPending.toLocaleString()}</td>
+                    <tr className="bg-bg-main/50 border-t-2 border-border-soft print:bg-white print:border-t-2 print:border-slate-900">
+                      <td colSpan="2" className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft print:text-black">Report Total:</td>
+                      <td className="px-5 py-3 text-right text-[13px] font-black text-slate-800 print:text-black">{reportTotals.totInward.toLocaleString('en-IN')}</td>
                     </tr>
                   </tfoot>
                 )}

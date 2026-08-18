@@ -32,7 +32,10 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
                 <tr key={row.id} className="hover:bg-bg-main/50 transition-colors duration-75">
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-text-primary tracking-tight">
                     <span 
-                      onClick={() => setSelectedTx(row)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTx(row);
+                      }}
                       className="text-brand-blue hover:text-brand-blue-hover hover:underline cursor-pointer font-bold tracking-tight uppercase select-none transition-colors"
                     >
                       {row.challan_no}
@@ -58,22 +61,28 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
                     <div className="flex items-center justify-center gap-2.5">
                       {onEdit && (
                         <button 
-                          onClick={() => onEdit(row.id)}
-                          className="text-brand-blue hover:scale-110 p-1.5 rounded transition" 
-                          title="Edit Transaction"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(row.id);
+                          }}
+                          className="text-brand-blue hover:scale-110 p-1 rounded transition" 
+                          title="Edit"
                         >
-                          <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
                       )}
                       {onDelete && (
                         <button 
-                          onClick={() => onDelete(row.id)}
-                          className="text-red-500 hover:scale-110 p-1.5 rounded transition" 
-                          title="Delete Transaction"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(row.id);
+                          }}
+                          className="text-red-500 hover:scale-110 p-1 rounded transition" 
+                          title="Delete"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>

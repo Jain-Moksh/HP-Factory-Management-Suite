@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
@@ -134,6 +134,22 @@ const DetailJobReport = () => {
     setIsPrinting(true);
   };
 
+  const reportTotals = useMemo(() => {
+    let totQty = 0;
+    data.forEach(row => {
+      totQty += parseFloat(row.total_quantity) || 0;
+    });
+    return { totQty };
+  }, [data]);
+
+  const handleJobberClick = (jobberId) => {
+    navigate(`/reports/job-work?jobber_id=${jobberId}&from=${startDate}&to=${endDate}`);
+  };
+
+  const handleItemClick = (itemId) => {
+    navigate(`/item-stock-details/${itemId}`);
+  };
+
   const actions = [
     {
       label: 'Print Report',
@@ -201,20 +217,16 @@ const DetailJobReport = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse print:text-[11px]">
                 <thead>
-                  <tr className="bg-table-header text-white print:bg-slate-100 print:text-slate-800 print:border-b-2 print:border-slate-300">
-                    <th className="px-5 py-2 text-left text-[10.5px] uppercase font-bold tracking-wider">Date</th>
-                    <th className="px-5 py-2 text-left text-[10.5px] uppercase font-bold tracking-wider">Challan No.</th>
-                    <th className="px-5 py-2 text-left text-[10.5px] uppercase font-bold tracking-wider">Jobber Name</th>
-                    <th className="px-5 py-2 text-left text-[10.5px] uppercase font-bold tracking-wider">Item Name</th>
-                    <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider">Weight (kg)</th>
-                    <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider">Pcs</th>
-                    <th className="px-5 py-2 text-center text-[10.5px] uppercase font-bold tracking-wider">Scrap (kg)</th>
+                  <tr className="bg-table-header text-white print:bg-white print:text-slate-800 print:border-b-2 print:border-slate-900">
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[11px] uppercase font-black tracking-wider w-64 print:text-black">Jobber Name</th>
+                    <th className="px-5 py-2 text-left border-r border-white/10 text-[11px] uppercase font-black tracking-wider print:text-black">Item Name</th>
+                    <th className="px-5 py-2 text-right text-[11px] uppercase font-black tracking-wider w-44 print:text-black">Total Qty</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft print:divide-y-0 print:divide-slate-200">
+                <tbody className="divide-y divide-border-soft print:divide-y print:divide-slate-200">
                   {isLoading ? (
                     <tr className="print:hidden">
-                      <td colSpan="7" className="px-6 py-12 text-center">
+                      <td colSpan="3" className="px-6 py-12 text-center">
                         <div className="flex items-center justify-center gap-2 text-brand-blue animate-pulse font-bold text-[13px]">
                           <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                           <span>PREPARING LOG REPORT...</span>
@@ -222,27 +234,50 @@ const DetailJobReport = () => {
                       </td>
                     </tr>
                   ) : data.length > 0 ? (
-                    data.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-bg-main/30 print:hover:bg-transparent transition-colors duration-75 print:border-b print:border-slate-100">
-                        <td className="px-5 py-1.5 text-[12.5px] text-text-primary print:text-slate-700">{row.date}</td>
-                        <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary print:text-slate-800">
-                          <ClickableChallan challanNo={row.challan_no} type="purchase" />
-                        </td>
-                        <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue uppercase print:text-slate-800">{row.jobber_name}</td>
-                        <td className="px-5 py-1.5 text-[12.5px] font-bold text-text-primary uppercase print:text-slate-800">{row.item_name}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary print:text-slate-700">{row.weight}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary print:text-slate-700">{row.pcs}</td>
-                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-red-500 print:text-slate-700">{row.scrap}</td>
-                      </tr>
-                    ))
+                    data.map((row, idx) => {
+                      const showJobberName = idx === 0 || row.jobber_name !== data[idx - 1].jobber_name;
+                      return (
+                        <tr key={idx} className="hover:bg-bg-main/30 print:hover:bg-transparent transition-colors duration-75 print:border-b print:border-slate-100">
+                          <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue uppercase border-r border-border-soft print:text-black w-64">
+                            {showJobberName ? (
+                              <span 
+                                onClick={() => handleJobberClick(row.jobber_id)}
+                                className="hover:underline cursor-pointer text-brand-blue hover:text-brand-blue-hover"
+                              >
+                                {row.jobber_name}
+                              </span>
+                            ) : ''}
+                          </td>
+                          <td className="px-5 py-1.5 text-[12.5px] font-bold text-brand-blue uppercase border-r border-border-soft print:text-black">
+                            <span 
+                              onClick={() => handleItemClick(row.item_id)}
+                              className="hover:underline cursor-pointer text-brand-blue hover:text-brand-blue-hover"
+                            >
+                              {row.item_name}
+                            </span>
+                          </td>
+                          <td className="px-5 py-1.5 text-right text-[13px] font-black text-slate-700 print:text-black w-44">
+                            {parseFloat(row.total_quantity || 0).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="7" className="px-6 py-12 text-center italic text-text-light text-[12.5px] opacity-60">
+                      <td colSpan="3" className="px-6 py-12 text-center italic text-text-light text-[12.5px] opacity-60">
                         No inward records found for the selected dates.
                       </td>
                     </tr>
                   )}
                 </tbody>
+                {data.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-bg-main/50 border-t-2 border-border-soft print:bg-white print:border-t-2 print:border-slate-900">
+                      <td colSpan="2" className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft print:text-black">Report Total:</td>
+                      <td className="px-5 py-3 text-right text-[13px] font-black text-slate-800 print:text-black">{reportTotals.totQty.toLocaleString('en-IN')}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           </div>

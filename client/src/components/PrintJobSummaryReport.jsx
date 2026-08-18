@@ -56,11 +56,8 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
   // Calculate totals inline
   const totals = data.reduce((acc, row) => {
     acc.inward += parseFloat(row.inward_pcs) || 0;
-    acc.outward += parseFloat(row.outward_pcs) || 0;
-    acc.loss += parseFloat(row.loss_pcs) || 0;
-    acc.pending += parseFloat(row.pending_pcs) || 0;
     return acc;
-  }, { inward: 0, outward: 0, loss: 0, pending: 0 });
+  }, { inward: 0 });
 
   const portalContent = (
     <div className="print-container">
@@ -81,37 +78,32 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
         <table className="report-table">
           <thead>
             <tr style={{ borderBottom: '2px solid #000' }}>
-              <th style={{ textAlign: 'left', width: '40%', padding: '4px 0' }}>Item Name</th>
-              <th className="text-center" style={{ width: '15%', padding: '4px 0' }}>Inward Pcs</th>
-              <th className="text-center" style={{ width: '15%', padding: '4px 0' }}>Outward Pcs</th>
-              <th className="text-center" style={{ width: '15%', padding: '4px 0' }}>Loss Pcs</th>
-              <th className="text-center" style={{ width: '15%', padding: '4px 0' }}>Pending Pcs</th>
+              <th style={{ textAlign: 'left', width: '25%', padding: '4px 0' }}>DATE</th>
+              <th style={{ textAlign: 'left', width: '55%', padding: '4px 0' }}>ITEM NAME</th>
+              <th className="text-right" style={{ width: '20%', padding: '4px 0' }}>INWARD QTY</th>
             </tr>
           </thead>
           <tbody>
             {data.length > 0 ? (
-              data.map((row, index) => (
-                <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ textAlign: 'left', textTransform: 'uppercase', padding: '3px 0' }}>
-                    {row.item_name}
-                  </td>
-                  <td className="text-center" style={{ padding: '3px 0' }}>
-                    {parseFloat(row.inward_pcs || 0).toLocaleString()}
-                  </td>
-                  <td className="text-center" style={{ padding: '3px 0' }}>
-                    {parseFloat(row.outward_pcs || 0).toLocaleString()}
-                  </td>
-                  <td className="text-center" style={{ padding: '3px 0', color: '#ef4444' }}>
-                    {parseFloat(row.loss_pcs || 0).toLocaleString()}
-                  </td>
-                  <td className="text-center font-bold" style={{ padding: '3px 0' }}>
-                    {parseFloat(row.pending_pcs || 0).toLocaleString()}
-                  </td>
-                </tr>
-              ))
+              data.map((row, index) => {
+                const showDate = index === 0 || row.date !== data[index - 1].date;
+                return (
+                  <tr key={index} style={{ borderBottom: '1px solid #ddd' }}>
+                    <td style={{ textAlign: 'left', padding: '3px 0', width: '25%' }}>
+                      {showDate ? (row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—') : ''}
+                    </td>
+                    <td style={{ textAlign: 'left', textTransform: 'uppercase', padding: '3px 0', width: '55%' }}>
+                      {row.item_name}
+                    </td>
+                    <td className="text-right font-bold" style={{ padding: '3px 0', width: '20%' }}>
+                      {parseFloat(row.inward_pcs || 0).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
+                <td colSpan="3" style={{ textAlign: 'center', padding: '20px', fontStyle: 'italic' }}>
                   No data found
                 </td>
               </tr>
@@ -120,11 +112,8 @@ const PrintJobSummaryReport = ({ data, startDate, endDate, paperSize = 'A4' }) =
           {data.length > 0 && (
             <tfoot>
               <tr style={{ borderTop: '2px solid #000', fontWeight: '900' }}>
-                <td style={{ textAlign: 'right', padding: '5px 10px 5px 0' }}>Report Total:</td>
-                <td className="text-center" style={{ padding: '5px 0' }}>{totals.inward.toLocaleString()}</td>
-                <td className="text-center" style={{ padding: '5px 0' }}>{totals.outward.toLocaleString()}</td>
-                <td className="text-center" style={{ padding: '5px 0', color: '#ef4444' }}>{totals.loss.toLocaleString()}</td>
-                <td className="text-center font-bold" style={{ padding: '5px 0' }}>{totals.pending.toLocaleString()}</td>
+                <td colSpan="2" style={{ textAlign: 'right', padding: '5px 10px 5px 0' }}>Report Total:</td>
+                <td className="text-right font-bold" style={{ padding: '5px 0' }}>{totals.inward.toLocaleString('en-IN')}</td>
               </tr>
             </tfoot>
           )}
