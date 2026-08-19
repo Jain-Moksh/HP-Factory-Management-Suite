@@ -185,6 +185,15 @@ const PartyLedgerDetail = () => {
 
   const actions = [
     {
+      label: 'Create Payment',
+      onClick: () => navigate(`/create-payment?partyId=client_${clientId}`),
+      icon: (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+        </svg>
+      )
+    },
+    {
       label: 'Print Ledger',
       onClick: handlePrintRequest,
       icon: (

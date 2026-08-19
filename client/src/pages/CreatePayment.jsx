@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
@@ -10,7 +10,11 @@ import { API_BASE_URL } from '../config';
 const CreatePayment = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const isEditMode = !!id;
+
+  const queryParams = new URLSearchParams(location.search);
+  const initialPartyId = queryParams.get('partyId') || '';
 
   const [originalTransactionType, setOriginalTransactionType] = useState('');
   const [originalDate, setOriginalDate] = useState('');
@@ -20,7 +24,7 @@ const CreatePayment = () => {
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    partyId: '', // client_[id] or jobber_[id]
+    partyId: initialPartyId, // client_[id] or jobber_[id]
     amount: '',  // Represents amountPaid, amountReturned, or discountAmount
     paymentMode: 'Cash', // Bank or Cash (for Payment mode)
     remarks: ''
@@ -189,17 +193,12 @@ const CreatePayment = () => {
     fetchChallan();
   }, [transactionType, formData.date]);
 
-  const handleOpenHistory = async () => {
-    if (!formData.partyId) return;
+  const [historyMonth, setHistoryMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
 
-    // Resolve clean party name and type immediately from list of options
-    const selectedOption = options.find(opt => opt.id === formData.partyId);
-    const cleanName = selectedOption ? selectedOption.name.replace(/\s*\[(CLIENT|JOBBER)\]\s*$/i, '') : 'Unknown';
-    const partyType = selectedOption ? selectedOption.type.toUpperCase() : 'CLIENT';
-
-    setModalPartyName(cleanName);
-    setModalPartyType(partyType);
-    setIsHistoryOpen(true);
+  const fetchHistory = async (monthStr, pType) => {
     setIsHistoryLoading(true);
     setHistoryError('');
     setHistoryData(null);
@@ -207,22 +206,14 @@ const CreatePayment = () => {
     try {
       const parts = formData.partyId.split('_');
       const id = parts[1];
+      const type = pType || modalPartyType;
 
-      // Calculate dynamic date boundaries in server/local time
-      const today = new Date();
-      const prevMonthFirstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      
-      const formatDate = (d) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
+      const [year, month] = monthStr.split('-');
+      const fromDate = `${year}-${month}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const toDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
 
-      const fromDate = formatDate(prevMonthFirstDay);
-      const toDate = formatDate(today);
-
-      const res = await fetch(`${API_BASE_URL}/party-transactions/history?partyType=${partyType}&partyId=${id}&from=${fromDate}&to=${toDate}`);
+      const res = await fetch(`${API_BASE_URL}/party-transactions/history?partyType=${type}&partyId=${id}&from=${fromDate}&to=${toDate}`);
       const json = await res.json();
       if (json.success) {
         setHistoryData(json.data);
@@ -235,6 +226,22 @@ const CreatePayment = () => {
     } finally {
       setIsHistoryLoading(false);
     }
+  };
+
+  const handleOpenHistory = async () => {
+    if (!formData.partyId) return;
+
+    // Resolve clean party name and type immediately from list of options
+    const selectedOption = options.find(opt => opt.id === formData.partyId);
+    const cleanName = selectedOption ? selectedOption.name.replace(/\s*\[(CLIENT|JOBBER)\]\s*$/i, '') : 'Unknown';
+    const partyType = selectedOption ? selectedOption.type.toUpperCase() : 'CLIENT';
+
+    setModalPartyName(cleanName);
+    setModalPartyType(partyType);
+    setIsHistoryOpen(true);
+    
+    // Initial fetch for the current historyMonth
+    fetchHistory(historyMonth, partyType);
   };
 
   const handleCloseHistory = () => {
@@ -595,7 +602,7 @@ const CreatePayment = () => {
           />
 
           {/* Modal Container */}
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 text-left">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] lg:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 text-left">
             
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
@@ -623,8 +630,62 @@ const CreatePayment = () => {
               </button>
             </div>
 
+            {/* Filter Bar */}
+            <div 
+              className="px-6 py-3 bg-white border-b border-slate-100 flex items-center gap-6 overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+                RECORDS FOR {['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'][parseInt(historyMonth.split('-')[1], 10) - 1]}: <span className="text-brand-blue">{historyData?.history?.length || 0} ENTRIES</span>
+              </div>
+              
+              <div className="flex items-center gap-1 flex-1">
+                {['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'].map((m, idx) => {
+                  const mVal = String(idx + 1).padStart(2, '0');
+                  const currentYear = historyMonth.split('-')[0];
+                  const currentMonthStr = historyMonth.split('-')[1];
+                  const isActive = currentMonthStr === mVal;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        const newMonth = `${currentYear}-${mVal}`;
+                        setHistoryMonth(newMonth);
+                        fetchHistory(newMonth);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        isActive 
+                          ? 'bg-brand-blue text-white shadow-sm shadow-brand-blue/20' 
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0 ml-4">
+                <span>YEAR:</span>
+                <select
+                  value={historyMonth.split('-')[0]}
+                  onChange={(e) => {
+                    const newMonth = `${e.target.value}-${historyMonth.split('-')[1]}`;
+                    setHistoryMonth(newMonth);
+                    fetchHistory(newMonth);
+                  }}
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-brand-blue text-slate-600 font-bold shadow-sm cursor-pointer"
+                >
+                  {[...Array(10)].map((_, i) => {
+                    const yr = new Date().getFullYear() - i + 2;
+                    return <option key={yr} value={yr}>{yr}</option>;
+                  })}
+                </select>
+              </div>
+            </div>
+
             {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 text-slate-600">
+            <div className="flex-1 overflow-y-auto px-6 py-5 text-slate-600 bg-slate-50/30">
               {isHistoryLoading && (
                 <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
                   <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
@@ -701,7 +762,7 @@ const CreatePayment = () => {
                           ) : (
                             <tr>
                               <td colSpan="4" className="px-4 py-8 text-center text-slate-400 italic font-medium animate-pulse">
-                                No transaction history found for the current and previous month.
+                                No transaction history found for the selected month.
                               </td>
                             </tr>
                           )}
