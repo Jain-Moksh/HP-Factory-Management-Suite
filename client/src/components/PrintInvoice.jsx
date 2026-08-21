@@ -42,31 +42,39 @@ const formatDate = (dateStr) => {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items, printCopies = 1 }) => {
-  // Balanced limits to ensure Page 1 and Page 2 are utilized well
-  const ROWS_FIRST_PAGE = 28;
-  const ROWS_MIDDLE_PAGE = 30;
-  const ROWS_LAST_PAGE = 22;
-  const ROWS_SINGLE_PAGE = 20;
+  const ROWS_FIRST_PAGE = 25;
+  const ROWS_MIDDLE_PAGE = 28;
+  const ROWS_LAST_PAGE = 20;
+  const ROWS_SINGLE_PAGE = 18;
 
   const hasDiscount = items.some((item) => parseFloat(item.dAmount) > 0);
 
   const paginate = (rawItems) => {
     const pages = [];
-    const totalItems = rawItems.length;
+    let remainingItems = [...rawItems];
 
-    if (totalItems <= ROWS_SINGLE_PAGE) {
-      pages.push(rawItems);
-    } else {
-      pages.push(rawItems.slice(0, ROWS_FIRST_PAGE));
-      let currentIdx = ROWS_FIRST_PAGE;
-      while (currentIdx < totalItems - ROWS_LAST_PAGE) {
-        pages.push(rawItems.slice(currentIdx, currentIdx + ROWS_MIDDLE_PAGE));
-        currentIdx += ROWS_MIDDLE_PAGE;
-      }
-      if (currentIdx < totalItems) {
-        pages.push(rawItems.slice(currentIdx));
-      }
+    if (remainingItems.length <= ROWS_SINGLE_PAGE) {
+      pages.push(remainingItems);
+      return pages;
     }
+
+    // First page chunk
+    let firstChunkSize = Math.min(ROWS_FIRST_PAGE, remainingItems.length - 1);
+    pages.push(remainingItems.slice(0, firstChunkSize));
+    remainingItems = remainingItems.slice(firstChunkSize);
+
+    // Middle page chunks
+    while (remainingItems.length > ROWS_LAST_PAGE) {
+      let middleChunkSize = Math.min(ROWS_MIDDLE_PAGE, remainingItems.length - 1);
+      pages.push(remainingItems.slice(0, middleChunkSize));
+      remainingItems = remainingItems.slice(middleChunkSize);
+    }
+
+    // Last page chunk
+    if (remainingItems.length > 0) {
+      pages.push(remainingItems);
+    }
+
     return pages;
   };
 
