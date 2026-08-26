@@ -42,10 +42,10 @@ const formatDate = (dateStr) => {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items, printCopies = 1 }) => {
-  const ROWS_FIRST_PAGE = 25;
-  const ROWS_MIDDLE_PAGE = 28;
-  const ROWS_LAST_PAGE = 20;
-  const ROWS_SINGLE_PAGE = 18;
+  const ROWS_FIRST_PAGE = 32;
+  const ROWS_MIDDLE_PAGE = 36;
+  const ROWS_LAST_PAGE = 26;
+  const ROWS_SINGLE_PAGE = 23;
 
   const hasDiscount = items.some((item) => parseFloat(item.dAmount) > 0);
 
@@ -59,21 +59,19 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     }
 
     // First page chunk
-    let firstChunkSize = Math.min(ROWS_FIRST_PAGE, remainingItems.length - 1);
+    let firstChunkSize = Math.min(ROWS_FIRST_PAGE, remainingItems.length);
     pages.push(remainingItems.slice(0, firstChunkSize));
     remainingItems = remainingItems.slice(firstChunkSize);
 
     // Middle page chunks
     while (remainingItems.length > ROWS_LAST_PAGE) {
-      let middleChunkSize = Math.min(ROWS_MIDDLE_PAGE, remainingItems.length - 1);
+      let middleChunkSize = Math.min(ROWS_MIDDLE_PAGE, remainingItems.length);
       pages.push(remainingItems.slice(0, middleChunkSize));
       remainingItems = remainingItems.slice(middleChunkSize);
     }
 
     // Last page chunk
-    if (remainingItems.length > 0) {
-      pages.push(remainingItems);
-    }
+    pages.push(remainingItems);
 
     return pages;
   };
@@ -110,12 +108,12 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
 
     .watermark { text-align: center; font-size: 11px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; padding-bottom: 1mm; border-bottom: 2px solid #000; margin-bottom: 1.5mm; }
 
-    .section-top { border: 1px solid #000; margin: 0 auto 1mm auto; display: flex; flex-shrink: 0; width: 100%; }
-    .top-left { flex: 1.5; padding: 2mm; border-right: 1px solid #000; }
-    .top-right { flex: 1; padding: 2mm; }
+    .section-top { border: 1px solid #000; margin: 0 auto 1mm auto; display: flex; flex-shrink: 0; width: 100%; align-items: center; }
+    .top-left { flex: 1.5; padding: 0.5mm 2mm; border-right: 1px solid #000; }
+    .top-right { flex: 1; padding: 0.5mm 2mm; }
 
-    .party-title { font-size: 13px; font-weight: 800; text-transform: uppercase; margin-bottom: 1mm; }
-    .info-row { display: flex; font-size: 10px; margin-bottom: 0.5mm; }
+    .party-title { font-size: 13px; font-weight: 800; text-transform: uppercase; margin-bottom: 0; }
+    .info-row { display: flex; font-size: 10px; margin-bottom: 0; }
     .info-label { font-weight: 700; width: 18mm; flex-shrink: 0; }
     .info-val { font-weight: 500; word-break: break-all; }
 
@@ -137,9 +135,9 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
 
     .bill-table td { 
       border-right: 1px solid #000; 
-      padding: 0.8mm 1.5mm; 
+      padding: 0mm 1.5mm; 
       font-size: 12px; 
-      height: 5.3mm; 
+      height: 4.2mm; 
       vertical-align: top; 
       word-wrap: break-word; 
     }
@@ -147,7 +145,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     
     /* Ensure empty rows fill the remaining space without gaps */
     .bill-table tr.empty-row td { height: auto; }
-    .bill-table tr.empty-row:not(:last-child) td { height: 5.3mm; }
+    .bill-table tr.empty-row:not(:last-child) td { height: 4.2mm; }
 
     .c-bund  { width: 8%; text-align: center; }
     .c-desc  { width: ${hasDiscount ? "44%" : "53%"}; text-align: left; }
@@ -191,7 +189,13 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
             className="bill-page"
             style={isLast ? { paddingBottom: "20mm" } : {}}
           >
-            <div className="watermark">ORDER SUMMARY</div>
+            <div className="watermark" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <span style={{ flex: 1 }}></span>
+              <span style={{ flex: 2, textAlign: "center" }}>ORDER SUMMARY</span>
+              <span style={{ flex: 1, textAlign: "right", fontSize: "10px", fontWeight: "700", letterSpacing: "normal", textTransform: "none" }}>
+                Date: {formatDate(data.date)}
+              </span>
+            </div>
 
             {isFirst && (
               <div className="section-top">
@@ -199,13 +203,15 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                   <div className="party-title">
                     {data.clientRawName || data.clientName}
                   </div>
-                  <div className="info-row">
-                    <div className="info-val">
-                      {[data.address1, data.address2]
-                        .filter(Boolean)
-                        .join(", ")}
+                  {[data.address1, data.address2].filter(Boolean).length > 0 && (
+                    <div className="info-row" style={{ marginTop: "0.5mm" }}>
+                      <div className="info-val">
+                        {[data.address1, data.address2]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div className="top-right">
                   <div className="info-row" style={{ fontSize: "13px" }}>
@@ -216,10 +222,6 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                         ? String(data.challanNo).split("/")[0]
                         : ""}
                     </div>
-                  </div>
-                  <div className="info-row">
-                    <div className="info-label">Date:</div>
-                    <div className="info-val">{formatDate(data.date)}</div>
                   </div>
                   {data.transporterName && (
                     <div className="info-row">
@@ -293,7 +295,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
             </div>
 
             <div className="section-bottom">
-              {isLast && (
+              {isLast ? (
                 <>
                   <div className="bottom-wrapper">
                     <div className="remark-box">
@@ -351,6 +353,10 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
                     </div>
                   </div>
                 </>
+              ) : (
+                <div style={{ textAlign: "right", fontSize: "16.5px", fontWeight: "600", fontStyle: "italic", marginTop: "-0.5mm", paddingRight: "2mm" }}>
+                  Please Turn Over The Page...
+                </div>
               )}
             </div>
           </div>

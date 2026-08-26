@@ -104,7 +104,7 @@ const CreateInvoice = () => {
     adjustmentAmount: '',
     roundOff: ''
   });
-  
+
   // Track original values in edit mode to prevent unnecessary overwrites
   const [originalDate, setOriginalDate] = useState(null);
   const [originalChallanNo, setOriginalChallanNo] = useState(null);
@@ -126,7 +126,7 @@ const CreateInvoice = () => {
 
   // --- Invoice Summary State ---
   const [addedItems, setAddedItems] = useState([]);
-  
+
   // Auto-calculate summary amounts when items change
   useEffect(() => {
     setFormData(prev => {
@@ -144,7 +144,7 @@ const CreateInvoice = () => {
           changed = true;
         }
       }
-      
+
       if (prev.adjustmentPercent !== '') {
         const aPct = parseFloat(prev.adjustmentPercent) || 0;
         const newAAmount = itemsSub > 0 ? ((itemsSub * aPct) / 100).toFixed(2) : '0';
@@ -187,7 +187,7 @@ const CreateInvoice = () => {
           fetch(`${API_BASE_URL}/items`),
           fetch(`${API_BASE_URL}/transporters`)
         ]);
-        
+
         const clientsData = await clientsRes.json();
         const itemsData = await itemsRes.json();
         const transportersData = await transportersRes.json();
@@ -367,7 +367,7 @@ const CreateInvoice = () => {
     const q = parseFloat(qty) || 0;
     const r = parseFloat(rate) || 0;
     const subtotal = q * r;
-    
+
     let dp = parseFloat(dPercent) || 0;
     let da = parseFloat(dAmount) || 0;
 
@@ -662,10 +662,10 @@ const CreateInvoice = () => {
 
   const handleFinalSave = async (shouldNavigate = true) => {
     if (addedItems.length === 0 || !formData.client_id) {
-        alert("Please select a client and add at least one item.");
-        return false;
+      alert("Please select a client and add at least one item.");
+      return false;
     }
-    
+
     const itemsSubtotal = addedItems.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
     const transport = parseFloat(formData.transport) || 0;
     const packing = parseFloat(formData.packing) || 0;
@@ -673,7 +673,7 @@ const CreateInvoice = () => {
     const adjustmentAmount = parseFloat(formData.adjustmentAmount) || 0;
     const subtotalBeforeRound = itemsSubtotal + transport + packing + adjustmentAmount - discountAmount;
     const grandTotal = Math.round(subtotalBeforeRound);
-    
+
     const payload = {
       client_id: formData.client_id,
       transporter_id: formData.transporter_id || null,
@@ -705,7 +705,7 @@ const CreateInvoice = () => {
     try {
       const url = isEditMode ? `${API_BASE_URL}/billing/${id}` : `${API_BASE_URL}/billing`;
       const method = isEditMode ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
@@ -753,9 +753,9 @@ const CreateInvoice = () => {
   return (
     <Layout>
       <div className="flex flex-col min-h-screen pb-16">
-        <PageHeader 
-          title={isEditMode ? "Edit Invoice" : "Create Invoice"} 
-          subtitle={isEditMode ? "MODIFY EXISTING SALES INVOICE AND BILLING DETAILS" : "GENERATE SALES INVOICE AND MANAGE CLIENT BILLING"} 
+        <PageHeader
+          title={isEditMode ? "Edit Invoice" : "Create Invoice"}
+          subtitle={isEditMode ? "MODIFY EXISTING SALES INVOICE AND BILLING DETAILS" : "GENERATE SALES INVOICE AND MANAGE CLIENT BILLING"}
         />
 
         <div className="px-6 flex flex-col gap-5 w-full">
@@ -766,7 +766,7 @@ const CreateInvoice = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Challan No / Invoice No</label>
-                  <input 
+                  <input
                     type="text"
                     name="challanNo"
                     value={formData.challanNo}
@@ -777,7 +777,7 @@ const CreateInvoice = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Date</label>
-                  <input 
+                  <input
                     type="date"
                     name="date"
                     value={formData.date}
@@ -793,7 +793,7 @@ const CreateInvoice = () => {
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Party Name</label>
                   <div className="flex gap-2" ref={clientRef}>
                     <div className="flex-1 relative">
-                      <input 
+                      <input
                         type="text"
                         name="clientName"
                         value={formData.clientName}
@@ -808,28 +808,28 @@ const CreateInvoice = () => {
                       />
                       {showClientDropdown && (
                         <div className="absolute top-full left-0 right-0 z-[999] mt-1 bg-white border border-border-soft rounded-xl shadow-2xl max-h-80 overflow-y-auto">
-                           {clients
-                             .filter(c => c.name.toLowerCase().includes(formData.clientName.toLowerCase()) || c.shortform?.toLowerCase().includes(formData.clientName.toLowerCase()))
-                             .map(c => (
-                               <div 
-                                 key={c.id} 
-                                 onClick={() => handleSelectClient(c)}
-                                 className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
-                               >
-                               <div className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">
-                                 {c.name} {c.shortform && <span className="text-text-primary/50 font-medium ml-1">({c.shortform})</span>}
-                               </div>
-                               <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
-                               </div>
-                             ))
-                           }
-                           <div onClick={() => setShowClientDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
+                          {clients
+                            .filter(c => c.name.toLowerCase().includes(formData.clientName.toLowerCase()) || c.shortform?.toLowerCase().includes(formData.clientName.toLowerCase()))
+                            .map(c => (
+                              <div
+                                key={c.id}
+                                onClick={() => handleSelectClient(c)}
+                                className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
+                              >
+                                <div className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">
+                                  {c.name} {c.shortform && <span className="text-text-primary/50 font-medium ml-1">({c.shortform})</span>}
+                                </div>
+                                <div className="text-[10px] font-bold text-text-primary opacity-50 uppercase tracking-widest">{c.shortform || 'No Pet Name'} • {c.city || 'Unknown City'}</div>
+                              </div>
+                            ))
+                          }
+                          <div onClick={() => setShowClientDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
                         </div>
                       )}
                     </div>
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
+                    <Button
+                      variant="primary"
+                      size="sm"
                       className="whitespace-nowrap h-9 px-5 text-[11px] font-bold uppercase tracking-wide rounded-lg shadow-sm"
                       onClick={() => setShowClientForm(true)}
                     >
@@ -839,7 +839,7 @@ const CreateInvoice = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Address Line 1</label>
-                  <input 
+                  <input
                     type="text"
                     name="address1"
                     value={formData.address1}
@@ -850,7 +850,7 @@ const CreateInvoice = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Address Line 2</label>
-                  <input 
+                  <input
                     type="text"
                     name="address2"
                     value={formData.address2}
@@ -865,7 +865,7 @@ const CreateInvoice = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left relative">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Parcel</label>
-                  <input 
+                  <input
                     type="text"
                     name="short_remark"
                     value={formData.short_remark}
@@ -877,7 +877,7 @@ const CreateInvoice = () => {
                 <div className="flex flex-col gap-1 text-left relative">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5">Transporter Name</label>
                   <div className="relative" ref={transporterRef}>
-                    <input 
+                    <input
                       type="text"
                       name="transporterName"
                       value={formData.transporterName || ''}
@@ -893,35 +893,35 @@ const CreateInvoice = () => {
                     />
                     {showTransporterDropdown && (
                       <div className="absolute top-full left-0 right-0 z-[999] mt-1 bg-white border border-border-soft rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                         {transporters
-                           .filter(t => t.name.toLowerCase().includes((formData.transporterName || '').toLowerCase()))
-                           .map(t => (
-                             <div 
-                               key={t.id} 
-                               onClick={() => handleSelectTransporter(t)}
-                               className="px-4 py-2 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
-                             >
-                               <div className="text-[12.5px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{t.name}</div>
-                             </div>
-                           ))
-                         }
-                         {/* Dynamic "Add New" Option */}
-                         {formData.transporterName && !transporters.some(t => t.name.toLowerCase() === formData.transporterName.toLowerCase()) && (
-                           <div 
-                             onClick={() => handleCreateTransporter(formData.transporterName)}
-                             className="px-4 py-3 bg-brand-blue/5 hover:bg-brand-blue/10 cursor-pointer border-t border-border-soft/50 group"
-                           >
-                              <div className="flex items-center gap-2">
-                                <span className="text-brand-blue">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                                  </svg>
-                                </span>
-                                <span className="text-[12px] font-black text-brand-blue uppercase tracking-tight">Add "{formData.transporterName}"</span>
-                              </div>
-                           </div>
-                         )}
-                         <div onClick={() => setShowTransporterDropdown(false)} className="bg-bg-main/50 px-4 py-1 text-center text-[9px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close</div>
+                        {transporters
+                          .filter(t => t.name.toLowerCase().includes((formData.transporterName || '').toLowerCase()))
+                          .map(t => (
+                            <div
+                              key={t.id}
+                              onClick={() => handleSelectTransporter(t)}
+                              className="px-4 py-2 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
+                            >
+                              <div className="text-[12.5px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{t.name}</div>
+                            </div>
+                          ))
+                        }
+                        {/* Dynamic "Add New" Option */}
+                        {formData.transporterName && !transporters.some(t => t.name.toLowerCase() === formData.transporterName.toLowerCase()) && (
+                          <div
+                            onClick={() => handleCreateTransporter(formData.transporterName)}
+                            className="px-4 py-3 bg-brand-blue/5 hover:bg-brand-blue/10 cursor-pointer border-t border-border-soft/50 group"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-brand-blue">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                </svg>
+                              </span>
+                              <span className="text-[12px] font-black text-brand-blue uppercase tracking-tight">Add "{formData.transporterName}"</span>
+                            </div>
+                          </div>
+                        )}
+                        <div onClick={() => setShowTransporterDropdown(false)} className="bg-bg-main/50 px-4 py-1 text-center text-[9px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close</div>
                       </div>
                     )}
                   </div>
@@ -934,7 +934,7 @@ const CreateInvoice = () => {
           {showClientForm && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowClientForm(false)}></div>
-              
+
               <Card className="relative w-full max-w-xl bg-white border border-border-soft rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300">
                 <div className="bg-table-header px-6 py-3 flex justify-between items-center">
                   <div className="flex items-center gap-2.5">
@@ -945,12 +945,12 @@ const CreateInvoice = () => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
-                
+
                 <div className="p-6 flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5 flex-1">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Party Name</label>
-                      <input 
+                      <input
                         type="text"
                         name="name"
                         value={newClientFormData.name}
@@ -961,7 +961,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5 flex-1">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Pet Name / Shorthand</label>
-                      <input 
+                      <input
                         type="text"
                         name="shortform"
                         value={newClientFormData.shortform}
@@ -975,7 +975,7 @@ const CreateInvoice = () => {
                   <div className="grid grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Address Line 1</label>
-                      <input 
+                      <input
                         type="text"
                         name="street"
                         value={newClientFormData.street}
@@ -986,7 +986,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Address Line 2</label>
-                      <input 
+                      <input
                         type="text"
                         name="city"
                         value={newClientFormData.city}
@@ -1001,7 +1001,7 @@ const CreateInvoice = () => {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Opening Balance (₹)</label>
                       <div className="relative">
-                        <input 
+                        <input
                           type="number"
                           name="balance"
                           value={newClientFormData.balance}
@@ -1014,7 +1014,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Internal Remarks</label>
-                      <input 
+                      <input
                         type="text"
                         name="remark"
                         value={newClientFormData.remark}
@@ -1027,15 +1027,15 @@ const CreateInvoice = () => {
                 </div>
 
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60">
-                  <button 
+                  <button
                     onClick={() => setShowClientForm(false)}
                     className="px-4 py-2 text-[11px] font-bold text-text-primary hover:text-red-500 transition-all uppercase tracking-[0.1em]"
                   >
                     Cancel
                   </button>
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={handleSaveNewClient}
                     disabled={isSavingNewClient}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
@@ -1052,13 +1052,13 @@ const CreateInvoice = () => {
             <div className="bg-table-header h-9 px-4 flex items-center">
               <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">New Item Entry</h3>
             </div>
-            
+
             <div className="p-4 bg-bg-main/20 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-9 gap-3">
                 <div className="flex flex-col gap-1 col-span-2 text-left relative" ref={itemRef}>
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Item Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="item"
                     ref={itemNameInputRef}
                     value={currentItem.item}
@@ -1067,29 +1067,29 @@ const CreateInvoice = () => {
                       setShowItemDropdown(true);
                     }}
                     onFocus={() => setShowItemDropdown(true)}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue shadow-sm" 
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-medium outline-none focus:border-brand-blue shadow-sm"
                     placeholder="Start typing item..."
                     autoComplete="off"
                   />
                   {showItemDropdown && (
                     <div className="absolute top-full left-0 right-0 z-[999] mt-1 bg-white border border-border-soft rounded-xl shadow-2xl max-h-[400px] overflow-y-auto">
-                       {items
-                         .filter(i => i.name.toLowerCase().includes(currentItem.item.toLowerCase()))
-                         .map(i => (
-                           <div 
-                             key={i.id} 
-                             onClick={() => handleSelectItem(i)}
-                             className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
-                           >
-                             <div className="flex justify-between items-center">
-                                <span className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{i.name}</span>
-                                <span className="text-[10px] font-black text-brand-blue ml-2">₹{i.rate}</span>
-                             </div>
-                             <div className={`text-[10px] font-bold uppercase tracking-widest ${parseFloat(i.stock) > 0 ? 'text-green-600' : 'text-red-500'}`}>Stock: {i.stock} {i.unit}</div>
-                           </div>
-                         ))
-                       }
-                       <div onClick={() => setShowItemDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
+                      {items
+                        .filter(i => i.name.toLowerCase().includes(currentItem.item.toLowerCase()))
+                        .map(i => (
+                          <div
+                            key={i.id}
+                            onClick={() => handleSelectItem(i)}
+                            className="px-4 py-2.5 hover:bg-bg-main cursor-pointer border-b border-border-soft/30 last:border-none group"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-[13px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight">{i.name}</span>
+                              <span className="text-[10px] font-black text-brand-blue ml-2">₹{i.rate}</span>
+                            </div>
+                            <div className={`text-[10px] font-bold uppercase tracking-widest ${parseFloat(i.stock) > 0 ? 'text-green-600' : 'text-red-500'}`}>Stock: {i.stock} {i.unit}</div>
+                          </div>
+                        ))
+                      }
+                      <div onClick={() => setShowItemDropdown(false)} className="bg-bg-main/50 px-4 py-1.5 text-center text-[10px] font-black text-text-primary hover:text-brand-blue cursor-pointer uppercase tracking-widest">Close Search</div>
                     </div>
                   )}
                 </div>
@@ -1102,16 +1102,16 @@ const CreateInvoice = () => {
                 <div className="flex flex-col gap-1 col-span-2">
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Qty / Unit</label>
                   <div className="flex gap-1">
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       name="qty"
                       ref={qtyInputRef}
                       value={currentItem.qty}
                       onChange={handleEntryChange}
-                      className="w-full h-9 px-3 bg-white border border-brand-blue/30 rounded-lg text-[13px] font-bold text-brand-blue text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                      className="w-full h-9 px-3 bg-white border border-brand-blue/30 rounded-lg text-[13px] font-bold text-brand-blue text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm"
                       placeholder="0"
                     />
-                    <select 
+                    <select
                       name="unit"
                       value={currentItem.unit}
                       onChange={handleEntryChange}
@@ -1128,34 +1128,34 @@ const CreateInvoice = () => {
                 </div>
                 <div className="flex flex-col gap-1 text-center">
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Rate (₹)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     name="rate"
                     value={currentItem.rate}
                     onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm"
                     placeholder="0.00"
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-center">
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Disc %</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     name="dPercent"
                     value={currentItem.dPercent}
                     onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm"
                     placeholder="0"
                   />
                 </div>
                 <div className="flex flex-col gap-1 text-center">
                   <label className="text-[10px] uppercase font-bold text-text-primary tracking-widest">Disc (₹)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     name="dAmount"
                     value={currentItem.dAmount}
                     onChange={handleEntryChange}
-                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm" 
+                    className="w-full h-9 px-3 bg-white border border-border-soft rounded-lg text-[13px] font-bold text-text-primary text-center outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/10 transition-all shadow-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -1169,7 +1169,7 @@ const CreateInvoice = () => {
 
               {/* Action Buttons below inputs */}
               <div className="flex justify-between items-center pt-2 mt-1 border-t border-border-soft/50">
-                <button 
+                <button
                   onClick={() => setShowItemModal(true)}
                   className="flex items-center gap-2 px-3.5 h-8 bg-white border border-brand-navy rounded-lg text-[11.5px] font-bold text-text-primary hover:bg-bg-main transition shadow-sm"
                 >
@@ -1180,7 +1180,7 @@ const CreateInvoice = () => {
                 </button>
 
                 <div className="flex items-center gap-16">
-                  <button 
+                  <button
                     onClick={handleRedoCurrent}
                     className="flex items-center gap-2 px-3.5 h-8 bg-white border border-brand-navy rounded-lg text-[11px] font-bold text-text-primary hover:text-text-primary transition shadow-sm uppercase tracking-wider"
                   >
@@ -1189,7 +1189,7 @@ const CreateInvoice = () => {
                     </svg>
                     Redo
                   </button>
-                  <button 
+                  <button
                     onClick={handleAppendItem}
                     className="bg-brand-blue text-white px-5 h-8 rounded-lg text-[12px] font-bold flex items-center gap-2 hover:bg-brand-blue-hover transition transform active:scale-95 shadow-sm uppercase tracking-widest"
                   >
@@ -1207,7 +1207,7 @@ const CreateInvoice = () => {
           {showItemModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowItemModal(false)}></div>
-              
+
               <Card className="relative w-full max-w-4xl bg-white border border-border-soft rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300 overflow-visible">
                 <div className="bg-table-header px-6 py-3 flex justify-between items-center relative">
                   <div className="flex items-center gap-2.5">
@@ -1218,11 +1218,11 @@ const CreateInvoice = () => {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
-                
+
                 <div className="p-6 flex flex-col gap-6">
                   <div className="flex flex-col gap-1.5 min-w-0">
                     <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Item Name</label>
-                    <input 
+                    <input
                       type="text"
                       name="name"
                       value={newItemFormData.name}
@@ -1237,7 +1237,7 @@ const CreateInvoice = () => {
                   <div className="grid grid-cols-5 gap-6">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Base Rate (₹)</label>
-                      <input 
+                      <input
                         type="number"
                         name="rate"
                         value={newItemFormData.rate}
@@ -1248,7 +1248,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Selling Unit</label>
-                      <select 
+                      <select
                         name="unit"
                         value={newItemFormData.unit}
                         onChange={handleNewItemFormChange}
@@ -1264,7 +1264,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Conversion</label>
-                      <input 
+                      <input
                         type="number"
                         name="conversion"
                         value={newItemFormData.conversion}
@@ -1275,7 +1275,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Opening Stock</label>
-                      <input 
+                      <input
                         type="number"
                         name="stock"
                         value={newItemFormData.stock}
@@ -1286,7 +1286,7 @@ const CreateInvoice = () => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Min Stock</label>
-                      <input 
+                      <input
                         type="number"
                         name="min_stock"
                         value={newItemFormData.min_stock}
@@ -1299,16 +1299,16 @@ const CreateInvoice = () => {
                 </div>
 
                 <div className="px-6 py-4 bg-bg-main/40 flex justify-end items-center gap-4 border-t border-border-soft/60 mt-4">
-                  <button 
+                  <button
                     onClick={handleRedoNewItem}
                     className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-text-primary hover:text-text-primary transition-all uppercase tracking-widest border border-brand-navy rounded-xl"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     REDO
                   </button>
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={handleSaveNewItem}
                     disabled={isSavingNewItem}
                     className="px-10 h-10 shadow-lg shadow-brand-blue/20 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl"
@@ -1332,7 +1332,7 @@ const CreateInvoice = () => {
                   {addedItems.length} {addedItems.length === 1 ? 'Item' : 'Items'} Ready to Bill
                 </div>
               </div>
-              
+
               <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">
                 <table className="w-full border-collapse">
                   <thead>
@@ -1352,7 +1352,7 @@ const CreateInvoice = () => {
                       <tr key={item.id} className={`hover:bg-bg-main/30 group transition-colors duration-75 ${editingId === item.id ? 'bg-brand-blue/[0.03]' : ''}`}>
                         <td className="px-5 py-2 border-r border-border-soft/50">
                           {editingId === item.id ? (
-                            <input 
+                            <input
                               type="text"
                               value={item.item}
                               onChange={(e) => handleSummaryRowChange(item.id, 'item', e.target.value)}
@@ -1364,7 +1364,7 @@ const CreateInvoice = () => {
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50">
                           {editingId === item.id ? (
-                            <input 
+                            <input
                               type="number"
                               value={item.qty}
                               onChange={(e) => handleSummaryRowChange(item.id, 'qty', e.target.value)}
@@ -1375,8 +1375,8 @@ const CreateInvoice = () => {
                           )}
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50">
-                           {editingId === item.id ? (
-                            <select 
+                          {editingId === item.id ? (
+                            <select
                               value={item.unit}
                               onChange={(e) => handleSummaryRowChange(item.id, 'unit', e.target.value)}
                               className="bg-white border border-brand-blue/20 rounded px-1 py-0.5 text-[11px] font-bold text-text-primary outline-none"
@@ -1393,8 +1393,8 @@ const CreateInvoice = () => {
                           )}
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50">
-                           {editingId === item.id ? (
-                            <input 
+                          {editingId === item.id ? (
+                            <input
                               type="number"
                               value={item.rate}
                               onChange={(e) => handleSummaryRowChange(item.id, 'rate', e.target.value)}
@@ -1405,8 +1405,8 @@ const CreateInvoice = () => {
                           )}
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50">
-                           {editingId === item.id ? (
-                            <input 
+                          {editingId === item.id ? (
+                            <input
                               type="number"
                               value={item.dPercent}
                               onChange={(e) => handleSummaryRowChange(item.id, 'dPercent', e.target.value)}
@@ -1417,8 +1417,8 @@ const CreateInvoice = () => {
                           )}
                         </td>
                         <td className="px-5 py-2 text-center border-r border-border-soft/50 font-bold text-text-primary text-[11px]">
-                           {editingId === item.id ? (
-                            <input 
+                          {editingId === item.id ? (
+                            <input
                               type="number"
                               value={item.dAmount}
                               onChange={(e) => handleSummaryRowChange(item.id, 'dAmount', e.target.value)}
@@ -1433,7 +1433,7 @@ const CreateInvoice = () => {
                         </td>
                         <td className="px-4 py-2 text-center">
                           <div className="flex items-center justify-center gap-2">
-                             <button 
+                            <button
                               onClick={() => handleToggleEdit(item.id)}
                               className={`p-1.5 rounded-md transition-all ${editingId === item.id ? 'bg-green-100 text-green-600' : 'text-brand-blue hover:bg-brand-blue/10'}`}
                               title={editingId === item.id ? "Save Row" : "Edit Row"}
@@ -1448,8 +1448,8 @@ const CreateInvoice = () => {
                                 </svg>
                               )}
                             </button>
-                            <button 
-                               onClick={() => openDeleteModal(item.id)}
+                            <button
+                              onClick={() => openDeleteModal(item.id)}
                               className="p-1.5 text-text-primary hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
                               title="Delete Row"
                             >
@@ -1464,13 +1464,13 @@ const CreateInvoice = () => {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Extra Charges, Discounts & Totals Section */}
               <div className="flex gap-6 mt-4">
                 {/* Left Side: Remarks */}
                 <div className="flex-1 flex flex-col gap-2">
                   <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-1">Invoice Remarks</label>
-                  <textarea 
+                  <textarea
                     name="long_remark"
                     value={formData.long_remark}
                     onChange={handleFormChange}
@@ -1488,7 +1488,7 @@ const CreateInvoice = () => {
 
                   <div className="flex items-center justify-between px-1">
                     <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Transport (₹)</label>
-                    <input 
+                    <input
                       type="number"
                       name="transport"
                       value={formData.transport}
@@ -1499,7 +1499,7 @@ const CreateInvoice = () => {
 
                   <div className="flex items-center justify-between px-1">
                     <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Packing (₹)</label>
-                    <input 
+                    <input
                       type="number"
                       name="packing"
                       value={formData.packing}
@@ -1511,62 +1511,62 @@ const CreateInvoice = () => {
                   <div className="flex flex-col gap-2 bg-bg-main/20 p-2 rounded-lg border border-border-soft/50">
                     <label className="text-[9px] font-black text-text-primary uppercase tracking-[0.2em]">Discount</label>
                     <div className="flex items-center gap-2">
-                       <div className="flex-1 relative">
-                          <input 
-                            type="number"
-                            name="extraDiscountPercent"
-                            value={formData.extraDiscountPercent}
-                            onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
-                            placeholder="0"
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">%</span>
-                       </div>
-                       <div className="flex-1 relative">
-                          <input 
-                            type="number"
-                            name="extraDiscountAmount"
-                            value={formData.extraDiscountAmount}
-                            onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
-                            placeholder="0.00"
-                          />
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">₹</span>
-                       </div>
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          name="extraDiscountPercent"
+                          value={formData.extraDiscountPercent}
+                          onChange={handleSummaryFieldChange}
+                          className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
+                          placeholder="0"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">%</span>
+                      </div>
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          name="extraDiscountAmount"
+                          value={formData.extraDiscountAmount}
+                          onChange={handleSummaryFieldChange}
+                          className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">₹</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2 bg-bg-main/20 p-2 rounded-lg border border-border-soft/50">
                     <label className="text-[9px] font-black text-text-primary uppercase tracking-[0.2em]">Adjustment</label>
                     <div className="flex items-center gap-2">
-                       <div className="flex-1 relative">
-                          <input 
-                            type="number"
-                            name="adjustmentPercent"
-                            value={formData.adjustmentPercent}
-                            onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
-                            placeholder="0"
-                          />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">%</span>
-                       </div>
-                       <div className="flex-1 relative">
-                          <input 
-                            type="number"
-                            name="adjustmentAmount"
-                            value={formData.adjustmentAmount}
-                            onChange={handleSummaryFieldChange}
-                            className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
-                            placeholder="0.00"
-                          />
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">₹</span>
-                       </div>
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          name="adjustmentPercent"
+                          value={formData.adjustmentPercent}
+                          onChange={handleSummaryFieldChange}
+                          className="w-full h-8 pl-3 pr-6 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary outline-none focus:border-brand-blue transition-all"
+                          placeholder="0"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">%</span>
+                      </div>
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          name="adjustmentAmount"
+                          value={formData.adjustmentAmount}
+                          onChange={handleSummaryFieldChange}
+                          className="w-full h-8 pl-6 pr-3 bg-white border border-border-soft rounded-lg text-[12px] font-bold text-text-primary text-right outline-none focus:border-brand-blue transition-all"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-primary opacity-40">₹</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between px-1">
                     <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest">Round Off</label>
-                    <input 
+                    <input
                       type="text"
                       readOnly
                       value={roundOffDisplay}
@@ -1583,14 +1583,14 @@ const CreateInvoice = () => {
 
                   <div className="flex flex-col gap-2 mt-4">
                     <div className="flex gap-2">
-                      <Button 
-                        variant="secondary" 
+                      <Button
+                        variant="secondary"
                         className="flex-1 h-10 text-[11px] font-bold uppercase tracking-widest"
                         onClick={() => navigate('/order-summary')}
                       >
                         Cancel
                       </Button>
-                      <button 
+                      <button
                         onClick={handleSaveAndPrint}
                         className="flex-1 h-10 bg-white border-2 border-brand-blue text-brand-blue rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all flex items-center justify-center gap-2"
                       >
@@ -1600,8 +1600,8 @@ const CreateInvoice = () => {
                         Save & Print
                       </button>
                     </div>
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       className="w-full h-12 text-[13px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-blue/20"
                       onClick={handleFinalSave}
                     >
@@ -1612,34 +1612,34 @@ const CreateInvoice = () => {
               </div>
             </div>
           )}
-          
+
           {/* Print Component — rendered only when isPrinting is true */}
           {isPrinting && (
-            <PrintInvoice 
+            <PrintInvoice
               data={{
                 ...formData,
                 itemsSubtotal,
                 grandTotal,
                 roundOffDisplay
-              }} 
-              items={addedItems} 
+              }}
+              items={addedItems}
               printCopies={printCopies}
             />
           )}
 
-          <PrintCopiesModal 
-            isOpen={showPrintModal} 
-            onClose={() => setShowPrintModal(false)} 
+          <PrintCopiesModal
+            isOpen={showPrintModal}
+            onClose={() => setShowPrintModal(false)}
             onPrint={() => {
               setShowPrintModal(false);
               setIsPrinting(true);
-            }} 
-            printCopies={printCopies} 
-            setPrintCopies={setPrintCopies} 
+            }}
+            printCopies={printCopies}
+            setPrintCopies={setPrintCopies}
           />
 
           {/* Secure Delete Confirmation Modal */}
-          <DeleteModal 
+          <DeleteModal
             isOpen={isDeleteModalOpen}
             onClose={() => setIsDeleteModalOpen(false)}
             onConfirm={handleDeleteItem}
@@ -1650,7 +1650,7 @@ const CreateInvoice = () => {
           />
         </div>
         {/* Reusable Warning Modal */}
-        <WarningModal 
+        <WarningModal
           isOpen={isWarningOpen}
           onClose={() => setIsWarningOpen(false)}
           onConfirm={proceedAppend}

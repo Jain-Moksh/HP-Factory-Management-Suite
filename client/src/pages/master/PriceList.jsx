@@ -54,17 +54,17 @@ const PriceList = () => {
   // --- Dynamic pagination calculator for print preview sheets ---
   const printPages = useMemo(() => {
     if (categories.length === 0) return [];
-    
+
     const pages = [];
     let currentPageItems = [];
     let currentRowsCount = 0;
-    const MAX_ROWS = 43; // Target row count per A4 sheet
+    const MAX_ROWS = 48; // Target row count per A4 sheet
 
     categories.forEach(cat => {
       // 1 row for category header
       // If category has items, we must guarantee the header fits with at least 1 item.
       const neededRows = 1 + (cat.items.length > 0 ? 1 : 0);
-      
+
       if (currentRowsCount + neededRows > MAX_ROWS) {
         pages.push(currentPageItems);
         currentPageItems = [];
@@ -117,7 +117,7 @@ const PriceList = () => {
       const result = await response.json();
       if (result.success && result.data) {
         setSelectedDate(result.data.date);
-        
+
         // Preserve the expanded state of categories if they already exist
         setCategories(prev => {
           return result.data.categories.map((cat, idx) => {
@@ -170,10 +170,10 @@ const PriceList = () => {
       // Show item if it is not assigned anywhere, OR if it's already assigned to the active category
       // (so they can toggle selections in the modal)
       const isAssignedElsewhere = globallyAssignedItemIds.has(item.id);
-      const isAssignedToActiveCategory = activeCategoryId 
+      const isAssignedToActiveCategory = activeCategoryId
         ? categories.find(c => c.id === activeCategoryId)?.items.some(i => i.id === item.id)
         : false;
-      
+
       return !isAssignedElsewhere || isAssignedToActiveCategory;
     });
   }, [allItems, globallyAssignedItemIds, activeCategoryId, categories]);
@@ -257,14 +257,14 @@ const PriceList = () => {
     if (draggedIdx !== -1 && targetIdx !== -1) {
       const [dragged] = reordered.splice(draggedIdx, 1);
       reordered.splice(targetIdx, 0, dragged);
-      
+
       setCategories(reordered);
-      
+
       const orders = reordered.map((cat, idx) => ({
         categoryId: cat.id,
         order: idx + 1
       }));
-      
+
       persistCategoryOrder(orders);
     }
   };
@@ -277,14 +277,14 @@ const PriceList = () => {
       const temp = reordered[index];
       reordered[index] = reordered[targetIdx];
       reordered[targetIdx] = temp;
-      
+
       setCategories(reordered);
-      
+
       const orders = reordered.map((cat, idx) => ({
         categoryId: cat.id,
         order: idx + 1
       }));
-      
+
       persistCategoryOrder(orders);
     }
   };
@@ -326,12 +326,12 @@ const PriceList = () => {
     e.stopPropagation(); // Prevent category card accordion collapse
     setActiveCategoryId(categoryId);
     setItemSearchTerm('');
-    
+
     // Pre-populate checkboxes with currently assigned items in this category
     const category = categories.find(c => c.id === categoryId);
     const preselected = new Set(category ? category.items.map(i => i.id) : []);
     setSelectedItemIds(preselected);
-    
+
     setIsItemModalOpen(true);
   };
 
@@ -388,7 +388,7 @@ const PriceList = () => {
   // --- Reordering Logic ---
   const handleMoveItem = async (categoryId, index, direction, e) => {
     e.stopPropagation();
-    
+
     // 1. Calculate swapped list locally first
     const category = categories.find(cat => cat.id === categoryId);
     if (!category) return;
@@ -440,7 +440,8 @@ const PriceList = () => {
   return (
     <Layout>
       {/* Dynamic Printing Media Styles */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
           /* Hide all screen elements */
           body * {
@@ -463,10 +464,14 @@ const PriceList = () => {
             background: white !important;
           }
 
+          @page {
+            margin: 0;
+          }
+
           .print-page {
             width: 210mm !important;
             height: 295mm !important;
-            padding: 8mm 12mm !important;
+            padding: 5mm !important;
             box-sizing: border-box !important;
             page-break-after: always !important;
             background: white !important;
@@ -538,20 +543,20 @@ const PriceList = () => {
       `}} />
 
       <div className="flex flex-col min-h-screen pb-16">
-        <PageHeader 
-          title="Price List" 
-          subtitle="MANAGE ITEM PRICE LIST" 
+        <PageHeader
+          title="Price List"
+          subtitle="MANAGE ITEM PRICE LIST"
           backAction={() => window.history.back()}
         />
 
         <div className="px-6 flex flex-col gap-6 w-full">
-          
+
           {/* Top Control Section */}
           <div className="bg-white border border-border-soft rounded-xl px-4 py-3 shadow-sm flex items-center justify-between gap-4 group no-print">
             <div className="flex items-center gap-6">
-              <Button 
-                variant="primary" 
-                size="sm" 
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={handleOpenCategoryModal}
                 className="flex items-center gap-1.5 shadow-brand-blue/20"
               >
@@ -563,7 +568,7 @@ const PriceList = () => {
 
               <div className="flex items-center gap-2 border-l border-border-soft pl-6">
                 <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Date</span>
-                <input 
+                <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => handleDateChange(e.target.value)}
@@ -572,9 +577,9 @@ const PriceList = () => {
               </div>
             </div>
 
-            <Button 
-              variant="secondary" 
-              size="sm" 
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={handlePrint}
               className="flex items-center gap-1.5"
             >
@@ -587,7 +592,7 @@ const PriceList = () => {
 
           {/* Collapsible / Expandable Categories Display */}
           <div id="print-area" className="flex flex-col gap-5 w-full">
-            
+
             {/* Print Only Header Info */}
             <div className="hidden print-header w-full">
               <div className="flex justify-between items-end">
@@ -618,8 +623,8 @@ const PriceList = () => {
               </div>
             ) : (
               categories.map((cat, idx) => (
-                <div 
-                  key={cat.id} 
+                <div
+                  key={cat.id}
                   draggable={categoryDragId === cat.id}
                   onDragStart={(e) => {
                     setDraggedCategoryId(cat.id);
@@ -643,15 +648,15 @@ const PriceList = () => {
                   }}
                   className="print-card bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden"
                 >
-                  
+
                   {/* Category Header Card */}
-                  <div 
+                  <div
                     onClick={() => toggleCategoryCollapse(cat.id)}
                     className="px-5 py-3.5 bg-slate-50 border-b border-border-soft flex items-center justify-between cursor-pointer select-none hover:bg-slate-100/50 transition-colors duration-150"
                   >
                     <div className="flex items-center gap-3">
                       {/* Drag Handle ☰ */}
-                      <span 
+                      <span
                         className="cursor-grab hover:text-brand-blue text-text-light mr-1 font-bold text-lg select-none no-print"
                         onMouseDown={() => setCategoryDragId(cat.id)}
                         onMouseUp={() => setCategoryDragId(null)}
@@ -741,7 +746,7 @@ const PriceList = () => {
                           <tbody className="divide-y divide-border-soft text-text-primary text-[12.5px]">
                             {cat.items.map((item, idx) => (
                               <tr key={item.id} className="hover:bg-bg-main/20">
-                                
+
                                 {/* Position column */}
                                 <td className="px-5 py-2 text-center font-bold text-text-light border-r border-border-soft no-print">
                                   {idx + 1}
@@ -836,7 +841,7 @@ const PriceList = () => {
         }
       >
         <div className="flex flex-col gap-4">
-          <Input 
+          <Input
             label="Category Name"
             placeholder="e.g. ELECTRICAL ITEMS"
             value={newCategoryName}
@@ -891,8 +896,8 @@ const PriceList = () => {
           <div className="flex-1 overflow-y-auto border border-border-soft rounded-lg divide-y divide-border-soft max-h-[40vh] bg-bg-main/20">
             {filteredItemsInSelector.length === 0 ? (
               <div className="p-8 text-center text-text-light italic text-[12px]">
-                {itemSearchTerm 
-                  ? "No matching available items found." 
+                {itemSearchTerm
+                  ? "No matching available items found."
                   : "All system items are already assigned to a category."
                 }
               </div>
@@ -900,11 +905,11 @@ const PriceList = () => {
               filteredItemsInSelector.map(item => {
                 const isChecked = selectedItemIds.has(item.id);
                 return (
-                  <label 
+                  <label
                     key={item.id}
                     className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-50 select-none transition-colors"
                   >
-                    <input 
+                    <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => handleToggleItemCheckbox(item.id)}
@@ -929,7 +934,7 @@ const PriceList = () => {
       <div className="price-list-print-container">
         {printPages.map((page, pageIdx) => (
           <div key={pageIdx} className="print-page">
-            
+
             {/* Header: Date | Company Name | Page X of Y */}
             <table className="print-header-table">
               <tbody>
@@ -954,7 +959,7 @@ const PriceList = () => {
                   <th style={{ width: '8%', textAlign: 'center' }}>SR. NO</th>
                   <th style={{ width: '60%', textAlign: 'left' }}>ITEM NAME</th>
                   <th style={{ width: '16%', textAlign: 'center' }}>
-                    RATE<br/>
+                    RATE<br />
                     <span style={{ fontSize: '9px', fontWeight: 'normal', textTransform: 'none' }}>(In Doz)</span>
                   </th>
                   <th style={{ width: '16%', textAlign: 'center' }}>PARCEL PACKING</th>
@@ -965,8 +970,8 @@ const PriceList = () => {
                   if (row.type === 'category') {
                     return (
                       <tr key={rowIdx}>
-                        <td 
-                          colSpan="4" 
+                        <td
+                          colSpan="4"
                           className="category-row"
                         >
                           {row.name} {row.isContinuation ? '(Continued)' : ''}

@@ -64,7 +64,7 @@ const partyTransactionService = {
 
       // 4. Insert transaction
       const finalPaymentMode = ['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType) && transactionType !== 'PAYMENT' ? null : toUpperCase(paymentMode);
-      
+
       const insertRes = await client.query(queries.insertTransaction, [
         partyType,
         partyId,
@@ -226,7 +226,7 @@ const partyTransactionService = {
     // 1. Calculate dynamic date defaults in server local time
     const today = new Date();
     const prevMonthFirstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    
+
     const formatDate = (d) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
