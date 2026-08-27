@@ -54,12 +54,12 @@ const PrintStockSummary = ({ items, paperSize = 'A4' }) => {
 
     .report-table th {
       font-size: 11px !important;
-      padding: 6px 10px !important;
+      padding: 2px 4px !important;
     }
 
     .report-table td {
-      padding: 6px 10px !important;
-      height: 30px !important;
+      padding: 2px 4px !important;
+      height: 14px !important;
     }
 
     /* Column Widths for 2-column layout */
