@@ -133,6 +133,9 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
     .bill-table th { border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 1.5mm 1mm; font-size: 9px; font-weight: 800; text-transform: uppercase; background: #fdfdfd; text-align: center; }
     .bill-table th:last-child { border-right: none; }
 
+    .last-page-middle { flex-grow: 0 !important; }
+    .last-page-table { height: auto !important; }
+
     .bill-table td { 
       border-right: 1px solid #000; 
       padding: 0mm 1.5mm; 
@@ -180,7 +183,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
         else if (isFirst) maxRows = ROWS_FIRST_PAGE;
         else if (isLast) maxRows = ROWS_LAST_PAGE;
 
-        const emptyRowsCount = isLast ? 0 : Math.max(0, maxRows - chunk.length);
+        const emptyRowsCount = (isLast && totalPages > 1) ? 0 : Math.max(0, maxRows - chunk.length);
         const emptyRows = Array.from({ length: emptyRowsCount });
 
         return (
@@ -239,8 +242,8 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
               </div>
             )}
 
-            <div className="section-middle">
-              <table className="bill-table">
+            <div className={`section-middle ${(isLast && totalPages > 1) ? "last-page-middle" : ""}`}>
+              <table className={`bill-table ${(isLast && totalPages > 1) ? "last-page-table" : ""}`}>
                 <thead>
                   <tr>
                     <th className="c-bund">Bundle</th>
