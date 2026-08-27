@@ -42,10 +42,10 @@ const formatDate = (dateStr) => {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const PrintInvoice = ({ data, items, printCopies = 1 }) => {
-  const ROWS_FIRST_PAGE = 32;
-  const ROWS_MIDDLE_PAGE = 36;
+  const ROWS_FIRST_PAGE = 36;
+  const ROWS_MIDDLE_PAGE = 40;
   const ROWS_LAST_PAGE = 26;
-  const ROWS_SINGLE_PAGE = 23;
+  const ROWS_SINGLE_PAGE = 26;
 
   const hasDiscount = items.some((item) => parseFloat(item.dAmount) > 0);
 
@@ -180,7 +180,7 @@ const PrintInvoice = ({ data, items, printCopies = 1 }) => {
         else if (isFirst) maxRows = ROWS_FIRST_PAGE;
         else if (isLast) maxRows = ROWS_LAST_PAGE;
 
-        const emptyRowsCount = Math.max(0, maxRows - chunk.length);
+        const emptyRowsCount = isLast ? 0 : Math.max(0, maxRows - chunk.length);
         const emptyRows = Array.from({ length: emptyRowsCount });
 
         return (

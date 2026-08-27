@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
+import PrintStockSummary from '../components/PrintStockSummary';
 import { API_BASE_URL } from '../config';
 
 const StockSummary = () => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isPrinting, setIsPrinting] = useState(false);
   const navigate = useNavigate();
 
   const fetchItems = async () => {
@@ -35,9 +37,42 @@ const StockSummary = () => {
     return () => window.removeEventListener('app-refresh', fetchItems);
   }, []);
 
+  // Print lifecycle
+  useEffect(() => {
+    if (isPrinting) {
+      const handleAfterPrint = () => {
+        setIsPrinting(false);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+      
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      const timer = setTimeout(() => {
+        window.print();
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
+    }
+  }, [isPrinting]);
+
   const filteredItems = items
     .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => parseFloat(b.stock || 0) - parseFloat(a.stock || 0));
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const actions = [
+    {
+      label: 'Print Report',
+      onClick: () => setIsPrinting(true),
+      icon: (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+      )
+    }
+  ];
 
   return (
     <Layout>
@@ -45,6 +80,7 @@ const StockSummary = () => {
         <PageHeader 
           title="Stock Summary" 
           subtitle="REAL-TIME INVENTORY SNAPSHOT OF ALL ITEMS" 
+          actions={actions}
         />
         
         <div className="px-6 flex flex-col gap-4 w-full">
@@ -128,6 +164,8 @@ const StockSummary = () => {
             </div>
           </div>
         </div>
+        
+        {isPrinting && <PrintStockSummary items={filteredItems} />}
       </div>
     </Layout>
   );
