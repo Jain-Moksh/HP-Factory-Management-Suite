@@ -99,6 +99,19 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
                 </tr>
               )}
             </tbody>
+            {data.length > 0 && (
+              <tfoot className="bg-slate-50 font-bold border-t-2 border-border-soft">
+                <tr>
+                  <td colSpan="4" className="px-5 py-2.5 text-right text-[11px] uppercase tracking-widest text-text-primary">
+                    Total Amount
+                  </td>
+                  <td className="px-5 py-2.5 text-[12.5px] font-black text-brand-blue">
+                    ₹{data.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
