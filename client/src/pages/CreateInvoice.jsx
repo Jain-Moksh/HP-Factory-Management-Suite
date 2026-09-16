@@ -100,7 +100,7 @@ const CreateInvoice = () => {
     packing: '',
     extraDiscountPercent: '',
     extraDiscountAmount: '',
-    adjustmentPercent: '3',
+    adjustmentPercent: '6',
     adjustmentAmount: '',
     roundOff: ''
   });
