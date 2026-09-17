@@ -86,6 +86,65 @@ const partyTransactionService = {
     }
   },
 
+  createBulk: async (bulkData) => {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const { transactionType, date, transactions } = bulkData;
+      const results = [];
+
+      // Lock table to prevent race conditions during bulk insert
+      await client.query('LOCK TABLE party_transactions IN SHARE ROW EXCLUSIVE MODE');
+
+      for (const tx of transactions) {
+        const { partyType, partyId, amount, paymentMode, remark } = tx;
+
+        // 1. Verify party exists
+        if (partyType === 'CLIENT') {
+          const clientCheck = await client.query('SELECT id FROM clients WHERE id = $1', [partyId]);
+          if (clientCheck.rows.length === 0) {
+            throw new Error(`Client ID ${partyId} not found in database.`);
+          }
+        } else if (partyType === 'JOBBER') {
+          const jobberCheck = await client.query('SELECT id FROM jobbers WHERE id = $1', [partyId]);
+          if (jobberCheck.rows.length === 0) {
+            throw new Error(`Jobber ID ${partyId} not found in database.`);
+          }
+        } else {
+          throw new Error(`Invalid party type: ${partyType}`);
+        }
+
+        // 2. Generate sequential challan number
+        const challan_no = await getFormattedTransactionChallan(date, transactionType, client);
+
+        // 3. Insert transaction
+        const finalPaymentMode = ['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType) && transactionType !== 'PAYMENT' ? null : toUpperCase(paymentMode || 'CASH');
+
+        const insertRes = await client.query(queries.insertTransaction, [
+          partyType,
+          partyId,
+          transactionType,
+          date,
+          challan_no,
+          amount,
+          finalPaymentMode,
+          toUpperCase(remark || '')
+        ]);
+
+        results.push(insertRes.rows[0]);
+      }
+
+      await client.query('COMMIT');
+      return results;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
   getAll: async () => {
     const res = await db.query(queries.getTransactionList);
     return res.rows;

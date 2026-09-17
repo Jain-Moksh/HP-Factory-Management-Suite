@@ -14,6 +14,7 @@ const JobWork = lazy(() => import('./pages/JobWork'));
 const CreateJobWork = lazy(() => import('./pages/CreateJobWork'));
 const Payment = lazy(() => import('./pages/Payment'));
 const CreatePayment = lazy(() => import('./pages/CreatePayment'));
+const BulkPayment = lazy(() => import('./pages/BulkPayment'));
 const ItemStockDetails = lazy(() => import('./pages/ItemStockDetails'));
 const StockSummary = lazy(() => import('./pages/StockSummary'));
 const TransporterList = lazy(() => import('./pages/master/TransporterList'));
@@ -156,6 +157,7 @@ function App() {
           <Route path="/payment" element={<Payment />} />
           <Route path="/create-payment" element={<CreatePayment />} />
           <Route path="/create-payment/:id" element={<CreatePayment />} />
+          <Route path="/create-bulk-payment" element={<BulkPayment />} />
           
           {/* Reports Routes */}
           <Route path="/reports" element={<ReportsDashboard />} />

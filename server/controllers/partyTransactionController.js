@@ -84,6 +84,65 @@ const partyTransactionController = {
     }
   },
 
+  createBulk: async (req, res) => {
+    try {
+      const { transactionType, date, transactions } = req.body;
+
+      if (!transactionType || !['PAYMENT', 'REPLACE', 'DISCOUNT'].includes(transactionType)) {
+        return res.status(400).json({ success: false, error: 'Invalid or missing transactionType (must be PAYMENT, REPLACE, or DISCOUNT).' });
+      }
+
+      if (!date || isNaN(Date.parse(date))) {
+        return res.status(400).json({ success: false, error: 'Invalid or missing date.' });
+      }
+
+      if (!Array.isArray(transactions) || transactions.length === 0) {
+        return res.status(400).json({ success: false, error: 'transactions must be a non-empty array.' });
+      }
+
+      // Check for duplicate parties in request and validate paymentMode per row
+      const partyKeys = new Set();
+      for (let i = 0; i < transactions.length; i++) {
+        const tx = transactions[i];
+        if (!tx.partyType || !['CLIENT', 'JOBBER'].includes(tx.partyType)) {
+          return res.status(400).json({ success: false, error: `Row ${i+1}: Invalid partyType.` });
+        }
+        if (!tx.partyId || isNaN(parseInt(tx.partyId))) {
+          return res.status(400).json({ success: false, error: `Row ${i+1}: Invalid partyId.` });
+        }
+        const parsedAmount = parseFloat(tx.amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          return res.status(400).json({ success: false, error: `Row ${i+1}: Amount must be > 0.` });
+        }
+        
+        if (transactionType === 'PAYMENT') {
+          if (!tx.paymentMode || !['BANK', 'CASH'].includes(tx.paymentMode.toUpperCase())) {
+            return res.status(400).json({ success: false, error: `Row ${i+1}: paymentMode must be BANK or CASH for PAYMENT transaction types.` });
+          }
+        }
+
+        const key = `${tx.partyType}_${tx.partyId}`;
+        if (partyKeys.has(key)) {
+          return res.status(400).json({ success: false, error: `Duplicate party found in request. A party can only have one entry per bulk request.` });
+        }
+        partyKeys.add(key);
+      }
+
+      const mappedTxType = transactionType === 'REPLACE' ? 'RETURN' : transactionType;
+
+      const results = await partyTransactionService.createBulk({
+        transactionType: mappedTxType,
+        date,
+        transactions
+      });
+
+      res.status(201).json({ success: true, data: mapTxTypeResponse(results) });
+    } catch (err) {
+      console.error('Error in partyTransactionController.createBulk:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
   getAll: async (req, res) => {
     try {
       const list = await partyTransactionService.getAll();
