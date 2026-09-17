@@ -505,6 +505,24 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           ]
         }
         ```
+### 10. Party Ledger Detail
+*   **GET `/reports/party-ledger-detail`**
+    *   *Description*: Comprehensive ledger of bills, purchases, and payments for a specific party.
+    *   *Query Params*: `partyType` (CLIENT/JOBBER), `partyId`, `from`, `to` (optional).
+
+### 11. Total Payment Received Report
+*   **GET `/reports/total-payment-received`**
+    *   *Description*: Detailed list of all incoming payments within a date range.
+    *   *Query Params*: `from`, `to` (optional).
+    
+*   **GET `/reports/total-payment-received-summary`**
+    *   *Description*: Summary of incoming payments grouped by client within a date range.
+    *   *Query Params*: `from`, `to` (optional).
+
+### 12. Pending Payments
+*   **GET `/reports/pending-payment`**
+    *   *Description*: Lists clients or jobbers with outstanding balances.
+    *   *Query Params*: `partyType` (CLIENT/JOBBER).
 
 ---
 
@@ -529,3 +547,25 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
           ]
         }
         ```
+
+---
+
+## 💸 PARTY TRANSACTIONS APIs
+
+### 1. Transactions
+*   **GET `/party-transactions`**
+    *   *Description*: Fetch transactions list, filterable by date and party.
+*   **GET `/party-transactions/outstanding`**
+    *   *Description*: Calculates outstanding ledger aggregates for a given party.
+    *   *Query Params*: `partyType` (CLIENT/JOBBER), `partyId`.
+*   **GET `/party-transactions/next-challan`**
+    *   *Description*: Generates sequential transaction slip numbers.
+    *   *Query Params*: `date`, `transactionType`.
+*   **POST `/party-transactions`**
+    *   *Description*: Creates a new transaction (payment, return, discount).
+*   **POST `/party-transactions/bulk`**
+    *   *Description*: Processes bulk payments safely across multiple parties or transactions.
+*   **PUT `/party-transactions/:id`**
+    *   *Description*: Updates a specific transaction.
+*   **DELETE `/party-transactions/:id`**
+    *   *Description*: Deletes a transaction and safely reverts its ledger impact.

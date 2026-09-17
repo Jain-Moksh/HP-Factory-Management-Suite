@@ -107,6 +107,20 @@ erDiagram
         int member_id "Polymorphic FK"
     }
 
+    party_transactions {
+        int id PK
+        party_type_enum party_type "CLIENT/JOBBER"
+        int party_id "Polymorphic FK"
+        transaction_type_enum transaction_type "PAYMENT/RETURN/DISCOUNT"
+        date date
+        text challan_no "UNIQUE"
+        numeric amount
+        text payment_mode
+        text remark
+        timestamp created_at
+        timestamp updated_at
+    }
+
     backup_settings {
         int id PK
         boolean auto_backup_enabled
@@ -139,6 +153,9 @@ erDiagram
     %% Logical/Polymorphic Relationships
     group_members }o--|| clients : "polymorphic member"
     group_members }o--|| jobbers : "polymorphic member"
+    
+    party_transactions }o--|| clients : "polymorphic party"
+    party_transactions }o--|| jobbers : "polymorphic party"
 ```
 
 ---
@@ -212,6 +229,18 @@ Stores line items for inward receipts.
 * **`purchase_id` (INT, FK)**: References `purchase(id)` with `ON DELETE CASCADE`.
 * **`item_id` (INT, FK)**: References `items(id)`.
 * **`quantity` (NUMERIC)**: Quantity received (increments `items.stock`).
+
+### 3.5. `party_transactions` (Financial Ledger)
+Records financial transactions affecting the ledger balances of clients and jobbers.
+* **`id` (SERIAL, PK)**: Unique transaction identifier.
+* **`party_type` (party_type_enum)**: Postgres Custom Enum containing `'CLIENT'` or `'JOBBER'`.
+* **`party_id` (INT)**: Polymorphic FK pointing to `clients.id` or `jobbers.id`.
+* **`transaction_type` (transaction_type_enum)**: Custom Enum `'PAYMENT'`, `'RETURN'`, or `'DISCOUNT'`.
+* **`date` (DATE)**: Date of transaction.
+* **`challan_no` (TEXT, UNIQUE)**: Unique receipt/reference number.
+* **`amount` (NUMERIC)**: Financial amount of the transaction.
+* **`payment_mode` (TEXT)**: Optional mode of payment (e.g. `'BANK'`, `'CASH'`).
+* **`remark` (TEXT)**: Optional notes.
 
 ---
 

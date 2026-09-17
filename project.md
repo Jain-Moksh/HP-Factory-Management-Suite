@@ -13,7 +13,7 @@ The **HP Factory Management Suite** is a full-stack ERP and accounting software 
 - **Sales & Outward Billing**: Full-featured billing module supporting transport and packing charges, line-item and overall discounts, adjustments, and automated inventory deduction.
 - **Inward Job Work**: Logs goods received from contract workers (jobbers) and automatically increments stock levels.
 - **Polymorphic Reporting Groups**: Dynamically groups clients and jobbers for consolidated ledger reporting.
-- **Transaction & Outstanding Balance Ledger**: Tracks financial transactions (Payments, Returns, and Discounts) and computes outstanding client/jobber balances in real-time.
+- **Transaction & Outstanding Balance Ledger**: Tracks financial transactions (Payments, Returns, and Discounts), supports bulk payments, and computes outstanding client/jobber balances in real-time.
 - **Price List Management**: Customized, categorized price list configuration for products.
 - **Automated Backup & Restore**: Change-triggered database backups, local directory configurations, FTP replication, and database restore utilities.
 - **Database Self-Healing**: Dynamic database schema initialization and background recovery of missing tables/indexes on startup or server table error events.
@@ -234,6 +234,7 @@ The server runs on port `5000` (or `process.env.PORT`) with base URL `http://<IP
   - `GET /party-transactions` - Fetch transactions list.
   - `GET /party-transactions/outstanding?partyType=CLIENT/JOBBER&partyId=...` - Calculates outstanding ledger aggregates.
   - `GET /party-transactions/next-challan?date=...&transactionType=...` - Generates sequential transaction slip numbers.
+  - `POST /party-transactions/bulk` - Processes bulk payments safely across multiple parties/transactions.
   - `GET /party-transactions/:id` | `POST /party-transactions` | `PUT /party-transactions/:id` | `DELETE /party-transactions/:id`.
 - **Groups**:
   - `GET /groups` | `GET /groups/:id` | `POST /groups` | `PUT /groups/:id` | `DELETE /groups/:id`.
@@ -271,6 +272,7 @@ App Entry
         ├── /create-job-work/:id                          -> CreateJobWork page (Edit existing job work entry)
         ├── /payment                                      -> Payment page (List payment and transaction receipts)
         ├── /create-payment                               -> CreatePayment page (Add payment, return, or discount transaction)
+        ├── /create-bulk-payment                          -> BulkPayment page (Add payment, return, or discount transaction)
         ├── /day-book                                     -> DayBook page (Aggregated ledger of all billing/purchases for a selected date)
         ├── /utility                                      -> Utility main panel
         │   ├── /utility/backup                           -> BackupManager page (Automatic/FTP settings and manual dump creation)
@@ -293,7 +295,9 @@ App Entry
             ├── job-work-detail/:jobberId/:itemId         -> JobWorkDetail page (Jobber-item transaction ledger)
             ├── detail-job-report                         -> DetailJobReport page (Chronological inward items table)
             ├── job-summary                               -> JobSummaryReport page (Total job work quantity per item/jobber)
-            └── item-sold-summary                         -> ItemSoldSummary page (Sales volume by item)
+            ├── item-sold-summary                         -> ItemSoldSummary page (Sales volume by item)
+            ├── party-ledger-detail                       -> PartyLedgerDetail page (Comprehensive ledger of bills and payments for a party)
+            └── total-payment-received                    -> TotalPaymentReceivedReport and Detail pages (Summary and details of incoming payments)
 ```
 
 ---
