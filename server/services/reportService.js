@@ -244,6 +244,32 @@ const reportService = {
       closing_balance: runningBalance,
       ledger
     };
+  },
+
+  getTotalPaymentReceived: async (fromDate, toDate, partyId, partyType) => {
+    const parsedPartyId = partyId && partyId !== 'all' ? parseInt(partyId) : null;
+    const parsedPartyType = partyType && partyType !== 'all' ? partyType : null;
+    const result = await db.query(queries.getTotalPaymentReceived, [
+      fromDate || null, 
+      toDate || null, 
+      parsedPartyId,
+      parsedPartyType
+    ]);
+    return result.rows;
+  },
+
+  getTotalPaymentReceivedSummary: async (fromDate, toDate, partyId, partyType, groupId) => {
+    const parsedPartyId = partyId && partyId !== 'all' ? parseInt(partyId) : null;
+    const parsedPartyType = partyType && partyType !== 'all' ? partyType : null;
+    const parsedGroupId = groupId && groupId !== 'all' ? parseInt(groupId) : null;
+    const result = await db.query(queries.getTotalPaymentReceivedSummary, [
+      fromDate || null, 
+      toDate || null, 
+      parsedPartyId,
+      parsedPartyType,
+      parsedGroupId
+    ]);
+    return result.rows;
   }
 };
 

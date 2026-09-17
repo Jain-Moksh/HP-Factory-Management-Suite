@@ -282,6 +282,49 @@ const reportQueries = {
             COALESCE(pt.total_discounts, 0)
         ) > 0
         ORDER BY pending_amount DESC, c.name ASC
+    `,
+    getTotalPaymentReceived: `
+        SELECT 
+            pt.date,
+            pt.party_type,
+            pt.party_id,
+            COALESCE(c.name, j.name) AS party_name,
+            pt.payment_mode,
+            pt.amount,
+            pt.remark,
+            pt.challan_no
+        FROM party_transactions pt
+        LEFT JOIN clients c ON pt.party_type = 'CLIENT' AND pt.party_id = c.id
+        LEFT JOIN jobbers j ON pt.party_type = 'JOBBER' AND pt.party_id = j.id
+        WHERE pt.transaction_type = 'PAYMENT'
+          AND ($1::DATE IS NULL OR pt.date >= $1)
+          AND ($2::DATE IS NULL OR pt.date <= $2)
+          AND ($3::INT IS NULL OR pt.party_id = $3)
+          AND ($4::TEXT IS NULL OR pt.party_type::TEXT = $4::TEXT)
+        ORDER BY pt.date DESC, pt.created_at DESC
+    `,
+    getTotalPaymentReceivedSummary: `
+        SELECT 
+            pt.party_type,
+            pt.party_id,
+            COALESCE(c.name, j.name) AS party_name,
+            SUM(pt.amount) AS total_amount
+        FROM party_transactions pt
+        LEFT JOIN clients c ON pt.party_type = 'CLIENT' AND pt.party_id = c.id
+        LEFT JOIN jobbers j ON pt.party_type = 'JOBBER' AND pt.party_id = j.id
+        WHERE pt.transaction_type = 'PAYMENT'
+          AND ($1::DATE IS NULL OR pt.date >= $1)
+          AND ($2::DATE IS NULL OR pt.date <= $2)
+          AND ($3::INT IS NULL OR pt.party_id = $3)
+          AND ($4::TEXT IS NULL OR pt.party_type::TEXT = $4::TEXT)
+          AND ($5::INT IS NULL OR EXISTS (
+              SELECT 1 FROM group_members gm 
+              WHERE gm.group_id = $5 
+                AND gm.member_id = pt.party_id 
+                AND UPPER(gm.member_type::TEXT) = pt.party_type::TEXT
+          ))
+        GROUP BY pt.party_type, pt.party_id, party_name
+        ORDER BY total_amount DESC
     `
 };
 

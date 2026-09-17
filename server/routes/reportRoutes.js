@@ -19,5 +19,7 @@ router.get('/item-sales-summary', reportController.getItemSoldSummary);
 router.get('/group-sales-print', reportController.getGroupSalesPrint);
 router.get('/pending-payment', reportController.getPendingPaymentReport);
 router.get('/party-ledger-detail', reportController.getPartyLedgerDetail);
+router.get('/total-payment-received', reportController.getTotalPaymentReceived);
+router.get('/total-payment-received-summary', reportController.getTotalPaymentReceivedSummary);
 
 module.exports = router;

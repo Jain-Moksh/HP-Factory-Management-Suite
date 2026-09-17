@@ -318,10 +318,10 @@ const PartyLedgerDetail = () => {
                         <td className="px-5 py-1.5 text-center border-r border-border-soft">
                           <span className={`px-2 py-0.5 rounded text-[9px] tracking-wider font-extrabold uppercase ${
                             row.transaction_type === 'OPENING BALANCE' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
-                            row.transaction_type === 'BILLING' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                            row.transaction_type === 'PAYMENT' ? 'bg-red-50 text-red-700 border border-red-200' :
+                            row.transaction_type === 'BILLING' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            row.transaction_type === 'PAYMENT' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                             row.transaction_type === 'REPLACE' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                            row.transaction_type === 'DISCOUNT' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            row.transaction_type === 'DISCOUNT' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
                             'bg-slate-50 text-slate-700 border border-slate-200'
                           }`}>
                             {row.transaction_type === 'BILLING' ? 'SALES' : row.transaction_type}
@@ -330,10 +330,10 @@ const PartyLedgerDetail = () => {
                         <td className="px-5 py-1.5 text-center text-[12px] font-bold text-text-primary border-r border-border-soft">
                           {row.date && row.date !== '—' && row.transaction_type !== 'OPENING BALANCE' ? new Date(row.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : row.date}
                         </td>
-                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-emerald-600 border-r border-border-soft">
+                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-blue-600 border-r border-border-soft">
                           {row.credit > 0 ? `₹${parseFloat(row.credit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                         </td>
-                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-red-500 border-r border-border-soft">
+                        <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-emerald-600 border-r border-border-soft">
                           {row.debit > 0 ? `₹${parseFloat(row.debit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                         </td>
                         <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-brand-blue">
@@ -355,10 +355,10 @@ const PartyLedgerDetail = () => {
                       <td colSpan="3" className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft">
                         Totals / Closing Bal:
                       </td>
-                      <td className="px-5 py-3 text-right text-[14px] font-black text-emerald-600 border-r border-border-soft">
+                      <td className="px-5 py-3 text-right text-[14px] font-black text-blue-600 border-r border-border-soft">
                         ₹{ledgerTotals.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="px-5 py-3 text-right text-[14px] font-black text-red-500 border-r border-border-soft">
+                      <td className="px-5 py-3 text-right text-[14px] font-black text-emerald-600 border-r border-border-soft">
                         ₹{ledgerTotals.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="px-5 py-3 text-right text-[15px] font-black text-brand-blue">

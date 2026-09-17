@@ -34,6 +34,8 @@ const DetailJobReport = lazy(() => import('./pages/reports/DetailJobReport'));
 const JobSummaryReport = lazy(() => import('./pages/reports/JobSummaryReport'));
 const ItemSoldSummary = lazy(() => import('./pages/reports/ItemSoldSummary'));
 const PendingPaymentReport = lazy(() => import('./pages/reports/PendingPaymentReport'));
+const TotalPaymentReceivedReport = lazy(() => import('./pages/reports/TotalPaymentReceivedReport'));
+const TotalPaymentReceivedDetail = lazy(() => import('./pages/reports/TotalPaymentReceivedDetail'));
 const PartyLedgerReport = lazy(() => import('./pages/reports/PartyLedgerReport'));
 const PartyLedgerDetail = lazy(() => import('./pages/reports/PartyLedgerDetail'));
 const DayBook = lazy(() => import('./pages/DayBook'));
@@ -168,6 +170,8 @@ function App() {
           <Route path="/reports/job-summary" element={<JobSummaryReport />} />
           <Route path="/reports/item-sold-summary" element={<ItemSoldSummary />} />
           <Route path="/reports/pending-payment" element={<PendingPaymentReport />} />
+          <Route path="/reports/total-payment-received" element={<TotalPaymentReceivedReport />} />
+          <Route path="/reports/total-payment-received/:partyType/:partyId" element={<TotalPaymentReceivedDetail />} />
           <Route path="/reports/party-ledger" element={<PartyLedgerReport />} />
           <Route path="/reports/party-ledger/:clientId" element={<PartyLedgerDetail />} />
           <Route path="/day-book" element={<DayBook />} />

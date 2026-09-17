@@ -176,6 +176,26 @@ const reportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  getTotalPaymentReceived: async (req, res, next) => {
+    try {
+      const { from, to, party_id, party_type } = req.query;
+      const data = await reportService.getTotalPaymentReceived(from, to, party_id, party_type);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getTotalPaymentReceivedSummary: async (req, res, next) => {
+    try {
+      const { from, to, party_id, party_type, group_id } = req.query;
+      const data = await reportService.getTotalPaymentReceivedSummary(from, to, party_id, party_type, group_id);
+      res.json({ success: true, count: data.length, data });
+    } catch (err) {
+      next(err);
+    }
   }
 };
 
