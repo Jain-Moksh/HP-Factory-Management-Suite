@@ -1,0 +1,3 @@
+@echo off
+echo Starting both Frontend (Vite) and Backend (Nodemon) in development mode...
+npx concurrently -c "green,blue" -n "client,server" "cd client && npm run dev" "cd server && npm run dev"

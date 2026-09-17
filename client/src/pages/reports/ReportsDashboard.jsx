@@ -8,67 +8,18 @@ const ReportsDashboard = () => {
 
   const sections = [
     {
-      name: 'Job Work',
+      name: 'Ledger',
       reports: [
         {
-          title: 'Job Work Report',
-          description: 'Track purchase history and production output from jobbers and manufacturing units.',
+          title: 'Party Ledger',
+          description: 'View detailed credit, debit and closing balances for clients.',
           icon: (
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           ),
-          path: '/reports/job-work',
-          color: 'bg-orange-500'
-        },
-        {
-          title: 'Job Summary Report',
-          description: 'Detailed inward stock movement report from Job Work entries.',
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          ),
-          path: '/reports/detail-job-report',
-          color: 'bg-rose-500'
-        },
-        {
-          title: 'Detailed Job Report',
-          description: 'Aggregated view of production quantities grouped by jobber and item for any period.',
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          ),
-          path: '/reports/job-summary',
-          color: 'bg-amber-600'
-        }
-      ]
-    },
-    {
-      name: 'Payment',
-      reports: [
-        {
-          title: 'Pending Payment',
-          description: 'View clients with outstanding payment balances and print filtered lists.',
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ),
-          path: '/reports/pending-payment',
-          color: 'bg-teal-500'
-        },
-        {
-          title: 'Payment Received',
-          description: 'View total payments received from clients and jobbers over a specific date range.',
-          icon: (
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          ),
-          path: '/reports/total-payment-received',
-          color: 'bg-blue-500'
+          path: '/reports/party-ledger',
+          color: 'bg-indigo-600'
         }
       ]
     },
@@ -96,6 +47,33 @@ const ReportsDashboard = () => {
           ),
           path: '/reports/group-sales',
           color: 'bg-indigo-500'
+        }
+      ]
+    },
+    {
+      name: 'Payment',
+      reports: [
+        {
+          title: 'Pending Payment',
+          description: 'View clients with outstanding payment balances and print filtered lists.',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
+          path: '/reports/pending-payment',
+          color: 'bg-teal-500'
+        },
+        {
+          title: 'Payment Received',
+          description: 'View total payments received from clients and jobbers over a specific date range.',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          ),
+          path: '/reports/total-payment-received',
+          color: 'bg-blue-500'
         }
       ]
     },
@@ -138,18 +116,40 @@ const ReportsDashboard = () => {
       ]
     },
     {
-      name: 'Ledger',
+      name: 'Job Work',
       reports: [
         {
-          title: 'Party Ledger',
-          description: 'View detailed credit, debit and closing balances for clients.',
+          title: 'Job Work Report',
+          description: 'Track purchase history and production output from jobbers and manufacturing units.',
           icon: (
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           ),
-          path: '/reports/party-ledger',
-          color: 'bg-indigo-600'
+          path: '/reports/job-work',
+          color: 'bg-orange-500'
+        },
+        {
+          title: 'Job Summary Report',
+          description: 'Detailed inward stock movement report from Job Work entries.',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          ),
+          path: '/reports/detail-job-report',
+          color: 'bg-rose-500'
+        },
+        {
+          title: 'Detailed Job Report',
+          description: 'Aggregated view of production quantities grouped by jobber and item for any period.',
+          icon: (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          ),
+          path: '/reports/job-summary',
+          color: 'bg-amber-600'
         }
       ]
     }
@@ -157,53 +157,42 @@ const ReportsDashboard = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col min-h-screen relative pb-16">
+      <div className="flex flex-col min-h-screen relative pb-8">
         <PageHeader 
           title="Reports Dashboard" 
           subtitle="ANALYZE BUSINESS PERFORMANCE AND INVENTORY METRICS" 
         />
         
-        <div className="px-6 mt-4 flex flex-col gap-8">
+        <div className="px-6 mt-2 flex flex-col gap-5">
           {sections.map((section) => (
-            <div key={section.name} className="flex flex-col gap-4 animate-in fade-in duration-300">
+            <div key={section.name} className="flex flex-col gap-3 animate-in fade-in duration-300">
               {/* Section Header */}
-              <div className="flex items-center gap-3 border-b border-border-soft pb-2">
-                <div className="w-1.5 h-6 bg-brand-blue rounded-full"></div>
-                <span className="text-[12px] font-black text-text-primary uppercase tracking-widest">
+              <div className="flex items-center gap-2 border-b border-border-soft pb-1">
+                <div className="w-1 h-4 bg-brand-blue rounded-full"></div>
+                <span className="text-[11px] font-black text-text-primary uppercase tracking-widest">
                   {section.name} Reports
                 </span>
               </div>
 
               {/* Reports Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {section.reports.map((report) => (
                   <div 
                     key={report.title}
                     onClick={() => navigate(report.path)}
-                    className="group relative bg-white border border-border-soft rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between min-h-[220px]"
+                    className="group relative bg-white border border-border-soft rounded-xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer overflow-hidden flex items-center gap-4"
                   >
                     {/* Background Accent */}
-                    <div className={`absolute top-0 right-0 w-24 h-24 ${report.color} opacity-[0.03] -mr-8 -mt-8 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
+                    <div className={`absolute top-0 right-0 w-16 h-16 ${report.color} opacity-[0.03] -mr-4 -mt-4 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
                     
-                    <div>
-                      <div className={`w-12 h-12 ${report.color} rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-${report.color.split('-')[1]}-200 group-hover:scale-110 transition-transform duration-300`}>
-                        {report.icon}
-                      </div>
-                      
-                      <h3 className="text-[14px] font-bold text-text-primary mb-2 group-hover:text-brand-blue transition-colors uppercase tracking-tight">
-                        {report.title}
-                      </h3>
-                      
-                      <p className="text-[11.5px] text-text-light leading-relaxed opacity-70">
-                        {report.description}
-                      </p>
+                    <div className={`w-10 h-10 shrink-0 ${report.color} rounded-lg flex items-center justify-center text-white shadow-md shadow-${report.color.split('-')[1]}-200 group-hover:scale-110 transition-transform duration-300`}>
+                      {React.cloneElement(report.icon, { className: "w-5 h-5" })}
                     </div>
                     
-                    <div className="mt-4 flex items-center text-brand-blue font-bold text-[9.5px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>View Report</span>
-                      <svg className="w-3 h-3 ml-1.5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
+                    <div className="flex-1 min-w-0 z-10">
+                      <h3 className="text-[12.5px] font-bold text-text-primary group-hover:text-brand-blue transition-colors uppercase tracking-tight truncate">
+                        {report.title}
+                      </h3>
                     </div>
                   </div>
                 ))}
