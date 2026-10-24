@@ -1,9 +1,10 @@
 const purchaseQueries = {
     createPurchase: `
-        INSERT INTO purchase (jobber_id, date, remark, challan_no) 
-        VALUES ($1, $2, $3, $4) 
+        INSERT INTO purchase (jobber_id, date, remark, challan_no, request_id)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *
     `,
+    getPurchaseIdByRequestId: 'SELECT id FROM purchase WHERE request_id = $1',
     createPurchaseItem: `
         INSERT INTO purchase_items (purchase_id, item_id, quantity, unit, order_index) 
         VALUES ($1, $2, $3, $4, $5) 

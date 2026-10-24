@@ -3,10 +3,11 @@ const billingQueries = {
         INSERT INTO billing (
             client_id, transporter_id, date, transport_charge, packing_charge, 
             discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark, 
-            long_remark, grand_total, challan_no
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+            long_remark, grand_total, challan_no, request_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING *
     `,
+    getBillIdByRequestId: 'SELECT id FROM billing WHERE request_id = $1',
     createBillItem: `
         INSERT INTO billing_items (
             billing_id, item_id, rate, discount_percent, discount_amount, 

@@ -247,6 +247,18 @@ CREATE INDEX idx_price_list_categories_list ON price_list_categories(price_list_
 CREATE INDEX idx_price_list_items_category ON price_list_items(price_list_category_id);
 
 -- =========================
+-- DUPLICATE SAVE PROTECTION
+-- =========================
+-- Each invoice / job work form sends a random request_id with its first save.
+-- A repeated save with the same id (double-click, retry) returns the existing record instead of creating another.
+-- IF NOT EXISTS keeps these safe to re-run on every startup.
+
+ALTER TABLE billing ADD COLUMN IF NOT EXISTS request_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_request_id ON billing(request_id);
+ALTER TABLE purchase ADD COLUMN IF NOT EXISTS request_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_request_id ON purchase(request_id);
+
+-- =========================
 -- AUDIT & ARCHIVE TABLES
 -- =========================
 

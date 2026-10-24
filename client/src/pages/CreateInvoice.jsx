@@ -10,11 +10,23 @@ import WarningModal from '../components/UI/WarningModal';
 import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import { API_BASE_URL } from '../config';
 import PrintInvoice from '../components/PrintInvoice';
+import { createRequestId } from '../utils/requestId';
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
+
+  // --- Save State ---
+  // Once a new invoice is saved (e.g. by Save & Print), this page edits that bill instead of creating another
+  const [savedBillId, setSavedBillId] = useState(null);
+  const billingId = id || savedBillId;
+  const [isSaving, setIsSaving] = useState(false);
+  // A ref, not state, so a second click a few milliseconds later is blocked before React re-renders
+  const savingRef = useRef(false);
+  // Lets the server recognise a repeated create of this same form and return the existing bill
+  const requestIdRef = useRef(createRequestId());
+  const lastSavedKeyRef = useRef(null);
 
   // --- Master Data State ---
   const [clients, setClients] = useState([]);
@@ -262,7 +274,7 @@ const CreateInvoice = () => {
   useEffect(() => {
     const fetchNextChallan = async () => {
       try {
-        const url = `${API_BASE_URL}/billing/next-challan?date=${formData.date}${isEditMode ? `&billing_id=${id}` : ''}`;
+        const url = `${API_BASE_URL}/billing/next-challan?date=${formData.date}${billingId ? `&billing_id=${billingId}` : ''}`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.success) {
@@ -285,7 +297,7 @@ const CreateInvoice = () => {
       }
       fetchNextChallan();
     }
-  }, [formData.date, isEditMode, id, originalDate, originalChallanNo]);
+  }, [formData.date, isEditMode, billingId, originalDate, originalChallanNo]);
 
   // --- Handlers ---
   const handleFormChange = (e) => {
@@ -661,6 +673,7 @@ const CreateInvoice = () => {
   };
 
   const handleFinalSave = async (shouldNavigate = true) => {
+    if (savingRef.current) return false;
     if (addedItems.length === 0 || !formData.client_id) {
       alert("Please select a client and add at least one item.");
       return false;
@@ -702,30 +715,63 @@ const CreateInvoice = () => {
       }))
     };
 
+    // What the bill contains, ignoring row ids and the display-only challan no.
+    // Used to skip re-saving an unchanged bill when Save & Print is clicked again.
+    const contentKey = JSON.stringify({ ...payload, challan_no: undefined, items: payload.items.map(item => ({ ...item, id: undefined })) });
+    if (billingId && !shouldNavigate && lastSavedKeyRef.current === contentKey) {
+      return true;
+    }
+
+    savingRef.current = true;
+    setIsSaving(true);
+    let keepLocked = false;
+
     try {
-      const url = isEditMode ? `${API_BASE_URL}/billing/${id}` : `${API_BASE_URL}/billing`;
-      const method = isEditMode ? 'PUT' : 'POST';
+      const url = billingId ? `${API_BASE_URL}/billing/${billingId}` : `${API_BASE_URL}/billing`;
+      const method = billingId ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(method === 'POST' ? { ...payload, request_id: requestIdRef.current } : payload)
       });
       const result = await response.json();
       if (result.success) {
-        if (result.data && result.data.challan_no) {
-          setFormData(prev => ({ ...prev, challanNo: result.data.challan_no }));
+        const saved = result.data || {};
+        if (saved.challan_no) {
+          setFormData(prev => ({ ...prev, challanNo: saved.challan_no }));
         }
-        if (shouldNavigate) navigate('/order-summary');
+        if (!billingId && saved.id) {
+          setSavedBillId(saved.id);
+        }
+        // Give screen rows their saved row ids, so a later update edits them instead of re-adding them
+        // (create returns rows by order_index, update returns them in the order they were sent)
+        const savedRows = method === 'POST'
+          ? [...(saved.items || [])].sort((a, b) => a.order_index - b.order_index)
+          : (saved.items || []);
+        if (savedRows.length === addedItems.length) {
+          setAddedItems(prev => prev.map((item, i) => (savedRows[i] ? { ...item, id: savedRows[i].id } : item)));
+        }
+        lastSavedKeyRef.current = contentKey;
+
+        if (shouldNavigate) {
+          keepLocked = true; // page is leaving, keep the buttons disabled
+          navigate('/order-summary');
+        }
         return true;
       } else {
-        alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} invoice`);
+        alert(result.message || `Failed to ${billingId ? 'update' : 'save'} invoice`);
         return false;
       }
     } catch (err) {
-      console.error(`Error ${isEditMode ? 'updating' : 'saving'} invoice:`, err);
-      alert(`Network error while ${isEditMode ? 'updating' : 'saving'} invoice`);
+      console.error(`Error ${billingId ? 'updating' : 'saving'} invoice:`, err);
+      alert(`Network error while ${billingId ? 'updating' : 'saving'} invoice`);
       return false;
+    } finally {
+      if (!keepLocked) {
+        savingRef.current = false;
+        setIsSaving(false);
+      }
     }
   };
 
@@ -1592,7 +1638,8 @@ const CreateInvoice = () => {
                       </Button>
                       <button
                         onClick={handleSaveAndPrint}
-                        className="flex-1 h-10 bg-white border-2 border-brand-blue text-brand-blue rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all flex items-center justify-center gap-2"
+                        disabled={isSaving}
+                        className="flex-1 h-10 bg-white border-2 border-brand-blue text-brand-blue rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-brand-blue hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1603,9 +1650,10 @@ const CreateInvoice = () => {
                     <Button
                       variant="primary"
                       className="w-full h-12 text-[13px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-blue/20"
-                      onClick={handleFinalSave}
+                      onClick={() => handleFinalSave(true)}
+                      disabled={isSaving}
                     >
-                      {isEditMode ? "Update Invoice" : "Save Invoice"}
+                      {isSaving ? "Saving..." : billingId ? "Update Invoice" : "Save Invoice"}
                     </Button>
                   </div>
                 </div>

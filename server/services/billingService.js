@@ -28,17 +28,28 @@ const billingService = {
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark,
-        long_remark, grand_total, items
+        long_remark, grand_total, items, request_id
       } = billData;
 
-      // 1. Generate custom challan number
+      // 1. Generate custom challan number (also locks the billing table until COMMIT)
       const challan_no = await generateChallanNo(date, 'billing', client);
+
+      // A repeated save of the same form (double-click, retry) returns the bill it already created.
+      // Checked after the table lock, so two simultaneous requests cannot both pass.
+      if (request_id) {
+        const existing = await client.query(queries.getBillIdByRequestId, [request_id]);
+        if (existing.rows.length > 0) {
+          await client.query('ROLLBACK');
+          const bill = await billingService.getById(existing.rows[0].id);
+          return { ...bill, duplicate: true };
+        }
+      }
 
       // 2. Insert billing record
       const billRes = await client.query(queries.createBill, [
         client_id, transporter_id, date, transport_charge, packing_charge,
         discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, toUpperCase(short_remark),
-        toUpperCase(long_remark), grand_total, challan_no
+        toUpperCase(long_remark), grand_total, challan_no, request_id || null
       ]);
       const bill = billRes.rows[0];
 

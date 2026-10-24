@@ -44,7 +44,7 @@ const ITEM_COLUMNS = [
   { key: 'total_amount', label: 'Amount' }
 ];
 
-const HIDDEN_FIELDS = ['id', 'items', 'order_index'];
+const HIDDEN_FIELDS = ['id', 'items', 'order_index', 'request_id'];
 
 const fieldLabel = (key) => key.replace(/_/g, ' ').toUpperCase();
 

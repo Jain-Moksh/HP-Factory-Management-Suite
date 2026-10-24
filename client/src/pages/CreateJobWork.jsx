@@ -6,6 +6,7 @@ import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import DeleteModal from '../components/UI/DeleteModal';
+import { createRequestId } from '../utils/requestId';
 
 const API_BASE_URL = "/api";
 
@@ -13,6 +14,13 @@ const CreateJobWork = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
+
+  // --- Save State ---
+  const [isSaving, setIsSaving] = useState(false);
+  // A ref, not state, so a second click a few milliseconds later is blocked before React re-renders
+  const savingRef = useRef(false);
+  // Lets the server recognise a repeated create of this same form and return the existing entry
+  const requestIdRef = useRef(createRequestId());
 
   // --- Master Data State ---
   const [jobbers, setJobbers] = useState([]);
@@ -312,6 +320,7 @@ const CreateJobWork = () => {
   };
 
   const handleFinalSave = async () => {
+    if (savingRef.current) return;
     if (!formData.jobber_id || addedItems.length === 0) {
       alert("Please select a jobber and add at least one item.");
       return;
@@ -329,6 +338,11 @@ const CreateJobWork = () => {
         unit: i.unit
       }))
     };
+    if (!isEditMode) payload.request_id = requestIdRef.current;
+
+    savingRef.current = true;
+    setIsSaving(true);
+    let keepLocked = false;
 
     try {
       const url = isEditMode ? `${API_BASE_URL}/purchase/${id}` : `${API_BASE_URL}/purchase`;
@@ -360,6 +374,7 @@ const CreateJobWork = () => {
           }
         }
 
+        keepLocked = true; // page is leaving, keep the button disabled
         navigate('/job-work');
       } else {
         alert(result.message || `Failed to ${isEditMode ? 'update' : 'save'} job work record`);
@@ -367,6 +382,11 @@ const CreateJobWork = () => {
     } catch (err) {
       console.error(`Error ${isEditMode ? 'updating' : 'saving'} job work:`, err);
       alert(`Network error occurred while ${isEditMode ? 'updating' : 'saving'}.`);
+    } finally {
+      if (!keepLocked) {
+        savingRef.current = false;
+        setIsSaving(false);
+      }
     }
   };
 
@@ -803,14 +823,15 @@ const CreateJobWork = () => {
                     >
                       Cancel
                     </button>
-                    <button 
+                    <button
                       onClick={handleFinalSave}
-                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-extrabold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest shadow-lg shadow-brand-blue/20"
+                      disabled={isSaving}
+                      className="flex items-center justify-center px-6 h-8 bg-brand-blue rounded-lg text-[12px] font-extrabold text-white hover:bg-brand-blue-hover transition transform active:scale-95 uppercase tracking-widest shadow-lg shadow-brand-blue/20 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                       </svg>
-                      {isEditMode ? "Update Job Work" : "Save Job Work"}
+                      {isSaving ? "Saving..." : isEditMode ? "Update Job Work" : "Save Job Work"}
                     </button>
                   </div>
                 </div>

@@ -61,7 +61,12 @@ const RestoreSystem = () => {
       if (data.success) {
         setProgress(100);
         setTimeout(() => {
-          setResult({ success: true, message: 'System restored successfully!' });
+          setResult({
+            success: true,
+            message: data.safetyBackup
+              ? `System restored successfully! Your previous data was saved to ${data.safetyBackup}`
+              : 'System restored successfully!'
+          });
           setFile(null);
           if (fileInputRef.current) fileInputRef.current.value = '';
           setRestoring(false);

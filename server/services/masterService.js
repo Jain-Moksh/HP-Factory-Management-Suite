@@ -10,6 +10,28 @@ const AUDIT_MODULES = {
   transporters: { module: auditService.MODULES.TRANSPORTER, label: 'Transporter' }
 };
 
+/**
+ * Cleans master form data: empty strings become null, strings are uppercased,
+ * and the name is trimmed and required.
+ *
+ * @throws {Error} 400 error when the name is missing or only spaces
+ */
+const cleanMasterData = (table, data) => {
+  const clean = {};
+  Object.keys(data || {}).forEach(key => {
+    const value = data[key] === '' ? null : data[key];
+    clean[key] = typeof value === 'string' ? toUpperCase(value) : value;
+  });
+
+  clean.name = typeof clean.name === 'string' ? clean.name.trim() : clean.name;
+  if (!clean.name) {
+    const err = new Error(`${AUDIT_MODULES[table].label} name is required.`);
+    err.status = 400;
+    throw err;
+  }
+  return clean;
+};
+
 const masterService = {
   // Generic list/search helper
   list: async (table, search) => {
@@ -30,13 +52,7 @@ const masterService = {
   },
 
   create: async (table, data) => {
-    // Sanitize: convert empty strings to null
-    const clean = {};
-    Object.keys(data).forEach(key => {
-      let value = data[key] === '' ? null : data[key];
-      // Convert to uppercase if it's a string
-      clean[key] = typeof value === 'string' ? toUpperCase(value) : value;
-    });
+    const clean = cleanMasterData(table, data);
 
     let queryKey, params;
     switch (table) {
@@ -50,11 +66,11 @@ const masterService = {
         break;
       case 'jobbers':
         queryKey = 'createJobber';
-        params = [data.name];
+        params = [clean.name];
         break;
       case 'transporters':
         queryKey = 'createTransporter';
-        params = [data.name];
+        params = [clean.name];
         break;
     }
     const result = await db.query(queries[queryKey], params);
@@ -76,13 +92,7 @@ const masterService = {
   },
 
   update: async (table, id, data) => {
-    // Sanitize: convert empty strings to null
-    const clean = {};
-    Object.keys(data).forEach(key => {
-      let value = data[key] === '' ? null : data[key];
-      // Convert to uppercase if it's a string
-      clean[key] = typeof value === 'string' ? toUpperCase(value) : value;
-    });
+    const clean = cleanMasterData(table, data);
 
     const before = await masterService.getById(table, id);
 
@@ -110,11 +120,11 @@ const masterService = {
         break;
       case 'jobbers':
         queryKey = 'updateJobber';
-        params = [data.name, id];
+        params = [clean.name, id];
         break;
       case 'transporters':
         queryKey = 'updateTransporter';
-        params = [data.name, id];
+        params = [clean.name, id];
         break;
     }
     const result = await db.query(queries[queryKey], params);

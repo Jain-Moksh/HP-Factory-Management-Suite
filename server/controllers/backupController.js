@@ -98,8 +98,8 @@ const backupController = {
         return res.status(400).json({ success: false, message: 'Invalid file type. Only .sql and .backup files are allowed.' });
       }
 
-      await backupService.restore(filePath);
-      
+      const { safetyBackup, counts } = await backupService.restore(filePath);
+
       // Clean up uploaded file after restore
       fs.unlinkSync(filePath);
 
@@ -108,15 +108,25 @@ const backupController = {
         module: auditService.MODULES.SYSTEM,
         action: auditService.ACTIONS.RESTORE,
         reference: req.file.originalname,
-        summary: `Database restored from backup file ${req.file.originalname}`,
-        details: { after: { file_name: req.file.originalname, file_size_bytes: req.file.size } }
+        summary: `Database restored from backup file ${req.file.originalname} (safety copy of previous data: ${path.basename(safetyBackup)})`,
+        details: { after: { file_name: req.file.originalname, file_size_bytes: req.file.size, safety_backup: safetyBackup, ...counts } }
       });
 
-      res.json({ success: true, message: 'Database restored successfully' });
+      res.json({ success: true, message: 'Database restored successfully', safetyBackup, counts });
     } catch (err) {
       // Clean up if error
       if (req.file && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
+      }
+      if (req.file) {
+        // A failed restore leaves the data untouched, so this entry lands in the current audit log
+        await auditService.recordSafe({
+          module: auditService.MODULES.SYSTEM,
+          action: auditService.ACTIONS.RESTORE,
+          reference: req.file.originalname,
+          summary: `Restore FAILED from ${req.file.originalname}: ${err.message}`,
+          details: { after: { file_name: req.file.originalname, file_size_bytes: req.file.size, failed: true, error: err.message } }
+        });
       }
       next(err);
     }

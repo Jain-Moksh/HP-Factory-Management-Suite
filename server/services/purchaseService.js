@@ -24,13 +24,24 @@ const purchaseService = {
     try {
       await client.query('BEGIN');
 
-      const { jobber_id, date, remark, items } = purchaseData;
+      const { jobber_id, date, remark, items, request_id } = purchaseData;
 
-      // 1. Generate custom challan number
+      // 1. Generate custom challan number (also locks the purchase table until COMMIT)
       const challan_no = await generateChallanNo(date, 'purchase', client);
 
+      // A repeated save of the same form (double-click, retry) returns the entry it already created.
+      // Checked after the table lock, so two simultaneous requests cannot both pass.
+      if (request_id) {
+        const existing = await client.query(queries.getPurchaseIdByRequestId, [request_id]);
+        if (existing.rows.length > 0) {
+          await client.query('ROLLBACK');
+          const purchase = await purchaseService.getById(existing.rows[0].id);
+          return { ...purchase, duplicate: true };
+        }
+      }
+
       // 2. Insert purchase record
-      const purchaseRes = await client.query(queries.createPurchase, [jobber_id, date, toUpperCase(remark), challan_no]);
+      const purchaseRes = await client.query(queries.createPurchase, [jobber_id, date, toUpperCase(remark), challan_no, request_id || null]);
       const purchase = purchaseRes.rows[0];
 
       // 2. Insert items and update stock

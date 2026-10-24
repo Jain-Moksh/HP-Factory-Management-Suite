@@ -3,11 +3,21 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../config/db');
 const ftp = require('basic-ftp');
+const {
+  runStrict, validatePlainDump, prepareSqlFile, requiredTablesCheck, describeSqlError, prunePreRestoreBackups
+} = require('../utils/restoreHelpers');
 require('dotenv').config();
 
 // Concurrency lock to prevent multiple backups at once
 let isBackupRunning = false;
 let backupPending = false;
+
+// Errors whose message is safe and useful to show on the restore screen
+const userError = (message) => {
+  const err = new Error(message);
+  err.status = 400;
+  return err;
+};
 
 // Helper to check if file is a binary backup format
 const isBinaryBackup = (filePath) => {
@@ -210,7 +220,7 @@ const backupService = {
 
       // Use spawn to be quote-safe and pipe stdout directly to the file stream
       const out = fs.createWriteStream(newFilePath);
-      const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '--clean', DB_NAME];
+      const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '--clean', '--if-exists', DB_NAME];
       const child = spawn(pgDumpPath, args, { env });
 
       child.stdout.pipe(out);
@@ -383,6 +393,17 @@ const backupService = {
     }
   },
 
+  /**
+   * Restores the database from a .sql or .backup file, all or nothing.
+   *
+   * The schema wipe, the import and a required-tables check run in ONE transaction
+   * (psql --single-transaction with ON_ERROR_STOP), so any error rolls everything back,
+   * including DROP SCHEMA, and the existing data stays exactly as it was.
+   * A safety copy of the current database is saved before anything is changed.
+   *
+   * @param {string} filePath - Uploaded backup file
+   * @returns {Promise<{safetyBackup: string, counts: object}>}
+   */
   restore: async (filePath) => {
     if (isBackupRunning) {
       throw new Error('Another backup or restore is already in progress. Please wait.');
@@ -395,90 +416,98 @@ const backupService = {
     const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
     const psqlPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'psql') : 'psql';
     const pgRestorePath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_restore') : 'pg_restore';
+    const pgDumpPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_dump') : 'pg_dump';
     const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
-
-    const runSpawn = (cmd, args) => {
-      return new Promise((resolve, reject) => {
-        const child = spawn(cmd, args, { env });
-        let stderr = '';
-        let stdout = '';
-        child.stdout.on('data', (d) => { stdout += d.toString(); });
-        child.stderr.on('data', (d) => { stderr += d.toString(); });
-        child.on('error', reject);
-        child.on('close', (code) => {
-          if (stderr) {
-            console.log(`[RESTORE] ${path.basename(cmd)} output:\n${stderr}`);
-          }
-          if (code !== 0) {
-            const isFatal = !stderr.includes('already exists') && 
-                            !stderr.includes('does not exist') && 
-                            !stderr.includes('NOTICE') && 
-                            !stderr.includes('WARNING');
-            if (isFatal) {
-              return reject(new Error(`Process ${path.basename(cmd)} exited with code ${code}. Error: ${stderr}`));
-            }
-          }
-          resolve({ code, stdout, stderr });
-        });
-      });
-    };
+    const conn = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT];
+    const preparedPath = `${filePath}.prepared.sql`;
 
     try {
       // Step 1: Ensure database exists
       console.log('[RESTORE] 🔍 Checking if database exists...');
-      const checkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'`];
-      const checkDbRes = await runSpawn(psqlPath, checkDbArgs);
-
-      if (!checkDbRes.stdout.includes('1')) {
+      const checkDbRes = await runStrict(psqlPath, [...conn, '-d', 'postgres', '-tA', '-c', `SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'`], env);
+      if (checkDbRes.stdout.trim() !== '1') {
         console.log(`[RESTORE] 🛠️ Database ${DB_NAME} not found. Creating...`);
-        const mkDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', 'postgres', '-c', `CREATE DATABASE ${DB_NAME}`];
-        await runSpawn(psqlPath, mkDbArgs);
-        console.log(`[RESTORE] Database ${DB_NAME} created successfully.`);
+        await runStrict(psqlPath, [...conn, '-d', 'postgres', '-c', `CREATE DATABASE "${DB_NAME}"`], env);
       }
 
-      // Step 2: Schema validation started & Table creation started
-      console.log('[RESTORE] 🛡️ Schema validation started.');
-      console.log('[RESTORE] 🧹 Table creation started - Cleaning existing public schema...');
-      const cleanDbArgs = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'];
-      await runSpawn(psqlPath, cleanDbArgs);
-      console.log('[RESTORE] 🧹 Table creation completed - Schema cleaned successfully.');
-
-      // Step 3: Data import started
-      console.log('[RESTORE] 📥 Data import started.');
-      const isBinary = isBinaryBackup(filePath);
-      if (isBinary) {
-        console.log('[RESTORE] Restoring using pg_restore (Binary format)...');
-        const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '--clean', filePath];
-        await runSpawn(pgRestorePath, args);
+      // Step 2: Validate the backup file and convert it to a complete SQL script on disk.
+      // The import only starts once the whole script exists, so it can never be fed a partial stream.
+      console.log('[RESTORE] 🛡️ Validating backup file...');
+      if (isBinaryBackup(filePath)) {
+        try {
+          await runStrict(pgRestorePath, ['--list', filePath], env);
+          await runStrict(pgRestorePath, ['--clean', '--if-exists', '-f', preparedPath, filePath], env);
+        } catch (err) {
+          throw userError('This .backup file is damaged or incomplete, so it cannot be restored.');
+        }
       } else {
-        console.log('[RESTORE] Restoring using psql (Plain text format)...');
-        const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '-d', DB_NAME, '-f', filePath];
-        await runSpawn(psqlPath, args);
+        try {
+          validatePlainDump(filePath);
+        } catch (err) {
+          throw userError(err.message);
+        }
+        await prepareSqlFile(filePath, preparedPath);
       }
-      console.log('[RESTORE] 📥 Data import completed.');
 
-      // Step 4: Post-restore initialization started
-      console.log('[RESTORE] ⚙️ Post-restore initialization started.');
+      // Step 3: Safety copy of the current data, in case the wrong file is restored
+      const settings = await backupService.getSettingsInternal().catch(() => null);
+      const safetyDir = (settings && settings.auto_backup_path) || path.join(__dirname, '..', 'uploads', 'backups');
+      if (!fs.existsSync(safetyDir)) fs.mkdirSync(safetyDir, { recursive: true });
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}--${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      let safetyBackup = path.join(safetyDir, `PreRestore-${stamp}.sql`);
+      // Never overwrite an earlier safety copy taken in the same second
+      if (fs.existsSync(safetyBackup)) safetyBackup = path.join(safetyDir, `PreRestore-${stamp}-${now.getMilliseconds()}.sql`);
+      console.log(`[RESTORE] 💾 Saving safety copy of current data: ${safetyBackup}`);
+      try {
+        await runStrict(pgDumpPath, [...conn, '--clean', '--if-exists', '-f', safetyBackup, DB_NAME], env);
+      } catch (err) {
+        throw userError(`Could not save a safety copy of the current data (${describeSqlError(err.stderr)}). Restore cancelled; nothing was changed.`);
+      }
+      prunePreRestoreBackups(safetyDir);
+
+      // Step 4: Wipe + import + verify in a single transaction
+      console.log('[RESTORE] 📥 Data import started (single transaction).');
+      try {
+        await runStrict(psqlPath, [
+          ...conn, '-d', DB_NAME,
+          '-X', '-q',
+          '-v', 'ON_ERROR_STOP=1',
+          '--single-transaction',
+          '-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+          '-f', preparedPath,
+          '-c', requiredTablesCheck()
+        ], env);
+      } catch (err) {
+        throw userError(`The backup file has an error (${describeSqlError(err.stderr)}). Nothing was restored and your existing data has not been changed.`);
+      }
+      console.log('[RESTORE] 📥 Data import completed and committed.');
+
+      // Step 5: Post-restore initialization (adds tables newer than the backup, e.g. audit_logs)
+      console.log('[RESTORE] 🔄 Cache refresh started.');
+      await db.refreshPool();
       const { autoHealDatabase } = require('../utils/dbHealer');
       await autoHealDatabase(db.pool);
       console.log('[RESTORE] ⚙️ Post-restore initialization completed.');
 
-      // Step 5: Cache refresh started
-      console.log('[RESTORE] 🔄 Cache refresh started.');
-      await db.refreshPool();
-      console.log('[RESTORE] 🔄 Cache refresh completed.');
-
-      // Step 6: Log final record counts
-      console.log('[RESTORE] 📊 Querying final record counts...');
-      const tables = ['items', 'clients', 'jobbers', 'transporters', 'billing', 'billing_items', 'purchase', 'purchase_items', 'groups', 'group_members', 'price_lists', 'price_list_categories', 'price_list_items'];
-      const counts = await Promise.all(tables.map(t => db.query('SELECT COUNT(*) FROM ' + t).then(res => `${t}: ${res.rows[0].count}`).catch(err => `${t}: Error (${err.message})`)));
-      console.log('[RESTORE] 📊 Final record counts:', counts.join(', '));
+      // Step 6: Record counts so the result can be shown to the user
+      const tables = ['items', 'clients', 'jobbers', 'transporters', 'billing', 'billing_items', 'purchase', 'purchase_items', 'party_transactions', 'groups', 'group_members', 'price_lists', 'price_list_categories', 'price_list_items'];
+      const counts = {};
+      await Promise.all(tables.map(t => db.query('SELECT COUNT(*) FROM ' + t)
+        .then(res => { counts[t] = Number(res.rows[0].count); })
+        .catch(() => { counts[t] = null; })));
+      console.log('[RESTORE] 📊 Final record counts:', JSON.stringify(counts));
 
       console.log('[RESTORE] 🎉 Restore success confirmation.');
+      return { safetyBackup, counts };
     } catch (err) {
-      console.error('[RESTORE] ❌ Restore process failed:', err);
+      console.error('[RESTORE] ❌ Restore process failed:', err.message);
       throw err;
     } finally {
+      if (fs.existsSync(preparedPath)) {
+        try { fs.unlinkSync(preparedPath); } catch (e) { /* removed on next restore */ }
+      }
       isBackupRunning = false;
       global.isBackupRestoreRunning = false;
     }
