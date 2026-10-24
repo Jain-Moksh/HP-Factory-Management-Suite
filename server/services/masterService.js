@@ -1,6 +1,14 @@
 const db = require('../config/db');
 const queries = require('../queries/masterQueries');
 const { toUpperCase } = require('../utils/dataSanitizer');
+const auditService = require('./auditService');
+
+const AUDIT_MODULES = {
+  items: { module: auditService.MODULES.ITEM, label: 'Item' },
+  clients: { module: auditService.MODULES.PARTY, label: 'Party' },
+  jobbers: { module: auditService.MODULES.JOBBER, label: 'Jobber' },
+  transporters: { module: auditService.MODULES.TRANSPORTER, label: 'Transporter' }
+};
 
 const masterService = {
   // Generic list/search helper
@@ -50,7 +58,21 @@ const masterService = {
         break;
     }
     const result = await db.query(queries[queryKey], params);
-    return result.rows[0];
+    const created = result.rows[0];
+
+    const { module, label } = AUDIT_MODULES[table];
+    await auditService.recordSafe({
+      module,
+      action: auditService.ACTIONS.CREATE,
+      recordId: created.id,
+      reference: created.name,
+      summary: table === 'items'
+        ? `${label} ${created.name} created with opening stock ${Number(created.open_stock) || 0}`
+        : `${label} ${created.name} created`,
+      details: { after: created }
+    });
+
+    return created;
   },
 
   update: async (table, id, data) => {
@@ -62,13 +84,15 @@ const masterService = {
       clean[key] = typeof value === 'string' ? toUpperCase(value) : value;
     });
 
+    const before = await masterService.getById(table, id);
+
     let queryKey, params;
     switch (table) {
       case 'items':
         queryKey = 'updateItem';
-        
+
         // Fetch old item to calculate stock difference based on open_stock change
-        const oldItem = await masterService.getById('items', id);
+        const oldItem = before;
         if (!oldItem) throw new Error('Item not found');
         
         const oldOpenStock = Number(oldItem.open_stock) || 0;
@@ -94,7 +118,65 @@ const masterService = {
         break;
     }
     const result = await db.query(queries[queryKey], params);
-    return result.rows[0];
+    const after = result.rows[0];
+
+    if (after) {
+      const { module, label } = AUDIT_MODULES[table];
+      const changes = auditService.diffFields(before, after);
+      await auditService.recordSafe({
+        module,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: after.id,
+        reference: after.name,
+        summary: `${label} ${after.name} updated: ${auditService.describeUpdate(changes)}`,
+        details: { before, after, changes }
+      });
+    }
+
+    return after;
+  },
+
+  /**
+   * Deletes a master record and keeps an archived copy of it.
+   * Records still used by bills / job work fail with a foreign key error (23503) and nothing is archived.
+   *
+   * @returns {Promise<object|null>} The deleted record, or null if it did not exist
+   */
+  delete: async (table, id) => {
+    const getKey = `get${table.charAt(0).toUpperCase() + table.slice(1).replace(/s$/, '')}ById`;
+    const deleteKey = `delete${table.charAt(0).toUpperCase() + table.slice(1).replace(/s$/, '')}`;
+    const { module, label } = AUDIT_MODULES[table];
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const existing = await client.query(queries[getKey], [id]);
+      if (existing.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+      const snapshot = existing.rows[0];
+
+      await client.query(queries[deleteKey], [id]);
+
+      await auditService.archiveAndRecord(client, {
+        module,
+        recordId: snapshot.id,
+        reference: snapshot.name,
+        partyName: snapshot.name,
+        summary: `${label} ${snapshot.name} deleted and archived`,
+        snapshot
+      });
+
+      await client.query('COMMIT');
+      return snapshot;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   getItemTransactions: async (itemId, startDate, endDate) => {

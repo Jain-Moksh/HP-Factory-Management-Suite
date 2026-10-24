@@ -1,6 +1,17 @@
 const db = require('../config/db');
 const queries = require('../queries/priceListQueries');
 const { toUpperCase } = require('../utils/dataSanitizer');
+const auditService = require('./auditService');
+
+const getCategoryName = async (executor, categoryId) => {
+  const res = await executor.query('SELECT category_name FROM price_list_categories WHERE id = $1', [categoryId]);
+  return res.rows[0] ? res.rows[0].category_name : `#${categoryId}`;
+};
+
+const getCategoryItemNames = async (executor, categoryId) => {
+  const res = await executor.query(queries.getCategoryItems, [categoryId]);
+  return res.rows.map(i => i.name);
+};
 
 const priceListService = {
   get: async () => {
@@ -44,7 +55,20 @@ const priceListService = {
   updateDate: async (date) => {
     // Self-healing: ensure singleton row exists before updating
     await db.query('INSERT INTO price_lists (id, date) VALUES (1, CURRENT_DATE) ON CONFLICT (id) DO NOTHING');
+    const beforeRes = await db.query(queries.getPriceList);
     const result = await db.query(queries.updatePriceListDate, [date]);
+
+    const before = { date: beforeRes.rows[0] ? beforeRes.rows[0].date : null };
+    const after = { date: result.rows[0].date };
+    await auditService.recordSafe({
+      module: auditService.MODULES.PRICE_LIST,
+      action: auditService.ACTIONS.UPDATE,
+      recordId: 1,
+      reference: 'PRICE LIST DATE',
+      summary: `Price list date changed from ${before.date} to ${after.date}`,
+      details: { before, after, changes: auditService.diffFields(before, after) }
+    });
+
     return result.rows[0];
   },
 
@@ -68,17 +92,51 @@ const priceListService = {
 
     // Insert
     const result = await db.query(queries.createCategory, [sanitized, displayOrder]);
+
+    await auditService.recordSafe({
+      module: auditService.MODULES.PRICE_LIST,
+      action: auditService.ACTIONS.CREATE,
+      recordId: result.rows[0].id,
+      reference: sanitized,
+      summary: `Price list category ${sanitized} created`,
+      details: { after: result.rows[0] }
+    });
+
     return result.rows[0];
   },
 
   deleteCategory: async (id) => {
-    const result = await db.query(queries.deleteCategory, [id]);
-    if (result.rows.length === 0) {
-      const err = new Error('Category not found');
-      err.status = 404;
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Item assignments are removed by ON DELETE CASCADE, so capture them first
+      const itemNames = await getCategoryItemNames(client, id);
+      const result = await client.query(queries.deleteCategory, [id]);
+      if (result.rows.length === 0) {
+        const err = new Error('Category not found');
+        err.status = 404;
+        throw err;
+      }
+      const category = result.rows[0];
+
+      await auditService.archiveAndRecord(client, {
+        module: auditService.MODULES.PRICE_LIST,
+        recordId: category.id,
+        reference: category.category_name,
+        partyName: category.category_name,
+        summary: `Price list category ${category.category_name} deleted and archived (${itemNames.length} item${itemNames.length === 1 ? '' : 's'})`,
+        snapshot: { ...category, items: itemNames.join(', ') }
+      });
+
+      await client.query('COMMIT');
+      return category;
+    } catch (err) {
+      await client.query('ROLLBACK');
       throw err;
+    } finally {
+      client.release();
     }
-    return result.rows[0];
   },
 
   setCategoryItems: async (categoryId, itemIds) => {
@@ -104,6 +162,8 @@ const priceListService = {
         }
       }
 
+      const beforeItems = await getCategoryItemNames(client, categoryId);
+
       // 3. Clear existing items for this category
       await client.query(queries.clearCategoryItems, [categoryId]);
 
@@ -115,6 +175,21 @@ const priceListService = {
         const res = await client.query(queries.assignItemToCategory, [categoryId, itemId, displayOrder]);
         insertedItems.push(res.rows[0]);
       }
+
+      const categoryName = await getCategoryName(client, categoryId);
+      const afterItems = await getCategoryItemNames(client, categoryId);
+      const before = { items: beforeItems.join(', ') };
+      const after = { items: afterItems.join(', ') };
+      const added = afterItems.filter(n => !beforeItems.includes(n)).length;
+      const removed = beforeItems.filter(n => !afterItems.includes(n)).length;
+      await auditService.record(client, {
+        module: auditService.MODULES.PRICE_LIST,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: Number(categoryId),
+        reference: categoryName,
+        summary: `Price list category ${categoryName} items updated: ${added} added, ${removed} removed`,
+        details: { before, after, changes: auditService.diffFields(before, after) }
+      });
 
       await client.query('COMMIT');
       return insertedItems;
@@ -133,7 +208,21 @@ const priceListService = {
       err.status = 404;
       throw err;
     }
-    return result.rows[0];
+
+    const removed = result.rows[0];
+    const itemRes = await db.query('SELECT name FROM items WHERE id = $1', [itemId]);
+    const itemName = itemRes.rows[0] ? itemRes.rows[0].name : `#${itemId}`;
+    const categoryName = await getCategoryName(db, removed.price_list_category_id);
+    await auditService.recordSafe({
+      module: auditService.MODULES.PRICE_LIST,
+      action: auditService.ACTIONS.DELETE,
+      recordId: Number(itemId),
+      reference: categoryName,
+      summary: `Item ${itemName} removed from price list category ${categoryName}`,
+      details: { before: { ...removed, item_name: itemName, category_name: categoryName } }
+    });
+
+    return removed;
   },
 
   reorderCategoryItems: async (categoryId, orders) => {
@@ -141,10 +230,24 @@ const priceListService = {
     try {
       await client.query('BEGIN');
 
+      const beforeItems = await getCategoryItemNames(client, categoryId);
+
       // orders: Array of { itemId, order }
       for (const entry of orders) {
         await client.query(queries.updateItemOrder, [entry.order, categoryId, entry.itemId]);
       }
+
+      const categoryName = await getCategoryName(client, categoryId);
+      const before = { item_order: beforeItems.join(', ') };
+      const after = { item_order: (await getCategoryItemNames(client, categoryId)).join(', ') };
+      await auditService.record(client, {
+        module: auditService.MODULES.PRICE_LIST,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: Number(categoryId),
+        reference: categoryName,
+        summary: `Price list category ${categoryName} items reordered`,
+        details: { before, after, changes: auditService.diffFields(before, after) }
+      });
 
       await client.query('COMMIT');
       return { success: true };
@@ -161,10 +264,23 @@ const priceListService = {
     try {
       await client.query('BEGIN');
 
+      const categoryOrder = async () => (await client.query(queries.getCategories)).rows.map(c => c.name).join(', ');
+      const before = { category_order: await categoryOrder() };
+
       // orders: Array of { categoryId, order }
       for (const entry of orders) {
         await client.query(queries.updateCategoryOrder, [entry.order, entry.categoryId]);
       }
+
+      const after = { category_order: await categoryOrder() };
+      await auditService.record(client, {
+        module: auditService.MODULES.PRICE_LIST,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: 1,
+        reference: 'CATEGORY ORDER',
+        summary: 'Price list categories reordered',
+        details: { before, after, changes: auditService.diffFields(before, after) }
+      });
 
       await client.query('COMMIT');
       return { success: true };

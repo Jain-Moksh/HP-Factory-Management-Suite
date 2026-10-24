@@ -1,4 +1,13 @@
 const backupService = require('../services/backupService');
+const auditService = require('../services/auditService');
+
+const pick = (obj, keys) => keys.reduce((acc, k) => ({ ...acc, [k]: obj ? obj[k] : null }), {});
+
+const BACKUP_FIELDS = ['auto_backup_enabled', 'auto_backup_path', 'auto_backup_interval'];
+const FTP_FIELDS = ['ftp_backup_enabled', 'ftp_host', 'ftp_port', 'ftp_username', 'ftp_password', 'ftp_path'];
+
+// The FTP password is never written to the audit log, only whether it changed
+const maskFtp = (settings) => ({ ...settings, ftp_password: settings.ftp_password ? '********' : null });
 const path = require('path');
 const fs = require('fs');
 
@@ -14,7 +23,18 @@ const backupController = {
 
   updateSettings: async (req, res, next) => {
     try {
+      const before = pick(await backupService.getSettingsInternal(), BACKUP_FIELDS);
       const settings = await backupService.updateSettings(req.body);
+      const after = pick(settings, BACKUP_FIELDS);
+      const changes = auditService.diffFields(before, after);
+      await auditService.recordSafe({
+        module: auditService.MODULES.SYSTEM,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: 1,
+        reference: 'AUTO BACKUP SETTINGS',
+        summary: `Auto backup settings updated: ${auditService.describeUpdate(changes)}`,
+        details: { before, after, changes }
+      });
       res.json(settings);
     } catch (err) {
       next(err);
@@ -32,7 +52,23 @@ const backupController = {
 
   updateFtpSettings: async (req, res, next) => {
     try {
+      const rawBefore = pick(await backupService.getSettingsInternal(), FTP_FIELDS);
       const settings = await backupService.updateFtpSettings(req.body);
+      const rawAfter = pick(settings, FTP_FIELDS);
+      const before = maskFtp(rawBefore);
+      const after = maskFtp(rawAfter);
+      const changes = auditService.diffFields(before, after);
+      if (rawBefore.ftp_password !== rawAfter.ftp_password) {
+        changes.push({ field: 'ftp_password', from: '********', to: 'changed' });
+      }
+      await auditService.recordSafe({
+        module: auditService.MODULES.SYSTEM,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: 1,
+        reference: 'FTP BACKUP SETTINGS',
+        summary: `FTP backup settings updated: ${auditService.describeUpdate(changes)}`,
+        details: { before, after, changes }
+      });
       res.json(settings);
     } catch (err) {
       next(err);
@@ -66,6 +102,15 @@ const backupController = {
       
       // Clean up uploaded file after restore
       fs.unlinkSync(filePath);
+
+      // Logged after the restore, since restoring replaces audit_logs with the backup's copy
+      await auditService.recordSafe({
+        module: auditService.MODULES.SYSTEM,
+        action: auditService.ACTIONS.RESTORE,
+        reference: req.file.originalname,
+        summary: `Database restored from backup file ${req.file.originalname}`,
+        details: { after: { file_name: req.file.originalname, file_size_bytes: req.file.size } }
+      });
 
       res.json({ success: true, message: 'Database restored successfully' });
     } catch (err) {

@@ -1,10 +1,26 @@
 const db = require('../config/db');
 const queries = require('../queries/billingQueries');
 const { generateChallanNo, getMonthAndFY } = require('../utils/challanGenerator');
-const { toUpperCase } = require('../utils/dataSanitizer');
+const { toUpperCase, validateLineItems } = require('../utils/dataSanitizer');
+const auditService = require('./auditService');
+
+const formatAmount = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/**
+ * Loads a bill with its line items for audit snapshots. Runs on the transaction client,
+ * so it sees the transaction's own uncommitted writes.
+ */
+const loadSnapshot = async (executor, id) => {
+  const billRes = await executor.query(queries.getBillById, [id]);
+  if (billRes.rows.length === 0) return null;
+  const { address1, address2, client_shortform, ...bill } = billRes.rows[0];
+  const itemsRes = await executor.query(queries.getBillItems, [id]);
+  return { ...bill, items: itemsRes.rows.map(({ conversion, ...item }) => item) };
+};
 
 const billingService = {
   create: async (billData) => {
+    validateLineItems(billData.items);
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
@@ -55,13 +71,29 @@ const billingService = {
       const billingItems = billingItemsRes.rows;
 
       // Execute Bulk Stock Update
+      // Quantities are summed per item: UPDATE ... FROM applies only one source row per target row,
+      // so the same item on two rows would otherwise be deducted only once
       const stockParams = items.flatMap(item => [item.quantity, item.item_id]);
       const stockQuery = `
         UPDATE items SET stock = items.stock - v.qty
-        FROM (VALUES ${stockValues.join(',')}) AS v(qty, id)
+        FROM (
+          SELECT id, SUM(qty) AS qty
+          FROM (VALUES ${stockValues.join(',')}) AS t(qty, id)
+          GROUP BY id
+        ) AS v
         WHERE items.id = v.id
       `;
       await client.query(stockQuery, stockParams);
+
+      const snapshot = await loadSnapshot(client, bill.id);
+      await auditService.record(client, {
+        module: auditService.MODULES.BILLING,
+        action: auditService.ACTIONS.CREATE,
+        recordId: bill.id,
+        reference: challan_no,
+        summary: `Bill ${challan_no} created for ${snapshot.client_name}: ₹${formatAmount(grand_total)} (${items.length} item${items.length === 1 ? '' : 's'})`,
+        details: { after: snapshot }
+      });
 
       await client.query('COMMIT');
       return { ...bill, items: billingItems };
@@ -135,6 +167,13 @@ const billingService = {
     try {
       await client.query('BEGIN');
 
+      // Full copy of the bill is archived instead of being lost
+      const snapshot = await loadSnapshot(client, id);
+      if (!snapshot) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
       // 1. Get items to reverse stock
       const itemsRes = await client.query(queries.getBillItems, [id]);
       const items = itemsRes.rows;
@@ -143,9 +182,14 @@ const billingService = {
       if (items.length > 0) {
         const stockValues = items.map((_, i) => `($${i * 2 + 1}::numeric, $${i * 2 + 2}::int)`);
         const stockParams = items.flatMap(item => [item.quantity, item.item_id]);
+        // Quantities are summed per item so the same item on two rows is fully restored
         const stockQuery = `
           UPDATE items SET stock = items.stock + v.qty
-          FROM (VALUES ${stockValues.join(',')}) AS v(qty, id)
+          FROM (
+            SELECT id, SUM(qty) AS qty
+            FROM (VALUES ${stockValues.join(',')}) AS t(qty, id)
+            GROUP BY id
+          ) AS v
           WHERE items.id = v.id
         `;
         await client.query(stockQuery, stockParams);
@@ -156,6 +200,17 @@ const billingService = {
 
       // 4. Delete billing record
       const result = await client.query(queries.deleteBill, [id]);
+
+      await auditService.archiveAndRecord(client, {
+        module: auditService.MODULES.BILLING,
+        recordId: snapshot.id,
+        reference: snapshot.challan_no,
+        partyName: snapshot.client_name,
+        recordDate: snapshot.date,
+        amount: snapshot.grand_total,
+        summary: `Bill ${snapshot.challan_no} of ${snapshot.client_name} deleted and archived: ₹${formatAmount(snapshot.grand_total)}, stock returned for ${items.length} item${items.length === 1 ? '' : 's'}`,
+        snapshot
+      });
 
       await client.query('COMMIT');
       return result.rows[0];
@@ -182,6 +237,7 @@ const billingService = {
   },
 
   update: async (id, billData) => {
+    validateLineItems(billData.items);
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
@@ -191,6 +247,8 @@ const billingService = {
         discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark,
         long_remark, grand_total, items
       } = billData; // Ignored challan_no from frontend
+
+      const before = await loadSnapshot(client, id);
 
       // 1. Get old bill to check date and get items for stock reversal
       const oldBillRes = await client.query('SELECT date, challan_no FROM billing WHERE id = $1', [id]);
@@ -233,12 +291,18 @@ const billingService = {
         if (item.id) {
           const oldItem = oldItems.find(i => i.id === item.id);
           if (oldItem) {
-            // Calculate stock difference
-            const qtyDiff = parseFloat(item.quantity) - parseFloat(oldItem.quantity);
-            if (qtyDiff > 0) {
-              await client.query(queries.updateItemStock, [qtyDiff, item.item_id]); // Deduct more stock
-            } else if (qtyDiff < 0) {
-              await client.query(queries.reverseStockUpdate, [Math.abs(qtyDiff), item.item_id]); // Add back stock
+            if (Number(oldItem.item_id) !== Number(item.item_id)) {
+              // Product changed on this row: return full qty to old product, deduct full qty from new product
+              await client.query(queries.reverseStockUpdate, [oldItem.quantity, oldItem.item_id]);
+              await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
+            } else {
+              // Calculate stock difference
+              const qtyDiff = parseFloat(item.quantity) - parseFloat(oldItem.quantity);
+              if (qtyDiff > 0) {
+                await client.query(queries.updateItemStock, [qtyDiff, item.item_id]); // Deduct more stock
+              } else if (qtyDiff < 0) {
+                await client.query(queries.reverseStockUpdate, [Math.abs(qtyDiff), item.item_id]); // Add back stock
+              }
             }
 
             const itemRes = await client.query(queries.updateBillItem, [
@@ -257,6 +321,18 @@ const billingService = {
           billingItems.push(itemRes.rows[0]);
         }
       }
+
+      const after = await loadSnapshot(client, id);
+      const changes = auditService.diffFields(before, after);
+      const itemDiff = auditService.diffLineItems(before.items, after.items);
+      await auditService.record(client, {
+        module: auditService.MODULES.BILLING,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: Number(id),
+        reference: after.challan_no,
+        summary: `Bill ${after.challan_no} of ${after.client_name} updated: ${auditService.describeUpdate(changes, itemDiff)}`,
+        details: { before, after, changes, itemDiff }
+      });
 
       await client.query('COMMIT');
       return { ...bill, items: billingItems };

@@ -43,6 +43,7 @@ const DayBook = lazy(() => import('./pages/DayBook'));
 const Utility = lazy(() => import('./pages/Utility'));
 const BackupManager = lazy(() => import('./pages/utility/BackupManager'));
 const RestoreManager = lazy(() => import('./pages/utility/RestoreManager'));
+const AuditLog = lazy(() => import('./pages/utility/AuditLog'));
 
 function AuthGuard({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -180,6 +181,7 @@ function App() {
           <Route path="/utility" element={<Utility />} />
           <Route path="/utility/backup" element={<BackupManager />} />
           <Route path="/utility/restore" element={<RestoreManager />} />
+          <Route path="/utility/audit" element={<AuditLog />} />
           
           {/* Master Routes */}
           <Route path="/master/items" element={<ItemList />} />

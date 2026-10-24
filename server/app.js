@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const backupService = require('./services/backupService');
+const { requestContextMiddleware } = require('./utils/requestContext');
 
 
 const app = express();
@@ -10,6 +11,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Captures the requesting device for audit logging
+app.use(requestContextMiddleware);
 
 // Auto Backup Trigger Middleware
 app.use((req, res, next) => {
@@ -49,6 +53,7 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/backup', require('./routes/backupRoutes'));
 app.use('/api/party-transactions', require('./routes/partyTransactionRoutes'));
 app.use('/api/price-list', require('./routes/priceListRoutes'));
+app.use('/api/audit-logs', require('./routes/auditRoutes'));
 
 
 // Verify login password

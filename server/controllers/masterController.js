@@ -53,14 +53,12 @@ const masterController = (table) => ({
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
 
-      const queryKey = `delete${table.charAt(0).toUpperCase() + table.slice(1).replace(/s$/, '')}`;
-      const result = await require('../config/db').query(require('../queries/masterQueries')[queryKey], [id]);
-      
-      if (result.rowCount === 0) {
+      const deleted = await masterService.delete(table, id);
+      if (!deleted) {
         return res.status(404).json({ success: false, message: 'Record not found' });
       }
 
-      res.json({ success: true, message: 'Record deleted successfully' });
+      res.json({ success: true, message: 'Record deleted and archived successfully' });
     } catch (err) {
       if (err.code === '23503') {
         return res.status(400).json({ 

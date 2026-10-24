@@ -57,8 +57,11 @@ const purchaseController = {
       if (password !== process.env.del_pass) {
         return res.status(401).json({ success: false, message: 'Fail to delete' });
       }
-      await purchaseService.delete(req.params.id);
-      res.json({ success: true, message: 'Purchase record deleted successfully' });
+      const deleted = await purchaseService.delete(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ success: false, message: 'Purchase record not found' });
+      }
+      res.json({ success: true, message: 'Purchase record deleted and archived successfully' });
     } catch (err) {
       next(err);
     }

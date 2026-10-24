@@ -41,7 +41,7 @@ const billingController = {
       if (!data) {
         return res.status(404).json({ success: false, message: 'Bill not found' });
       }
-      res.json({ success: true, message: 'Bill deleted successfully', data });
+      res.json({ success: true, message: 'Bill deleted and archived successfully', data });
     } catch (err) {
       next(err);
     }

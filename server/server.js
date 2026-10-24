@@ -62,7 +62,11 @@ async function initializeDatabase() {
   }
 }
 
-initializeDatabase().then(() => {
+initializeDatabase().then(async () => {
+  // Creates any tables added to db.md after this database was first set up (e.g. audit_logs)
+  const { autoHealDatabase } = require('./utils/dbHealer');
+  await autoHealDatabase(require('./config/db').pool).catch(err => console.error('Startup schema check failed:', err));
+
   const app = require('./app');
   const os = require('os');
   const { exec } = require('child_process');

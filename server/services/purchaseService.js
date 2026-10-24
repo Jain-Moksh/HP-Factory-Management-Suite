@@ -1,10 +1,25 @@
 const db = require('../config/db');
 const queries = require('../queries/purchaseQueries');
 const { generateChallanNo, getMonthAndFY } = require('../utils/challanGenerator');
-const { toUpperCase } = require('../utils/dataSanitizer');
+const { toUpperCase, validateLineItems } = require('../utils/dataSanitizer');
+const auditService = require('./auditService');
+
+/**
+ * Loads a job work entry with its line items for audit snapshots.
+ * Runs on the transaction client, so it sees the transaction's own uncommitted writes.
+ */
+const loadSnapshot = async (executor, id) => {
+  const purchaseRes = await executor.query(queries.getPurchaseById, [id]);
+  if (purchaseRes.rows.length === 0) return null;
+  const itemsRes = await executor.query(queries.getPurchaseItems, [id]);
+  return { ...purchaseRes.rows[0], items: itemsRes.rows };
+};
+
+const totalQuantity = (items) => items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
 
 const purchaseService = {
   create: async (purchaseData) => {
+    validateLineItems(purchaseData.items);
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
@@ -30,6 +45,16 @@ const purchaseService = {
         // Stock Update (Increment)
         await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
       }
+
+      const snapshot = await loadSnapshot(client, purchase.id);
+      await auditService.record(client, {
+        module: auditService.MODULES.JOB_WORK,
+        action: auditService.ACTIONS.CREATE,
+        recordId: purchase.id,
+        reference: challan_no,
+        summary: `Job work ${challan_no} created for ${snapshot.jobber_name}: ${items.length} item${items.length === 1 ? '' : 's'}, total qty ${totalQuantity(items)} added to stock`,
+        details: { after: snapshot }
+      });
 
       await client.query('COMMIT');
       return { ...purchase, items: purchaseItems };
@@ -73,6 +98,13 @@ const purchaseService = {
     try {
       await client.query('BEGIN');
 
+      // Full copy of the job work is archived instead of being lost
+      const snapshot = await loadSnapshot(client, id);
+      if (!snapshot) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
       // 1. Get items to reverse stock
       const itemsRes = await client.query(queries.getPurchaseItems, [id]);
       const items = itemsRes.rows;
@@ -88,6 +120,17 @@ const purchaseService = {
       // 4. Delete purchase record
       await client.query(queries.deletePurchase, [id]);
 
+      await auditService.archiveAndRecord(client, {
+        module: auditService.MODULES.JOB_WORK,
+        recordId: snapshot.id,
+        reference: snapshot.challan_no,
+        partyName: snapshot.jobber_name,
+        recordDate: snapshot.date,
+        amount: null,
+        summary: `Job work ${snapshot.challan_no} of ${snapshot.jobber_name} deleted and archived: total qty ${totalQuantity(items)} removed from stock`,
+        snapshot
+      });
+
       await client.query('COMMIT');
       return true;
     } catch (err) {
@@ -99,11 +142,14 @@ const purchaseService = {
   },
 
   update: async (id, purchaseData) => {
+    validateLineItems(purchaseData.items);
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
 
       const { jobber_id, date, remark, items } = purchaseData; // Ignore challan_no from frontend
+
+      const before = await loadSnapshot(client, id);
 
       // 1. Get old purchase to check date and get items for stock reversal
       const oldPurchaseRes = await client.query('SELECT date, challan_no FROM purchase WHERE id = $1', [id]);
@@ -142,12 +188,18 @@ const purchaseService = {
         if (item.id) {
           const oldItem = oldItems.find(i => i.id === item.id);
           if (oldItem) {
-            // Calculate stock difference
-            const qtyDiff = parseFloat(item.quantity) - parseFloat(oldItem.quantity);
-            if (qtyDiff > 0) {
-              await client.query(queries.updateItemStock, [qtyDiff, item.item_id]); // Add more stock
-            } else if (qtyDiff < 0) {
-              await client.query(queries.reverseStockUpdate, [Math.abs(qtyDiff), item.item_id]); // Revert stock
+            if (Number(oldItem.item_id) !== Number(item.item_id)) {
+              // Product changed on this row: remove full qty from old product, add full qty to new product
+              await client.query(queries.reverseStockUpdate, [oldItem.quantity, oldItem.item_id]);
+              await client.query(queries.updateItemStock, [item.quantity, item.item_id]);
+            } else {
+              // Calculate stock difference
+              const qtyDiff = parseFloat(item.quantity) - parseFloat(oldItem.quantity);
+              if (qtyDiff > 0) {
+                await client.query(queries.updateItemStock, [qtyDiff, item.item_id]); // Add more stock
+              } else if (qtyDiff < 0) {
+                await client.query(queries.reverseStockUpdate, [Math.abs(qtyDiff), item.item_id]); // Revert stock
+              }
             }
 
             const itemRes = await client.query(queries.updatePurchaseItem, [
@@ -164,6 +216,18 @@ const purchaseService = {
           purchaseItems.push(itemRes.rows[0]);
         }
       }
+
+      const after = await loadSnapshot(client, id);
+      const changes = auditService.diffFields(before, after);
+      const itemDiff = auditService.diffLineItems(before.items, after.items);
+      await auditService.record(client, {
+        module: auditService.MODULES.JOB_WORK,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: Number(id),
+        reference: after.challan_no,
+        summary: `Job work ${after.challan_no} of ${after.jobber_name} updated: ${auditService.describeUpdate(changes, itemDiff)}`,
+        details: { before, after, changes, itemDiff }
+      });
 
       await client.query('COMMIT');
       return { ...purchase, items: purchaseItems };

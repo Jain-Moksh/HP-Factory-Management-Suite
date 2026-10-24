@@ -246,6 +246,47 @@ CREATE TABLE price_list_items (
 CREATE INDEX idx_price_list_categories_list ON price_list_categories(price_list_id);
 CREATE INDEX idx_price_list_items_category ON price_list_items(price_list_category_id);
 
+-- =========================
+-- AUDIT & ARCHIVE TABLES
+-- =========================
+
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    module TEXT NOT NULL,          -- BILLING, JOB_WORK, PAYMENT, ITEM, PARTY, JOBBER, TRANSPORTER, GROUP, PRICE_LIST, SYSTEM
+    action TEXT NOT NULL,          -- CREATE, UPDATE, DELETE, RESTORE
+    record_id INT,
+    reference TEXT,                -- Challan no. or record name
+    summary TEXT,
+    details JSONB,                 -- { before, after, changes } snapshots
+    device_name TEXT,              -- Name the device registered for itself (X-Device-Name header)
+    hostname TEXT,                 -- Network computer name resolved from the IP
+    ip_address TEXT,
+    os TEXT,
+    browser TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
+CREATE INDEX idx_audit_logs_module ON audit_logs(module, created_at);
+
+CREATE TABLE archived_records (
+    id SERIAL PRIMARY KEY,
+    entity_type TEXT NOT NULL,     -- Same values as audit_logs.module
+    original_id INT NOT NULL,
+    reference TEXT,
+    party_name TEXT,
+    record_date DATE,
+    amount NUMERIC,
+    data JSONB NOT NULL,           -- Full record snapshot including line items
+    device_name TEXT,
+    hostname TEXT,
+    ip_address TEXT,
+    archived_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_archived_records_entity ON archived_records(entity_type, archived_at);
+
 -- =============================================
 -- DATABASE DATE PRECISION (TIMEZONES)
 -- =============================================
@@ -261,6 +302,7 @@ CREATE INDEX idx_price_list_items_category ON price_list_items(price_list_catego
 -- 1. PURCHASE: Increments `items.stock`.
 -- 2. BILLING: Decrements `items.stock`.
 -- 3. EDITS/DELETIONS: Stock is automatically reversed (using quantities from existing items) before applying new changes or deleting records.
+--    Deleted bills, job work and payments are moved into `archived_records` (full JSON snapshot), so they never count in stock, ledgers or reports.
 -- 4. MASTER DATA EDITS: If 'open_stock' is changed via an item update, the system automatically calculates a delta adjustment and applies it to 'items.stock'.
 
 -- =============================================
@@ -287,6 +329,14 @@ CREATE INDEX idx_price_list_items_category ON price_list_items(price_list_catego
 -- 2. AUTOMATIC BACKUP: Triggered by middleware on successful mutations. Path/Interval defined in `backup_settings`.
 -- 3. SELF-HEALING: Triggers background auto-backup on server startup and during settings fetch if files are missing on disk.
 -- 4. CONCURRENCY: Uses `isBackupRunning` lock to prevent overlapping backup/restore operations.
+
+-- =============================================
+-- AUDIT LOG & ARCHIVE
+-- =============================================
+-- 1. Every data-changing action (create/update/delete of bills, job work, payments, masters, groups, price list, backup settings, restore)
+--    writes one row to `audit_logs` inside the same transaction as the change, with the device name, hostname, IP, OS and browser.
+-- 2. Deletes are archived: the record is removed from its live table (stock reversed as before) and its full snapshot is kept in `archived_records`.
+-- 3. Logins and read-only requests are not logged.
 
 -- =============================================
 -- DATA SANITIZATION

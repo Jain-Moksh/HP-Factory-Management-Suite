@@ -2,6 +2,22 @@ const db = require('../config/db');
 const queries = require('../queries/partyTransactionQueries');
 const { getMonthAndFY } = require('../utils/challanGenerator');
 const { toUpperCase } = require('../utils/dataSanitizer');
+const auditService = require('./auditService');
+
+// RETURN is shown as REPLACE everywhere in the UI
+const TX_LABELS = { PAYMENT: 'Payment', RETURN: 'Replace', DISCOUNT: 'Discount' };
+
+const formatAmount = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const loadSnapshot = async (executor, id) => {
+  const res = await executor.query(queries.getTransactionById, [id]);
+  return res.rows[0] || null;
+};
+
+const describeTransaction = (tx) => {
+  const mode = tx.payment_mode ? ` (${tx.payment_mode})` : '';
+  return `${TX_LABELS[tx.transaction_type] || tx.transaction_type} ${tx.challan_no} of ₹${formatAmount(tx.amount)}${mode} for ${tx.party_name}`;
+};
 
 const getFormattedTransactionChallan = async (dateStr, transactionType, dbOrClient, excludeId = null) => {
   const { monthNum, monthName, fyRange } = getMonthAndFY(dateStr);
@@ -76,6 +92,16 @@ const partyTransactionService = {
         toUpperCase(remark)
       ]);
 
+      const snapshot = await loadSnapshot(client, insertRes.rows[0].id);
+      await auditService.record(client, {
+        module: auditService.MODULES.PAYMENT,
+        action: auditService.ACTIONS.CREATE,
+        recordId: snapshot.id,
+        reference: snapshot.challan_no,
+        summary: `${describeTransaction(snapshot)} created`,
+        details: { after: snapshot }
+      });
+
       await client.query('COMMIT');
       return insertRes.rows[0];
     } catch (err) {
@@ -132,6 +158,17 @@ const partyTransactionService = {
           toUpperCase(remark || '')
         ]);
 
+        // One log entry per party so each payment can be found by its own challan / party
+        const snapshot = await loadSnapshot(client, insertRes.rows[0].id);
+        await auditService.record(client, {
+          module: auditService.MODULES.PAYMENT,
+          action: auditService.ACTIONS.CREATE,
+          recordId: snapshot.id,
+          reference: snapshot.challan_no,
+          summary: `${describeTransaction(snapshot)} created (bulk entry of ${transactions.length})`,
+          details: { after: snapshot, bulk: true }
+        });
+
         results.push(insertRes.rows[0]);
       }
 
@@ -169,6 +206,7 @@ const partyTransactionService = {
         throw new Error(`Transaction ID ${id} not found.`);
       }
       const oldTx = oldTxRes.rows[0];
+      const before = await loadSnapshot(client, id);
 
       // 2. Re-evaluate Challan No if date shifted or type changed
       let final_challan_no = oldTx.challan_no;
@@ -192,6 +230,17 @@ const partyTransactionService = {
         id
       ]);
 
+      const after = await loadSnapshot(client, id);
+      const changes = auditService.diffFields(before, after);
+      await auditService.record(client, {
+        module: auditService.MODULES.PAYMENT,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: Number(id),
+        reference: after.challan_no,
+        summary: `${describeTransaction(after)} updated: ${auditService.describeUpdate(changes)}`,
+        details: { before, after, changes }
+      });
+
       await client.query('COMMIT');
       return updateRes.rows[0];
     } catch (err) {
@@ -203,9 +252,38 @@ const partyTransactionService = {
   },
 
   delete: async (id) => {
-    const res = await db.query(queries.deleteTransaction, [id]);
-    if (res.rows.length === 0) return false;
-    return true;
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Full copy of the transaction is archived instead of being lost
+      const snapshot = await loadSnapshot(client, id);
+      if (!snapshot) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      await client.query(queries.deleteTransaction, [id]);
+
+      await auditService.archiveAndRecord(client, {
+        module: auditService.MODULES.PAYMENT,
+        recordId: snapshot.id,
+        reference: snapshot.challan_no,
+        partyName: snapshot.party_name,
+        recordDate: snapshot.date,
+        amount: snapshot.amount,
+        summary: `${describeTransaction(snapshot)} deleted and archived`,
+        snapshot
+      });
+
+      await client.query('COMMIT');
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   getNextChallan: async (date, transactionType) => {

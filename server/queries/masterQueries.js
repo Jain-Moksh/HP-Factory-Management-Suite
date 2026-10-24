@@ -32,6 +32,7 @@ const masterQueries = {
     deleteItem: 'DELETE FROM items WHERE id = $1 RETURNING *',
     deleteClient: 'DELETE FROM clients WHERE id = $1 RETURNING *',
     deleteJobber: 'DELETE FROM jobbers WHERE id = $1 RETURNING *',
+    deleteTransporter: 'DELETE FROM transporters WHERE id = $1 RETURNING *',
 
     // Item Transaction History (Movement Ledger)
     getItemTransactions: `

@@ -10,7 +10,8 @@ const Layout = ({ children }) => {
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
       {/* Main Content Area */}
-      <main className={`flex-1 transition-all duration-300 ${isCollapsed ? 'ml-[70px]' : 'ml-[210px]'} bg-bg-main min-h-screen`}>
+      {/* min-w-0 keeps wide content (tables, tab rows) from stretching main past the viewport */}
+      <main className={`flex-1 min-w-0 transition-all duration-300 ${isCollapsed ? 'ml-[70px]' : 'ml-[210px]'} bg-bg-main min-h-screen`}>
         {/* Children contains the PageHeader and the content */}
         {children}
       </main>

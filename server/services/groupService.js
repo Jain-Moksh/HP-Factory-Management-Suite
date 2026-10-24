@@ -1,6 +1,15 @@
 const db = require('../config/db');
 const groupQueries = require('../queries/groupQueries');
 const { toUpperCase } = require('../utils/dataSanitizer');
+const auditService = require('./auditService');
+
+const loadSnapshot = async (executor, id) => {
+  const res = await executor.query(groupQueries.getGroupById, [id]);
+  if (res.rows.length === 0) return null;
+  const { members, ...group } = res.rows[0];
+  // Member list is kept as readable names so the diff shows who joined / left
+  return { ...group, members: members.map(m => `${m.name} (${m.member_type})`).sort().join(', ') };
+};
 
 const groupService = {
   getAllGroups: async () => {
@@ -43,6 +52,17 @@ const groupService = {
         }
       }
 
+      const snapshot = await loadSnapshot(client, group.id);
+      const memberCount = (members || []).length;
+      await auditService.record(client, {
+        module: auditService.MODULES.GROUP,
+        action: auditService.ACTIONS.CREATE,
+        recordId: group.id,
+        reference: group.name,
+        summary: `Group ${group.name} created with ${memberCount} member${memberCount === 1 ? '' : 's'}`,
+        details: { after: snapshot }
+      });
+
       await client.query('COMMIT');
       return group;
     } catch (err) {
@@ -57,6 +77,8 @@ const groupService = {
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
+
+      const before = await loadSnapshot(client, id);
 
       // 1. Update Group Info
       const groupRes = await client.query(groupQueries.updateGroup, [toUpperCase(name), toUpperCase(description), id]);
@@ -87,6 +109,17 @@ const groupService = {
         }
       }
 
+      const after = await loadSnapshot(client, id);
+      const changes = auditService.diffFields(before, after);
+      await auditService.record(client, {
+        module: auditService.MODULES.GROUP,
+        action: auditService.ACTIONS.UPDATE,
+        recordId: Number(id),
+        reference: after.name,
+        summary: `Group ${after.name} updated: ${auditService.describeUpdate(changes)}`,
+        details: { before, after, changes }
+      });
+
       await client.query('COMMIT');
       return group;
     } catch (err) {
@@ -98,8 +131,35 @@ const groupService = {
   },
 
   deleteGroup: async (id) => {
-    const result = await db.query(groupQueries.deleteGroup, [id]);
-    return result.rows[0];
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const snapshot = await loadSnapshot(client, id);
+      if (!snapshot) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      const result = await client.query(groupQueries.deleteGroup, [id]);
+
+      await auditService.archiveAndRecord(client, {
+        module: auditService.MODULES.GROUP,
+        recordId: snapshot.id,
+        reference: snapshot.name,
+        partyName: snapshot.name,
+        summary: `Group ${snapshot.name} deleted and archived`,
+        snapshot
+      });
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 };
 
