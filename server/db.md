@@ -259,6 +259,16 @@ ALTER TABLE purchase ADD COLUMN IF NOT EXISTS request_id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_request_id ON purchase(request_id);
 
 -- =========================
+-- UNIQUE MASTER NAMES
+-- =========================
+-- Names are unique ignoring case and surrounding spaces (masterService checks first and gives a clear message).
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_items_name_unique ON items (UPPER(TRIM(name)));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_name_unique ON clients (UPPER(TRIM(name)));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_jobbers_name_unique ON jobbers (UPPER(TRIM(name)));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_transporters_name_unique ON transporters (UPPER(TRIM(name)));
+
+-- =========================
 -- AUDIT & ARCHIVE TABLES
 -- =========================
 

@@ -1,4 +1,5 @@
 const masterService = require('../services/masterService');
+const { isValidDeletePassword } = require('../utils/deletePassword');
 
 const masterController = (table) => ({
   list: async (req, res, next) => {
@@ -46,10 +47,10 @@ const masterController = (table) => ({
 
   delete: async (req, res, next) => {
     try {
-      const { password } = req.body;
+      const { password } = req.body || {};
       const { id } = req.params;
 
-      if (!password || password !== process.env.del_pass) {
+      if (!isValidDeletePassword(password)) {
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
 

@@ -203,7 +203,9 @@ const partyTransactionService = {
       // 1. Fetch existing transaction record
       const oldTxRes = await client.query('SELECT * FROM party_transactions WHERE id = $1', [id]);
       if (oldTxRes.rows.length === 0) {
-        throw new Error(`Transaction ID ${id} not found.`);
+        const err = new Error('This payment no longer exists. It may have been deleted on another PC.');
+        err.status = 404;
+        throw err;
       }
       const oldTx = oldTxRes.rows[0];
       const before = await loadSnapshot(client, id);

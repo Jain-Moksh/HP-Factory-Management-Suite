@@ -53,7 +53,7 @@ const PartyLedgerReport = () => {
       const groupIdParam = selectedGroupId === 'all' ? '' : selectedGroupId;
 
       const response = await fetch(
-        `${API_BASE_URL}/reports/pending-payment?client_id=${clientIdParam}&group_id=${groupIdParam}`
+        `${API_BASE_URL}/reports/pending-payment?client_id=${clientIdParam}&group_id=${groupIdParam}&include_all=true`
       );
       const result = await response.json();
       if (result.success) {
@@ -213,7 +213,7 @@ const PartyLedgerReport = () => {
                     <thead>
                       <tr className="bg-table-header text-white">
                         <th className="px-5 py-2 text-left border-r border-white/10 text-[10.5px] uppercase font-bold tracking-wider">Client Name</th>
-                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10 w-72">Pending Outstanding Amount</th>
+                        <th className="px-5 py-2 text-right text-[10.5px] uppercase font-bold tracking-wider px-10 w-72">Balance</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-soft">
@@ -222,7 +222,7 @@ const PartyLedgerReport = () => {
                             <td colSpan="2" className="px-6 py-20 text-center">
                                 <div className="flex flex-col items-center gap-3">
                                   <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
-                                  <span className="text-[13px] font-medium text-text-light uppercase tracking-widest">Calculating pending balances...</span>
+                                  <span className="text-[13px] font-medium text-text-light uppercase tracking-widest">Calculating balances...</span>
                                 </div>
                             </td>
                           </tr>
@@ -240,8 +240,9 @@ const PartyLedgerReport = () => {
                                      {row.client_name}
                                    </span>
                                 </td>
-                                <td className="px-5 py-1.5 text-right text-[13.5px] font-black text-brand-blue px-10">
-                                   ₹{parseFloat(row.pending_amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                <td className={`px-5 py-1.5 text-right text-[13.5px] font-black px-10 ${parseFloat(row.pending_amount) < 0 ? 'text-emerald-600' : parseFloat(row.pending_amount) === 0 ? 'text-text-light' : 'text-brand-blue'}`}>
+                                   ₹{Math.abs(parseFloat(row.pending_amount)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                   {parseFloat(row.pending_amount) < 0 && <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider">Advance</span>}
                                 </td>
                              </tr>
                            ))
@@ -257,7 +258,7 @@ const PartyLedgerReport = () => {
                       <tfoot>
                         <tr className="bg-bg-main/50 border-t-2 border-border-soft">
                           <td className="px-5 py-3 text-right text-[10px] font-black uppercase text-text-light tracking-widest italic opacity-70 border-r border-border-soft">
-                             Total Pending:
+                             Net Balance:
                           </td>
                           <td className="px-5 py-3 text-right text-[15px] font-black text-brand-blue px-10">
                              ₹{reportTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -274,7 +275,7 @@ const PartyLedgerReport = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-[11px] text-text-light leading-snug font-medium italic">
-              This report displays all clients that currently have positive pending outstanding balances. 
+              This report lists every client with their current balance: amounts due in blue, advance payments in green, settled accounts as ₹0.00. 
               Clicking a client name opens that client's detailed financial credit, debit, and chronological running ledger.
             </p>
           </div>

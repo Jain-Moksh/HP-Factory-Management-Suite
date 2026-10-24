@@ -281,9 +281,12 @@ const CreateJobWork = () => {
         setShowJobberForm(false);
         setNewJobberData({ name: '', selectedItems: [] });
         setModalItemSearch('');
+      } else {
+        alert(result.message || 'Failed to save jobber');
       }
     } catch (err) {
       console.error("Error saving jobber:", err);
+      alert('Network error while saving jobber');
     } finally {
       setIsSavingNewJobber(false);
     }
@@ -311,9 +314,12 @@ const CreateJobWork = () => {
         handleSelectItem(result.data);
         setShowItemModal(false);
         setNewItemFormData({ name: '', rate: '', unit: 'DOZ', conversion: '1', stock: '0' });
+      } else {
+        alert(result.message || 'Failed to save item');
       }
     } catch (err) {
       console.error("Error saving item:", err);
+      alert('Network error while saving item');
     } finally {
       setIsSavingNewItem(false);
     }

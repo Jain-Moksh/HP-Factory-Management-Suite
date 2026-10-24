@@ -21,6 +21,8 @@ const JobWork = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Any search or date range looks across all months instead of only the footer month
+  const isSearchingAllMonths = !!(searchChallan.trim() || searchJobber.trim() || startDate || endDate);
 
   useEffect(() => {
     fetchJobWorks();
@@ -80,12 +82,13 @@ const JobWork = () => {
       // Extract month and year for filtering
       if (!pDateStr) return false;
       const bDate = new Date(pDateStr);
-      const matchesMonth = bDate.getMonth() === selectedMonth;
-      const matchesYear = bDate.getFullYear() === selectedYear;
+      // The footer month only applies when nothing is being searched, so a search finds entries from any month
+      const matchesMonth = isSearchingAllMonths || bDate.getMonth() === selectedMonth;
+      const matchesYear = isSearchingAllMonths || bDate.getFullYear() === selectedYear;
 
       return matchesChallan && matchesJobber && matchesStart && matchesEnd && matchesMonth && matchesYear;
     });
-  }, [jobWorks, searchChallan, searchJobber, startDate, endDate, selectedMonth, selectedYear]);
+  }, [jobWorks, searchChallan, searchJobber, startDate, endDate, selectedMonth, selectedYear, isSearchingAllMonths]);
 
   const jobWorkActions = [
     {
@@ -128,6 +131,7 @@ const JobWork = () => {
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
+          allMonths={isSearchingAllMonths}
           recordCount={filteredJobWorks.length}
         />
       </div>

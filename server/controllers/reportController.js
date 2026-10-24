@@ -158,8 +158,9 @@ const reportController = {
 
   getPendingPaymentReport: async (req, res, next) => {
     try {
-      const { client_id, group_id } = req.query;
-      const data = await reportService.getPendingPaymentReport(client_id, group_id);
+      const { client_id, group_id, include_all } = req.query;
+      // include_all=true lists every party (Party Ledger); otherwise only parties that owe money
+      const data = await reportService.getPendingPaymentReport(client_id, group_id, include_all === 'true');
       res.json({ success: true, count: data.length, data });
     } catch (err) {
       next(err);

@@ -476,9 +476,12 @@ const CreateInvoice = () => {
         handleSelectClient(result.data);
         setShowClientForm(false);
         setNewClientFormData({ name: '', shortform: '', street: '', city: '', balance: '', remark: '' });
+      } else {
+        alert(result.message || 'Failed to save party');
       }
     } catch (err) {
       console.error("Error saving client:", err);
+      alert('Network error while saving party');
     } finally {
       setIsSavingNewClient(false);
     }
@@ -531,9 +534,12 @@ const CreateInvoice = () => {
             qtyInputRef.current.focus();
           }
         }, 0);
+      } else {
+        alert(result.message || 'Failed to save item');
       }
     } catch (err) {
       console.error("Error saving item:", err);
+      alert('Network error while saving item');
     } finally {
       setIsSavingNewItem(false);
     }
@@ -600,9 +606,12 @@ const CreateInvoice = () => {
       if (result.success) {
         setTransporters(prev => [...prev, result.data]);
         handleSelectTransporter(result.data);
+      } else {
+        alert(result.message || 'Failed to save transporter');
       }
     } catch (err) {
       console.error("Error creating transporter:", err);
+      alert('Network error while saving transporter');
     }
   };
 

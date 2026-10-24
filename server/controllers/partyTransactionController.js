@@ -1,4 +1,5 @@
 const partyTransactionService = require('../services/partyTransactionService');
+const { isValidDeletePassword } = require('../utils/deletePassword');
 
 const mapTxTypeResponse = (tx) => {
   if (!tx) return tx;
@@ -80,7 +81,7 @@ const partyTransactionController = {
       res.status(201).json({ success: true, data: mapTxTypeResponse(tx) });
     } catch (err) {
       console.error('Error in partyTransactionController.create:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -139,7 +140,7 @@ const partyTransactionController = {
       res.status(201).json({ success: true, data: mapTxTypeResponse(results) });
     } catch (err) {
       console.error('Error in partyTransactionController.createBulk:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -149,7 +150,7 @@ const partyTransactionController = {
       res.json({ success: true, data: mapTxTypeResponse(list) });
     } catch (err) {
       console.error('Error in partyTransactionController.getAll:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -168,7 +169,7 @@ const partyTransactionController = {
       res.json({ success: true, data: mapTxTypeResponse(tx) });
     } catch (err) {
       console.error('Error in partyTransactionController.getById:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -214,7 +215,7 @@ const partyTransactionController = {
       res.json({ success: true, data: mapTxTypeResponse(tx) });
     } catch (err) {
       console.error('Error in partyTransactionController.update:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -225,6 +226,11 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Invalid transaction ID.' });
       }
 
+      const { password } = req.body || {};
+      if (!isValidDeletePassword(password)) {
+        return res.status(401).json({ success: false, error: 'Invalid password' });
+      }
+
       const success = await partyTransactionService.delete(id);
       if (!success) {
         return res.status(404).json({ success: false, error: 'Transaction not found.' });
@@ -233,7 +239,7 @@ const partyTransactionController = {
       res.json({ success: true, message: 'Transaction deleted successfully.' });
     } catch (err) {
       console.error('Error in partyTransactionController.delete:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -254,7 +260,7 @@ const partyTransactionController = {
       res.json({ success: true, challan_no });
     } catch (err) {
       console.error('Error in partyTransactionController.getNextChallan:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -275,7 +281,7 @@ const partyTransactionController = {
       res.json({ success: true, data: report });
     } catch (err) {
       console.error('Error in partyTransactionController.getOutstanding:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   },
 
@@ -296,7 +302,7 @@ const partyTransactionController = {
       res.json({ success: true, data: mapHistoryData(historyData) });
     } catch (err) {
       console.error('Error in partyTransactionController.getHistory:', err);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   }
 };

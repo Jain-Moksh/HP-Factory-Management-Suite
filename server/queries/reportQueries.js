@@ -2,16 +2,23 @@ const reportQueries = {
 
 
     // 2. Party Wise Sales Report
-    // Aggregates sales (billing) by client and date range
+    // Aggregates sales (billing) by client and date range.
+    // Amount is each bill's grand_total (incl. transport, packing, discount, adjustment), counted once per bill;
+    // quantity is pre-summed per bill so joining items cannot multiply the bill amount.
+    // From / To dates are optional independently.
     getPartySales: `
         SELECT 
             c.id as client_id,
             c.name as client_name, 
-            COALESCE(SUM(bi.quantity), 0) as total_quantity, 
-            COALESCE(SUM(bi.total_amount), 0) as total_amount 
+            COALESCE(SUM(bq.quantity), 0) as total_quantity, 
+            COALESCE(SUM(b.grand_total), 0) as total_amount 
         FROM clients c
-        LEFT JOIN billing b ON c.id = b.client_id AND (b.date BETWEEN $1 AND $2 OR $1 IS NULL)
-        LEFT JOIN billing_items bi ON b.id = bi.billing_id
+        LEFT JOIN billing b ON c.id = b.client_id
+            AND ($1::DATE IS NULL OR b.date >= $1)
+            AND ($2::DATE IS NULL OR b.date <= $2)
+        LEFT JOIN (
+            SELECT billing_id, SUM(quantity) AS quantity FROM billing_items GROUP BY billing_id
+        ) bq ON bq.billing_id = b.id
         WHERE ($3::INT IS NULL OR c.id = $3)
         GROUP BY c.id, c.name
         ORDER BY total_amount DESC
@@ -27,13 +34,14 @@ const reportQueries = {
                 WHEN gm.member_type = 'jobber' THEN j.name 
             END as member_name, 
             gm.member_type, 
-            COALESCE(SUM(bi.total_amount), 0) as total_sales 
+            COALESCE(SUM(b.grand_total), 0) as total_sales 
         FROM groups g 
         JOIN group_members gm ON g.id = gm.group_id 
         LEFT JOIN clients c ON gm.member_id = c.id AND gm.member_type = 'client' 
         LEFT JOIN jobbers j ON gm.member_id = j.id AND gm.member_type = 'jobber' 
-        LEFT JOIN billing b ON b.client_id = c.id AND gm.member_type = 'client' AND (b.date BETWEEN $1 AND $2 OR $1 IS NULL)
-        LEFT JOIN billing_items bi ON b.id = bi.billing_id 
+        LEFT JOIN billing b ON b.client_id = c.id AND gm.member_type = 'client'
+            AND ($1::DATE IS NULL OR b.date >= $1)
+            AND ($2::DATE IS NULL OR b.date <= $2)
         GROUP BY g.id, g.name, gm.member_id, gm.member_type, c.name, j.name
         ORDER BY g.name, member_name
     `,
@@ -46,7 +54,9 @@ const reportQueries = {
             i.name as item_name, 
             COALESCE(SUM(pi.quantity), 0) as total_quantity 
         FROM jobbers j
-        LEFT JOIN purchase p ON j.id = p.jobber_id AND (p.date BETWEEN $1 AND $2 OR $1 IS NULL)
+        LEFT JOIN purchase p ON j.id = p.jobber_id
+            AND ($1::DATE IS NULL OR p.date >= $1)
+            AND ($2::DATE IS NULL OR p.date <= $2)
         LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
         LEFT JOIN items i ON pi.item_id = i.id
         GROUP BY j.id, j.name, i.id, i.name
@@ -274,7 +284,7 @@ const reportQueries = {
               WHERE member_type = 'client' AND group_id = $2
           ))
         GROUP BY c.id, c.name, c.balance, b.total_billing, pt.total_payments, pt.total_returns, pt.total_discounts
-        HAVING (
+        HAVING $3::BOOLEAN OR (
             COALESCE(c.balance, 0) + 
             COALESCE(b.total_billing, 0) - 
             COALESCE(pt.total_payments, 0) - 

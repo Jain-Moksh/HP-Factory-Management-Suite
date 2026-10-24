@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import PaymentTable from '../components/PaymentTable';
 import MonthFilterFooter from '../components/MonthFilterFooter';
+import DeleteModal from '../components/UI/DeleteModal';
 import { API_BASE_URL } from '../config';
 
 const Payment = () => {
@@ -22,6 +23,8 @@ const Payment = () => {
   // MonthFilterFooter States
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Any search or date range looks across all months instead of only the footer month
+  const isSearchingAllMonths = !!(searchClient.trim() || searchChallan.trim() || dateFrom || dateTo);
 
   const fetchPayments = async () => {
     setIsLoading(true);
@@ -42,21 +45,34 @@ const Payment = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this transaction?')) return;
+  // --- Deletion State (same master password popup as bills and job work) ---
+  const [txToDelete, setTxToDelete] = useState(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleDelete = (id) => {
+    setTxToDelete(id);
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/party-transactions/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`${API_BASE_URL}/party-transactions/${txToDelete}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword })
       });
       const result = await response.json();
       if (result.success) {
+        setTxToDelete(null);
         fetchPayments();
       } else {
-        alert(result.error || 'Failed to delete transaction.');
+        setDeleteError(result.error || 'Failed to delete transaction.');
       }
     } catch (err) {
       console.error('Error deleting transaction:', err);
-      alert('Network error: failed to delete transaction.');
+      setDeleteError('Network error: failed to delete transaction.');
     }
   };
 
@@ -84,8 +100,8 @@ const Payment = () => {
         matchesDate = matchesDate && (p.date <= dateTo);
       }
 
-      // 5. Month/Year Filter (only respected if Date From/To dates are empty)
-      const respectMonthFilter = !dateFrom && !dateTo;
+      // 5. Month/Year Filter (only respected while nothing is searched and no dates are set)
+      const respectMonthFilter = !isSearchingAllMonths;
       let matchesMonthYear = true;
       if (respectMonthFilter) {
         const pDate = new Date(p.date);
@@ -96,7 +112,7 @@ const Payment = () => {
 
       return matchesClient && matchesChallan && matchesType && matchesDate && matchesMonthYear;
     });
-  }, [payments, searchClient, searchChallan, filterType, dateFrom, dateTo, selectedMonth, selectedYear]);
+  }, [payments, searchClient, searchChallan, filterType, dateFrom, dateTo, selectedMonth, selectedYear, isSearchingAllMonths]);
 
   const paymentActions = [
     {
@@ -216,9 +232,19 @@ const Payment = () => {
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
+          allMonths={isSearchingAllMonths}
           recordCount={filteredPayments.length}
         />
       </div>
+
+      <DeleteModal
+        isOpen={txToDelete !== null}
+        onClose={() => setTxToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        password={deletePassword}
+        setPassword={setDeletePassword}
+        error={deleteError}
+      />
     </Layout>
   );
 };

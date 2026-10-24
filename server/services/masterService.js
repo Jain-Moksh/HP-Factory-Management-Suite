@@ -32,6 +32,38 @@ const cleanMasterData = (table, data) => {
   return clean;
 };
 
+// Party / jobber records referenced by payments and group memberships (polymorphic, no foreign key)
+const PAYMENT_PARTY_TYPE = { clients: 'CLIENT', jobbers: 'JOBBER' };
+const GROUP_MEMBER_TYPE = { clients: 'client', jobbers: 'jobber' };
+
+const duplicateNameError = (table, name) => {
+  const err = new Error(`${AUDIT_MODULES[table].label === 'Item' ? 'An' : 'A'} ${AUDIT_MODULES[table].label.toLowerCase()} named ${name} already exists.`);
+  err.status = 400;
+  return err;
+};
+
+/**
+ * Refuses a name already used by another record of the same type, ignoring case and spaces.
+ * The unique indexes in db.md enforce the same rule if two saves race past this check.
+ */
+const ensureUniqueName = async (table, name, excludeId = null) => {
+  const res = await db.query(
+    `SELECT 1 FROM ${table} WHERE UPPER(TRIM(name)) = UPPER(TRIM($1)) AND ($2::INT IS NULL OR id <> $2) LIMIT 1`,
+    [name, excludeId]
+  );
+  if (res.rows.length > 0) throw duplicateNameError(table, name);
+};
+
+// 23505 = unique_violation: another PC saved the same name between the check and the insert
+const runNameQuery = async (table, name, text, params) => {
+  try {
+    return await db.query(text, params);
+  } catch (err) {
+    if (err.code === '23505') throw duplicateNameError(table, name);
+    throw err;
+  }
+};
+
 const masterService = {
   // Generic list/search helper
   list: async (table, search) => {
@@ -73,7 +105,8 @@ const masterService = {
         params = [clean.name];
         break;
     }
-    const result = await db.query(queries[queryKey], params);
+    await ensureUniqueName(table, clean.name);
+    const result = await runNameQuery(table, clean.name, queries[queryKey], params);
     const created = result.rows[0];
 
     const { module, label } = AUDIT_MODULES[table];
@@ -103,7 +136,11 @@ const masterService = {
 
         // Fetch old item to calculate stock difference based on open_stock change
         const oldItem = before;
-        if (!oldItem) throw new Error('Item not found');
+        if (!oldItem) {
+          const err = new Error('Item not found');
+          err.status = 404;
+          throw err;
+        }
         
         const oldOpenStock = Number(oldItem.open_stock) || 0;
         const currentStock = Number(oldItem.stock) || 0;
@@ -127,7 +164,8 @@ const masterService = {
         params = [clean.name, id];
         break;
     }
-    const result = await db.query(queries[queryKey], params);
+    await ensureUniqueName(table, clean.name, id);
+    const result = await runNameQuery(table, clean.name, queries[queryKey], params);
     const after = result.rows[0];
 
     if (after) {
@@ -148,7 +186,9 @@ const masterService = {
 
   /**
    * Deletes a master record and keeps an archived copy of it.
-   * Records still used by bills / job work fail with a foreign key error (23503) and nothing is archived.
+   * Records still used by bills / job work fail with a foreign key error (23503), and parties /
+   * jobbers that still have payments are refused (400); in both cases nothing is changed.
+   * Group memberships of a deleted party / jobber are removed with it.
    *
    * @returns {Promise<object|null>} The deleted record, or null if it did not exist
    */
@@ -167,6 +207,30 @@ const masterService = {
         return null;
       }
       const snapshot = existing.rows[0];
+
+      if (PAYMENT_PARTY_TYPE[table]) {
+        // Payments point to the party without a foreign key, so the database would not stop this delete
+        const payRes = await client.query(
+          'SELECT COUNT(*)::INT AS total FROM party_transactions WHERE party_type = $1 AND party_id = $2',
+          [PAYMENT_PARTY_TYPE[table], id]
+        );
+        const paymentCount = payRes.rows[0].total;
+        if (paymentCount > 0) {
+          const err = new Error(`${snapshot.name} has ${paymentCount} payment${paymentCount === 1 ? '' : 's'}. Delete ${paymentCount === 1 ? 'that payment' : 'those payments'} first.`);
+          err.status = 400;
+          throw err;
+        }
+
+        const groupRes = await client.query(
+          `DELETE FROM group_members gm USING groups g
+           WHERE gm.group_id = g.id AND gm.member_type = $1 AND gm.member_id = $2
+           RETURNING g.name`,
+          [GROUP_MEMBER_TYPE[table], id]
+        );
+        if (groupRes.rows.length > 0) {
+          snapshot.groups = groupRes.rows.map(r => r.name).sort().join(', ');
+        }
+      }
 
       await client.query(queries[deleteKey], [id]);
 

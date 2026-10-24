@@ -1,4 +1,5 @@
 const purchaseService = require('../services/purchaseService');
+const { isValidDeletePassword } = require('../utils/deletePassword');
 
 const purchaseController = {
   create: async (req, res, next) => {
@@ -53,8 +54,8 @@ const purchaseController = {
 
   delete: async (req, res, next) => {
     try {
-      const { password } = req.body;
-      if (password !== process.env.del_pass) {
+      const { password } = req.body || {};
+      if (!isValidDeletePassword(password)) {
         return res.status(401).json({ success: false, message: 'Fail to delete' });
       }
       const deleted = await purchaseService.delete(req.params.id);

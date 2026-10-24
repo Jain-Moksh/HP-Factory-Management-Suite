@@ -161,6 +161,11 @@ const purchaseService = {
       const { jobber_id, date, remark, items } = purchaseData; // Ignore challan_no from frontend
 
       const before = await loadSnapshot(client, id);
+      if (!before) {
+        const err = new Error('This job work entry no longer exists. It may have been deleted on another PC.');
+        err.status = 404;
+        throw err;
+      }
 
       // 1. Get old purchase to check date and get items for stock reversal
       const oldPurchaseRes = await client.query('SELECT date, challan_no FROM purchase WHERE id = $1', [id]);

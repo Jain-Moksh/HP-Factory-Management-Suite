@@ -5,7 +5,8 @@ const MonthFilterFooter = ({
   selectedYear, 
   onMonthChange, 
   onYearChange, 
-  recordCount 
+  recordCount,
+  allMonths = false // true while a search or date range is active and the month is ignored
 }) => {
   const months = [
     "January", "February", "March", "April", "May", "June", 
@@ -27,7 +28,7 @@ const MonthFilterFooter = ({
   return (
     <footer className="fixed bottom-0 right-0 left-[210px] bg-white border-t border-border-soft px-6 py-2.5 flex justify-between items-center z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] font-inter">
       <div className="flex items-center gap-4 text-[10.5px] font-bold text-text-secondary uppercase tracking-tighter">
-        <span className="opacity-50">Records for {months[selectedMonth]}: <span className="text-brand-blue opacity-100">{recordCount} Entries</span></span>
+        <span className="opacity-50">{allMonths ? 'Searching all months' : `Records for ${months[selectedMonth]}`}: <span className="text-brand-blue opacity-100">{recordCount} Entries</span></span>
         <div className="flex gap-2.5 ml-2">
           {availableMonths.map((month, index) => (
             <span 

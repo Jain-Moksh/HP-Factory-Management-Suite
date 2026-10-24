@@ -260,6 +260,11 @@ const billingService = {
       } = billData; // Ignored challan_no from frontend
 
       const before = await loadSnapshot(client, id);
+      if (!before) {
+        const err = new Error('This bill no longer exists. It may have been deleted on another PC.');
+        err.status = 404;
+        throw err;
+      }
 
       // 1. Get old bill to check date and get items for stock reversal
       const oldBillRes = await client.query('SELECT date, challan_no FROM billing WHERE id = $1', [id]);

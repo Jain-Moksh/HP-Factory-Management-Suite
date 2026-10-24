@@ -25,6 +25,8 @@ const OrderSummary = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Any search or date range looks across all months instead of only the footer month
+  const isSearchingAllMonths = !!(searchChallan.trim() || searchClient.trim() || startDate || endDate);
 
   const fetchBills = async () => {
     setIsLoading(true);
@@ -35,8 +37,11 @@ const OrderSummary = () => {
       if (searchClient) params.append('searchClient', searchClient);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      if (selectedMonth !== undefined) params.append('month', selectedMonth);
-      if (selectedYear) params.append('year', selectedYear);
+      // The footer month only applies when nothing is being searched, so a search finds bills from any month
+      if (!isSearchingAllMonths) {
+        if (selectedMonth !== undefined) params.append('month', selectedMonth);
+        if (selectedYear) params.append('year', selectedYear);
+      }
 
       const response = await fetch(`${API_BASE_URL}/billing?${params.toString()}`);
       const result = await response.json();
@@ -195,6 +200,7 @@ const OrderSummary = () => {
           selectedYear={selectedYear}
           onMonthChange={setSelectedMonth}
           onYearChange={setSelectedYear}
+          allMonths={isSearchingAllMonths}
           recordCount={bills.length}
         />
       </div>
