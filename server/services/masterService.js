@@ -168,7 +168,7 @@ const masterService = {
     if (after) {
       const { module, label } = AUDIT_MODULES[table];
       const changes = auditService.diffFields(before, after);
-      await auditService.recordSafe({
+      if (!auditService.isUnchanged(changes)) await auditService.recordSafe({
         module,
         action: auditService.ACTIONS.UPDATE,
         recordId: after.id,

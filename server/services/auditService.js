@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/auditQueries');
-const { getRequestContext } = require('../utils/requestContext');
+const { getRequestContext, resolveHostname } = require('../utils/requestContext');
 
 const MODULES = {
   BILLING: 'BILLING',
@@ -19,7 +19,28 @@ const ACTIONS = {
   CREATE: 'CREATE',
   UPDATE: 'UPDATE',
   DELETE: 'DELETE',
-  RESTORE: 'RESTORE'
+  RESTORE: 'RESTORE',
+  LOGIN: 'LOGIN',
+  LOGIN_FAILED: 'LOGIN_FAILED',
+  DOWNLOAD: 'DOWNLOAD',
+  DENIED: 'DENIED'
+};
+
+// How to find a readable name / challan for a record, used when a delete is refused
+const RECORD_REFERENCE = {
+  BILLING: 'SELECT challan_no AS ref FROM billing WHERE id = $1',
+  JOB_WORK: 'SELECT challan_no AS ref FROM purchase WHERE id = $1',
+  PAYMENT: 'SELECT challan_no AS ref FROM party_transactions WHERE id = $1',
+  GROUP: 'SELECT name AS ref FROM groups WHERE id = $1',
+  ITEM: 'SELECT name AS ref FROM items WHERE id = $1',
+  PARTY: 'SELECT name AS ref FROM clients WHERE id = $1',
+  JOBBER: 'SELECT name AS ref FROM jobbers WHERE id = $1',
+  TRANSPORTER: 'SELECT name AS ref FROM transporters WHERE id = $1'
+};
+
+const MODULE_LABELS = {
+  BILLING: 'Bill', JOB_WORK: 'Job work', PAYMENT: 'Payment', GROUP: 'Group',
+  ITEM: 'Item', PARTY: 'Party', JOBBER: 'Jobber', TRANSPORTER: 'Transporter'
 };
 
 // Bookkeeping columns that change on every save and carry no business meaning
@@ -122,12 +143,20 @@ const describeUpdate = (changes, itemDiff) => {
   return parts.length ? parts.join('; ') : 'no field changes';
 };
 
+/**
+ * True when a save changed nothing, so no audit entry is needed.
+ */
+const isUnchanged = (changes, itemDiff) =>
+  changes.length === 0 &&
+  (!itemDiff || (itemDiff.added.length === 0 && itemDiff.removed.length === 0 && itemDiff.modified.length === 0));
+
 const auditService = {
   MODULES,
   ACTIONS,
   diffFields,
   diffLineItems,
   describeUpdate,
+  isUnchanged,
 
   /**
    * Writes an audit log entry. Pass the transaction client so the entry commits or rolls back with the change.
@@ -138,6 +167,8 @@ const auditService = {
    */
   record: async (executor, { module, action, recordId = null, reference = null, summary = null, details = null }) => {
     const ctx = getRequestContext();
+    // Read requests (e.g. a backup download) skip the hostname lookup in the middleware
+    const hostname = ctx.hostname || (ctx.ip ? await resolveHostname(ctx.ip) : null);
     const res = await executor.query(queries.insertLog, [
       module,
       action,
@@ -146,7 +177,7 @@ const auditService = {
       summary,
       details ? JSON.stringify(details) : null,
       ctx.deviceName || null,
-      ctx.hostname || null,
+      hostname || null,
       ctx.ip || null,
       ctx.os || null,
       ctx.browser || null,
@@ -166,6 +197,30 @@ const auditService = {
       console.error('[AUDIT] Failed to write audit log:', err.message);
       return null;
     }
+  },
+
+  /**
+   * Logs a delete that was refused because the delete password was wrong. Nothing was changed,
+   * but repeated attempts show up in the audit log.
+   */
+  recordDeniedDelete: async (module, recordId) => {
+    let reference = null;
+    try {
+      if (RECORD_REFERENCE[module]) {
+        const res = await db.query(RECORD_REFERENCE[module], [recordId]);
+        reference = res.rows[0] ? res.rows[0].ref : null;
+      }
+    } catch (err) {
+      // The reference is only for readability; the entry is still written without it
+    }
+    const label = MODULE_LABELS[module] || module;
+    return auditService.recordSafe({
+      module,
+      action: ACTIONS.DENIED,
+      recordId: Number(recordId) || null,
+      reference: reference || `#${recordId}`,
+      summary: `Delete of ${label.toLowerCase()} ${reference || `#${recordId}`} refused: wrong delete password`
+    });
   },
 
   /**

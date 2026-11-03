@@ -28,10 +28,17 @@ const ACTION_STYLES = {
   CREATE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   UPDATE: 'bg-amber-50 text-amber-700 border-amber-200',
   DELETE: 'bg-red-50 text-red-700 border-red-200',
-  RESTORE: 'bg-purple-50 text-purple-700 border-purple-200'
+  RESTORE: 'bg-purple-50 text-purple-700 border-purple-200',
+  LOGIN: 'bg-sky-50 text-sky-700 border-sky-200',
+  LOGIN_FAILED: 'bg-rose-50 text-rose-700 border-rose-300',
+  DOWNLOAD: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  DENIED: 'bg-rose-50 text-rose-700 border-rose-300'
 };
 
-const ACTION_LABELS = { CREATE: 'Created', UPDATE: 'Updated', DELETE: 'Deleted', RESTORE: 'Restored' };
+const ACTION_LABELS = {
+  CREATE: 'Created', UPDATE: 'Updated', DELETE: 'Deleted', RESTORE: 'Restored',
+  LOGIN: 'Logged In', LOGIN_FAILED: 'Login Failed', DOWNLOAD: 'Downloaded', DENIED: 'Delete Refused'
+};
 
 // Line item columns, in display order; only the ones present in a snapshot are shown
 const ITEM_COLUMNS = [
@@ -592,6 +599,10 @@ const AuditLog = () => {
                   <option value="UPDATE">Updated</option>
                   <option value="DELETE">Deleted</option>
                   <option value="RESTORE">Restored</option>
+                  <option value="LOGIN">Logged In</option>
+                  <option value="LOGIN_FAILED">Login Failed</option>
+                  <option value="DOWNLOAD">Downloaded</option>
+                  <option value="DENIED">Delete Refused</option>
                 </select>
                 <select value={device} onChange={(e) => setDevice(e.target.value)} className={`${inputClass} max-w-[220px]`}>
                   <option value="">All Devices</option>

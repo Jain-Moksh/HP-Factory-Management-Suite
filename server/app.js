@@ -57,10 +57,19 @@ app.use('/api/audit-logs', require('./routes/auditRoutes'));
 
 
 // Verify login password
-app.post('/api/verify-login-pass', (req, res) => {
-  const { password } = req.body;
+app.post('/api/verify-login-pass', async (req, res) => {
+  const auditService = require('./services/auditService');
+  const { password } = req.body || {};
   const expectedPassword = process.env.login_pass ? process.env.login_pass.toString().trim() : '';
-  if (expectedPassword && password && password.toString().trim() === expectedPassword) {
+  const ok = Boolean(expectedPassword && password && password.toString().trim() === expectedPassword);
+  // The typed password is never logged
+  await auditService.recordSafe({
+    module: auditService.MODULES.SYSTEM,
+    action: ok ? auditService.ACTIONS.LOGIN : auditService.ACTIONS.LOGIN_FAILED,
+    reference: 'LOGIN',
+    summary: ok ? 'Logged in' : 'Login failed: wrong password'
+  });
+  if (ok) {
     return res.json({ success: true });
   }
   return res.json({ success: false, message: 'Invalid password' });

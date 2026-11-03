@@ -60,7 +60,7 @@ const priceListService = {
 
     const before = { date: beforeRes.rows[0] ? beforeRes.rows[0].date : null };
     const after = { date: result.rows[0].date };
-    await auditService.recordSafe({
+    if (!auditService.isUnchanged(auditService.diffFields(before, after))) await auditService.recordSafe({
       module: auditService.MODULES.PRICE_LIST,
       action: auditService.ACTIONS.UPDATE,
       recordId: 1,
@@ -182,7 +182,7 @@ const priceListService = {
       const after = { items: afterItems.join(', ') };
       const added = afterItems.filter(n => !beforeItems.includes(n)).length;
       const removed = beforeItems.filter(n => !afterItems.includes(n)).length;
-      await auditService.record(client, {
+      if (!auditService.isUnchanged(auditService.diffFields(before, after))) await auditService.record(client, {
         module: auditService.MODULES.PRICE_LIST,
         action: auditService.ACTIONS.UPDATE,
         recordId: Number(categoryId),
@@ -240,7 +240,7 @@ const priceListService = {
       const categoryName = await getCategoryName(client, categoryId);
       const before = { item_order: beforeItems.join(', ') };
       const after = { item_order: (await getCategoryItemNames(client, categoryId)).join(', ') };
-      await auditService.record(client, {
+      if (!auditService.isUnchanged(auditService.diffFields(before, after))) await auditService.record(client, {
         module: auditService.MODULES.PRICE_LIST,
         action: auditService.ACTIONS.UPDATE,
         recordId: Number(categoryId),
@@ -273,7 +273,7 @@ const priceListService = {
       }
 
       const after = { category_order: await categoryOrder() };
-      await auditService.record(client, {
+      if (!auditService.isUnchanged(auditService.diffFields(before, after))) await auditService.record(client, {
         module: auditService.MODULES.PRICE_LIST,
         action: auditService.ACTIONS.UPDATE,
         recordId: 1,

@@ -1,5 +1,14 @@
 const masterService = require('../services/masterService');
 const { isValidDeletePassword } = require('../utils/deletePassword');
+const auditService = require('../services/auditService');
+
+// Audit module of each master table
+const TABLE_MODULES = {
+  items: auditService.MODULES.ITEM,
+  clients: auditService.MODULES.PARTY,
+  jobbers: auditService.MODULES.JOBBER,
+  transporters: auditService.MODULES.TRANSPORTER
+};
 
 const masterController = (table) => ({
   list: async (req, res, next) => {
@@ -51,6 +60,7 @@ const masterController = (table) => ({
       const { id } = req.params;
 
       if (!isValidDeletePassword(password)) {
+        await auditService.recordDeniedDelete(TABLE_MODULES[table], id);
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
 

@@ -129,7 +129,7 @@ const groupService = {
 
       const after = await loadSnapshot(client, id);
       const changes = auditService.diffFields(before, after);
-      await auditService.record(client, {
+      if (!auditService.isUnchanged(changes)) await auditService.record(client, {
         module: auditService.MODULES.GROUP,
         action: auditService.ACTIONS.UPDATE,
         recordId: Number(id),

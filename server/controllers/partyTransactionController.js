@@ -1,5 +1,6 @@
 const partyTransactionService = require('../services/partyTransactionService');
 const { isValidDeletePassword } = require('../utils/deletePassword');
+const auditService = require('../services/auditService');
 
 const mapTxTypeResponse = (tx) => {
   if (!tx) return tx;
@@ -230,6 +231,7 @@ const partyTransactionController = {
 
       const { password } = req.body || {};
       if (!isValidDeletePassword(password)) {
+        await auditService.recordDeniedDelete(auditService.MODULES.PAYMENT, id);
         return res.status(401).json({ success: false, error: 'Invalid password' });
       }
 

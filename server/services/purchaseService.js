@@ -279,7 +279,7 @@ const purchaseService = {
       const after = await loadSnapshot(client, id);
       const changes = auditService.diffFields(before, after);
       const itemDiff = auditService.diffLineItems(before.items, after.items);
-      await auditService.record(client, {
+      if (!auditService.isUnchanged(changes, itemDiff)) await auditService.record(client, {
         module: auditService.MODULES.JOB_WORK,
         action: auditService.ACTIONS.UPDATE,
         recordId: Number(id),

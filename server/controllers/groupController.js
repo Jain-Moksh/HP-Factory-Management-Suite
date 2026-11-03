@@ -1,5 +1,6 @@
 const groupService = require('../services/groupService');
 const { isValidDeletePassword } = require('../utils/deletePassword');
+const auditService = require('../services/auditService');
 
 const groupController = {
   getAll: async (req, res, next) => {
@@ -52,6 +53,7 @@ const groupController = {
       const { id } = req.params;
       const { password } = req.body || {};
       if (!isValidDeletePassword(password)) {
+        await auditService.recordDeniedDelete(auditService.MODULES.GROUP, id);
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
       const data = await groupService.deleteGroup(id);

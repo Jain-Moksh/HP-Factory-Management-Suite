@@ -27,7 +27,7 @@ const backupController = {
       const settings = await backupService.updateSettings(req.body);
       const after = pick(settings, BACKUP_FIELDS);
       const changes = auditService.diffFields(before, after);
-      await auditService.recordSafe({
+      if (!auditService.isUnchanged(changes)) await auditService.recordSafe({
         module: auditService.MODULES.SYSTEM,
         action: auditService.ACTIONS.UPDATE,
         recordId: 1,
@@ -57,11 +57,12 @@ const backupController = {
       const rawAfter = pick(settings, FTP_FIELDS);
       const before = maskFtp(rawBefore);
       const after = maskFtp(rawAfter);
-      const changes = auditService.diffFields(before, after);
-      if (rawBefore.ftp_password !== rawAfter.ftp_password) {
-        changes.push({ field: 'ftp_password', from: '********', to: 'changed' });
+      // The masked password is compared separately, so a change is listed exactly once
+      const changes = auditService.diffFields(before, after).filter(c => c.field !== 'ftp_password');
+      if ((rawBefore.ftp_password || null) !== (rawAfter.ftp_password || null)) {
+        changes.push({ field: 'ftp_password', from: rawBefore.ftp_password ? '********' : null, to: rawAfter.ftp_password ? 'changed' : null });
       }
-      await auditService.recordSafe({
+      if (!auditService.isUnchanged(changes)) await auditService.recordSafe({
         module: auditService.MODULES.SYSTEM,
         action: auditService.ACTIONS.UPDATE,
         recordId: 1,
@@ -77,6 +78,13 @@ const backupController = {
 
   manualBackup: async (req, res, next) => {
     try {
+      // A backup file is a full copy of the data, so every download is recorded
+      await auditService.recordSafe({
+        module: auditService.MODULES.SYSTEM,
+        action: auditService.ACTIONS.DOWNLOAD,
+        reference: 'MANUAL BACKUP',
+        summary: 'Full database backup downloaded'
+      });
       await backupService.streamManualBackup(res);
     } catch (err) {
       next(err);
