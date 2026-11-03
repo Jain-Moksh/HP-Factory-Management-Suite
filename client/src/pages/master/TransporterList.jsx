@@ -15,7 +15,6 @@ const TransporterList = () => {
   // --- List State ---
   const [transporters, setTransporters] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredTransporters = useMemo(() => {
@@ -34,6 +33,11 @@ const TransporterList = () => {
   const [transporterToDelete, setTransporterToDelete] = useState(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
 
   // Close editing on click outside
   useEffect(() => {
@@ -57,10 +61,10 @@ const TransporterList = () => {
       if (result.success) {
         setTransporters(result.data);
       } else {
-        setError(result.message);
+        console.error(result.message);
       }
-    } catch (err) {
-      setError('Failed to connect to server');
+    } catch {
+      console.error('Failed to connect to server');
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +106,7 @@ const TransporterList = () => {
       } else {
         alert(result.message || 'Failed to save transporter');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while saving');
     } finally {
       setIsLoading(false);
@@ -128,11 +132,6 @@ const TransporterList = () => {
     setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({});
-  };
-
   const handleEditSave = async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/transporters/${id}`, {
@@ -150,7 +149,7 @@ const TransporterList = () => {
       } else {
         alert(result.message || 'Failed to update transporter');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while updating');
     }
   };
@@ -196,7 +195,7 @@ const TransporterList = () => {
       } else {
         setDeleteError(result.message || 'Fail to delete');
       }
-    } catch (err) {
+    } catch {
       setDeleteError('Network error while deleting');
     }
   };

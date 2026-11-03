@@ -24,16 +24,6 @@ const JobWork = () => {
   // Any search or date range looks across all months instead of only the footer month
   const isSearchingAllMonths = !!(searchChallan.trim() || searchJobber.trim() || startDate || endDate);
 
-  useEffect(() => {
-    fetchJobWorks();
-  }, []);
-
-  // Listen for global refresh event
-  useEffect(() => {
-    window.addEventListener('app-refresh', fetchJobWorks);
-    return () => window.removeEventListener('app-refresh', fetchJobWorks);
-  }, []);
-
   const fetchJobWorks = async () => {
     setLoading(true);
     try {
@@ -48,6 +38,16 @@ const JobWork = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchJobWorks();
+  }, []);
+
+  // Listen for global refresh event
+  useEffect(() => {
+    window.addEventListener('app-refresh', fetchJobWorks);
+    return () => window.removeEventListener('app-refresh', fetchJobWorks);
+  }, []);
 
   const handleDeleteRow = async (id, password) => {
     try {

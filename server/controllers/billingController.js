@@ -60,45 +60,15 @@ const billingController = {
     }
   },
 
-getNextChallan: async (req, res, next) => {
-  try {
-    const fs = require('fs');
-    const path = require('path');
-
-    const { date, billing_id } = req.query;
-
-    const logPath = path.join(__dirname, '..', 'debug.log');
-
-    fs.appendFileSync(
-      logPath,
-      `[BILLING NEXT-CHALLAN] req: date=${date}\n`
-    );
-
-    const challan_no = await billingService.getNextChallan(
-      date,
-      billing_id
-    );
-
-    fs.appendFileSync(
-      logPath,
-      `[BILLING NEXT-CHALLAN] res: challan_no=${challan_no}\n`
-    );
-
-    res.json({ success: true, challan_no });
-  } catch (err) {
-    const fs = require('fs');
-    const path = require('path');
-
-    const logPath = path.join(__dirname, '..', 'debug.log');
-
-    fs.appendFileSync(
-      logPath,
-      `[BILLING NEXT-CHALLAN] ERROR: ${err.message}\n`
-    );
-
-    next(err);
-  }
-},
+  getNextChallan: async (req, res, next) => {
+    try {
+      const { date, billing_id } = req.query;
+      const challan_no = await billingService.getNextChallan(date, billing_id);
+      res.json({ success: true, challan_no });
+    } catch (err) {
+      next(err);
+    }
+  },
 
   update: async (req, res, next) => {
     try {

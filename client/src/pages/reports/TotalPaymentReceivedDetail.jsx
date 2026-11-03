@@ -40,7 +40,6 @@ const TotalPaymentReceivedDetail = () => {
     year: initialMonthYear.year
   });
 
-  const selectedPartyId = filters.party_id;
   const startDate = filters.from;
   const endDate = filters.to;
   const selectedMonth = filters.month;

@@ -70,7 +70,7 @@ const AutoBackupSettings = () => {
       } else {
         setStatus('error');
       }
-    } catch (error) {
+    } catch {
       setStatus('error');
     } finally {
       setSaving(false);

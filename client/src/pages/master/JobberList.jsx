@@ -15,7 +15,6 @@ const JobberList = () => {
   // --- List State ---
   const [jobbers, setJobbers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredJobbers = useMemo(() => {
@@ -35,6 +34,11 @@ const JobberList = () => {
   const [editFormData, setEditFormData] = useState({ name: '' });
   const editRowRef = useRef(null);
 
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({ name: '' });
+  };
+
   // Close editing on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -53,8 +57,8 @@ const JobberList = () => {
       const jobbersRes = await fetch(`${API_BASE_URL}/jobbers`);
       const jobbersData = await jobbersRes.json();
       if (jobbersData.success) setJobbers(jobbersData.data);
-    } catch (err) {
-      setError('Failed to fetch data');
+    } catch {
+      console.error('Failed to fetch data');
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +96,7 @@ const JobberList = () => {
       } else {
         alert(result.message || 'Failed to save jobber');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while saving');
     } finally {
       setIsLoading(false);
@@ -105,11 +109,6 @@ const JobberList = () => {
     setEditFormData({
       name: jobber.name
     });
-  };
-
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({ name: '' });
   };
 
   const handleEditSave = async (id) => {
@@ -130,7 +129,7 @@ const JobberList = () => {
       } else {
         alert(result.message || 'Failed to update jobber');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while updating');
     }
   };
@@ -180,7 +179,7 @@ const JobberList = () => {
       } else {
         setDeleteError(result.message || 'Fail to delete');
       }
-    } catch (err) {
+    } catch {
       setDeleteError('Network error while deleting');
     }
   };

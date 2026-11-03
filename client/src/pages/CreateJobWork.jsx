@@ -6,7 +6,7 @@ import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import DeleteModal from '../components/UI/DeleteModal';
-import { createRequestId } from '../utils/requestId';
+import { createRequestId, createTempRowId } from '../utils/requestId';
 
 const API_BASE_URL = "/api";
 
@@ -25,7 +25,6 @@ const CreateJobWork = () => {
   // --- Master Data State ---
   const [jobbers, setJobbers] = useState([]);
   const [items, setItems] = useState([]);
-  const [isMastersLoading, setIsMastersLoading] = useState(true);
 
   // --- Dropdown States ---
   const [showJobberDropdown, setShowJobberDropdown] = useState(false);
@@ -36,7 +35,6 @@ const CreateJobWork = () => {
   // --- Refs for Click Outside ---
   const jobberRef = useRef(null);
   const itemRef = useRef(null);
-  const modalDropdownRef = useRef(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -46,9 +44,6 @@ const CreateJobWork = () => {
       }
       if (itemRef.current && !itemRef.current.contains(event.target)) {
         setShowItemDropdown(false);
-      }
-      if (modalDropdownRef.current && !modalDropdownRef.current.contains(event.target)) {
-        setIsModalDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -63,8 +58,6 @@ const CreateJobWork = () => {
     name: '',
     selectedItems: [] // Stores item objects {id, name}
   });
-  const [modalItemSearch, setModalItemSearch] = useState('');
-  const [isModalDropdownOpen, setIsModalDropdownOpen] = useState(false);
 
   // --- New Item Modal State ---
   const [showItemModal, setShowItemModal] = useState(false);
@@ -96,12 +89,6 @@ const CreateJobWork = () => {
   // --- Batch Summary State (Appended Items) ---
   const [addedItems, setAddedItems] = useState([]);
 
-  // --- Delete Modal State ---
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deleteError, setDeleteError] = useState('');
-
   useEffect(() => {
     const fetchMasters = async () => {
       try {
@@ -120,8 +107,6 @@ const CreateJobWork = () => {
 
       } catch (err) {
         console.error("Error fetching masters:", err);
-      } finally {
-        setIsMastersLoading(false);
       }
     };
     fetchMasters();
@@ -201,7 +186,7 @@ const CreateJobWork = () => {
   const proceedAppend = () => {
     const newItem = {
       ...currentItem,
-      id: Date.now(),
+      id: createTempRowId(),
     };
     setAddedItems([...addedItems, newItem]);
     handleRedo(); 
@@ -232,13 +217,6 @@ const CreateJobWork = () => {
   const handleJobberFormChange = (e) => {
     const { name, value } = e.target;
     setNewJobberData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const removeModalItem = (item) => {
-    setNewJobberData(prev => ({
-      ...prev,
-      selectedItems: prev.selectedItems.filter(i => i.id !== item.id)
-    }));
   };
 
   const handleSelectJobber = (jobber) => {
@@ -280,7 +258,6 @@ const CreateJobWork = () => {
         handleSelectJobber(result.data);
         setShowJobberForm(false);
         setNewJobberData({ name: '', selectedItems: [] });
-        setModalItemSearch('');
       } else {
         alert(result.message || 'Failed to save jobber');
       }

@@ -5,7 +5,7 @@ import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
 import SearchableSelect from '../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../config';
-import { createRequestId } from '../utils/requestId';
+import { createRequestId, createTempRowId } from '../utils/requestId';
 
 const BulkPayment = () => {
   const navigate = useNavigate();
@@ -15,8 +15,9 @@ const BulkPayment = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Rows Data
-  const [rows, setRows] = useState([
-    { id: Date.now(), partyId: '', amount: '', remarks: '', paymentMode: 'Cash', outstanding: 0, isLoadingOutstanding: false, closingBalance: 0 }
+  // Lazy initial value: the first row (and its id) is created once, not on every render
+  const [rows, setRows] = useState(() => [
+    { id: createTempRowId(), partyId: '', amount: '', remarks: '', paymentMode: 'Cash', outstanding: 0, isLoadingOutstanding: false, closingBalance: 0 }
   ]);
   
   const [options, setOptions] = useState([]);
@@ -104,7 +105,7 @@ const BulkPayment = () => {
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), partyId: '', amount: '', remarks: '', paymentMode: 'Cash', outstanding: 0, isLoadingOutstanding: false, closingBalance: 0 }]);
+    setRows([...rows, { id: createTempRowId(), partyId: '', amount: '', remarks: '', paymentMode: 'Cash', outstanding: 0, isLoadingOutstanding: false, closingBalance: 0 }]);
   };
 
   const removeRow = (idToRemove) => {

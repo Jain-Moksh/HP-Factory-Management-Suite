@@ -23,7 +23,6 @@ const ItemList = () => {
   // --- List State ---
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredItems = useMemo(() => {
@@ -36,6 +35,11 @@ const ItemList = () => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const editRowRef = useRef(null);
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
 
   // Close editing on click outside
   useEffect(() => {
@@ -65,10 +69,10 @@ const ItemList = () => {
       if (result.success) {
         setItems(result.data);
       } else {
-        setError(result.message);
+        console.error(result.message);
       }
-    } catch (err) {
-      setError('Failed to connect to server');
+    } catch {
+      console.error('Failed to connect to server');
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +122,7 @@ const ItemList = () => {
       } else {
         alert(result.message || 'Failed to save item');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while saving');
     } finally {
       setIsLoading(false);
@@ -155,11 +159,6 @@ const ItemList = () => {
     setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({});
-  };
-
   const handleEditSave = async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/items/${id}`, {
@@ -182,7 +181,7 @@ const ItemList = () => {
       } else {
         alert(result.message || 'Failed to update item');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while updating');
     }
   };
@@ -228,7 +227,7 @@ const ItemList = () => {
       } else {
         setDeleteError(result.message || 'Fail to delete');
       }
-    } catch (err) {
+    } catch {
       setDeleteError('Network error while deleting');
     }
   };

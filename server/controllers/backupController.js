@@ -77,18 +77,31 @@ const backupController = {
   },
 
   manualBackup: async (req, res, next) => {
+    let backup;
     try {
-      // A backup file is a full copy of the data, so every download is recorded
-      await auditService.recordSafe({
-        module: auditService.MODULES.SYSTEM,
-        action: auditService.ACTIONS.DOWNLOAD,
-        reference: 'MANUAL BACKUP',
-        summary: 'Full database backup downloaded'
-      });
-      await backupService.streamManualBackup(res);
+      // The whole backup is made first; a busy or failed backup becomes a JSON error, not a broken file
+      backup = await backupService.createManualBackupFile();
     } catch (err) {
-      next(err);
+      return next(err);
     }
+
+    // A backup file is a full copy of the data, so every download is recorded
+    // (only once a backup really was made, so refused or failed attempts are not logged as downloads)
+    await auditService.recordSafe({
+      module: auditService.MODULES.SYSTEM,
+      action: auditService.ACTIONS.DOWNLOAD,
+      reference: 'MANUAL BACKUP',
+      summary: 'Full database backup downloaded'
+    });
+
+    res.download(backup.filePath, backup.filename, { headers: { 'Content-Type': 'text/plain' } }, (err) => {
+      // The temp copy is removed whether or not the browser received it
+      fs.rm(backup.filePath, { force: true }, () => {});
+      if (err) {
+        console.error('Sending manual backup failed:', err.message);
+        if (!res.headersSent) next(err);
+      }
+    });
   },
 
   restore: async (req, res, next) => {

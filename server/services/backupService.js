@@ -1,5 +1,6 @@
-const { exec, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const db = require('../config/db');
 const ftp = require('basic-ftp');
@@ -18,6 +19,83 @@ const userError = (message) => {
   err.status = 400;
   return err;
 };
+
+/**
+ * Starts the backup that was asked for while another one was running.
+ * Called once a backup / restore finishes, whether it succeeded or not.
+ */
+const runPendingBackup = () => {
+  if (!backupPending) return;
+  backupPending = false;
+  console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
+  setImmediate(() => {
+    backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
+  });
+};
+
+/**
+ * Local time down to the millisecond, e.g. "04-11-2026--14-32-05-123".
+ * Two backups in the same minute (common, since every save triggers one) get different names,
+ * so a new backup can never overwrite the previous good file.
+ */
+const fileTimestamp = (d = new Date()) => {
+  const pad = (n, len = 2) => String(n).padStart(len, '0');
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}--` +
+    `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}-${pad(d.getMilliseconds(), 3)}`;
+};
+
+/**
+ * Runs pg_dump into `finalPath`, all or nothing.
+ * The dump goes to "<finalPath>.partial" first and is renamed only after BOTH pg_dump exited
+ * successfully AND every byte has been flushed to disk. A failed dump leaves no file behind and
+ * never touches an existing backup, and the caller can safely upload / send the file afterwards.
+ *
+ * @param {string[]} extraArgs - pg_dump options placed before the database name
+ * @param {string} finalPath - Where the finished backup should end up
+ * @returns {Promise<void>} Rejects with pg_dump's error output if the dump failed
+ */
+const dumpDatabaseToFile = (extraArgs, finalPath) => new Promise((resolve, reject) => {
+  const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
+  const pgDumpPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_dump') : 'pg_dump';
+  const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
+  const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, ...extraArgs, DB_NAME];
+  const tempPath = `${finalPath}.partial`;
+
+  let stderr = '';
+  let exitCode = null;
+  let flushed = false;
+  let settled = false;
+
+  const out = fs.createWriteStream(tempPath);
+  const child = spawn(pgDumpPath, args, { env });
+
+  const fail = (err) => {
+    if (settled) return;
+    settled = true;
+    out.destroy();
+    fs.rm(tempPath, { force: true }, () => reject(err));
+  };
+
+  // Called after each of the two events; finishes only once both have happened
+  const finishIfDone = () => {
+    if (settled || exitCode === null || !flushed) return;
+    if (exitCode !== 0) {
+      return fail(new Error(`pg_dump exited with code ${exitCode}${stderr.trim() ? `: ${stderr.trim()}` : ''}`));
+    }
+    fs.rename(tempPath, finalPath, (err) => {
+      if (err) return fail(err);
+      settled = true;
+      resolve();
+    });
+  };
+
+  child.stdout.pipe(out);
+  child.stderr.on('data', (data) => { stderr += data.toString(); });
+  child.on('error', fail); // pg_dump could not be started (wrong PG_BIN_PATH etc.)
+  out.on('error', fail);   // disk full, folder not writable etc.
+  out.on('finish', () => { flushed = true; finishIfDone(); });
+  child.on('close', (code) => { exitCode = code; finishIfDone(); });
+});
 
 // Helper to check if file is a binary backup format
 const isBinaryBackup = (filePath) => {
@@ -100,61 +178,40 @@ const backupService = {
     return result.rows[0];
   },
 
-  streamManualBackup: async (res) => {
-    if (isBackupRunning) {
-      return res.status(429).json({ success: false, message: 'Another backup or restore is already in progress. Please wait.' });
+  /**
+   * Makes a complete manual backup in the temp folder and returns where it is.
+   * The caller sends the file to the browser and deletes it afterwards. Because the file is only
+   * returned once pg_dump has finished successfully, a failed backup becomes an error message
+   * instead of a cut-off .sql download that looks fine.
+   *
+   * @returns {Promise<{filePath: string, filename: string}>}
+   * @throws {Error} 429 when another backup / restore is running, 500 when pg_dump fails
+   */
+  createManualBackupFile: async () => {
+    if (isBackupRunning || global.isBackupRestoreRunning) {
+      const err = new Error('Another backup or restore is already in progress. Please wait a moment and try again.');
+      err.status = 429;
+      throw err;
     }
 
     isBackupRunning = true;
-    const timestamp = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '').replace(/:/g, '-').replace(/ /g, '--');
-    const filename = `ManualBackup-${timestamp}.sql`;
-
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-    res.setHeader('Content-Type', 'text/plain');
-
-    const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
-    
-    const pgDumpPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_dump') : 'pg_dump';
-    const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
-    
-    // Using spawn is better for streaming large files than exec
-    const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, DB_NAME];
-    const child = spawn(pgDumpPath, args, { env });
-
-    child.stdout.pipe(res);
-
-    child.on('error', (err) => {
+    try {
+      // Local time (not UTC), same style as the auto backups, e.g. ManualBackup-04-11-2026--14-32-05-123.sql
+      const filename = `ManualBackup-${fileTimestamp()}.sql`;
+      const filePath = path.join(os.tmpdir(), `${Date.now()}-${filename}`);
+      try {
+        await dumpDatabaseToFile([], filePath);
+      } catch (err) {
+        console.error('Manual backup failed:', err.message);
+        const userErr = new Error('The backup could not be created, so nothing was downloaded. Please try again; if it keeps failing, check that PostgreSQL is running.');
+        userErr.status = 500;
+        throw userErr;
+      }
+      return { filePath, filename };
+    } finally {
       isBackupRunning = false;
-      console.error('pg_dump spawn error:', err);
-      if (!res.headersSent) {
-        res.status(500).send('Backup failed');
-      }
-      if (backupPending) {
-        backupPending = false;
-        console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
-        setImmediate(() => {
-          backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
-        });
-      }
-    });
-
-    child.stderr.on('data', (data) => {
-      console.error(`pg_dump stderr: ${data}`);
-    });
-
-    child.on('close', (code) => {
-      isBackupRunning = false;
-      if (code !== 0) {
-        console.error(`pg_dump process exited with code ${code}`);
-      }
-      if (backupPending) {
-        backupPending = false;
-        console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
-        setImmediate(() => {
-          backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
-        });
-      }
-    });
+      runPendingBackup();
+    }
   },
 
   triggerAutoBackup: async (isChangeTrigger = false) => {
@@ -174,12 +231,11 @@ const backupService = {
     }
 
     console.log('[AUTO-BACKUP] Automatic backup requested');
+    isBackupRunning = true;
 
     try {
-      isBackupRunning = true;
       const settings = await backupService.getSettingsInternal();
       if (!settings || !settings.auto_backup_enabled) {
-        isBackupRunning = false;
         return;
       }
 
@@ -189,7 +245,6 @@ const backupService = {
 
       // If this is a check (startup or settings check) and the file already exists, skip creating a new backup
       if (!isChangeTrigger && fileExists) {
-        isBackupRunning = false;
         console.log('🛡️ Auto-backup skipped: Backup file already exists and no database changes occurred.');
         return;
       }
@@ -203,132 +258,73 @@ const backupService = {
         fs.mkdirSync(backupDir, { recursive: true });
       }
 
-      const timestamp = new Date().toLocaleString('en-GB', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: false
-      }).replace(/[/, :]/g, '-');
-
-      const newFilename = `AutoBackup-${timestamp}.sql`;
+      // Unique to the millisecond, so the previous backup is never overwritten
+      const newFilename = `AutoBackup-${fileTimestamp()}.sql`;
       const newFilePath = path.join(backupDir, newFilename);
 
-      const { DB_USER, DB_NAME, DB_PASSWORD, DB_HOST, DB_PORT, PG_BIN_PATH } = process.env;
-      const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
-      
-      const pgDumpPath = PG_BIN_PATH ? path.join(PG_BIN_PATH, 'pg_dump') : 'pg_dump';
-
       console.log('[AUTO-BACKUP] Backup started');
-
-      // Use spawn to be quote-safe and pipe stdout directly to the file stream
-      const out = fs.createWriteStream(newFilePath);
-      const args = ['-U', DB_USER, '-h', DB_HOST, '-p', DB_PORT, '--clean', '--if-exists', DB_NAME];
-      const child = spawn(pgDumpPath, args, { env });
-
-      child.stdout.pipe(out);
-
-      let stderr = '';
-      child.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      child.on('error', (err) => {
-        isBackupRunning = false;
-        console.error('Auto backup failed to start:', err);
-        if (backupPending) {
-          backupPending = false;
-          console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
-          setImmediate(() => {
-            backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
-          });
-        }
-      });
-
-      child.on('close', async (code) => {
-        isBackupRunning = false;
-        if (code !== 0) {
-          console.error(`Auto backup process exited with code ${code}. Error: ${stderr}`);
-          if (fs.existsSync(newFilePath)) {
-            try { fs.unlinkSync(newFilePath); } catch (e) {}
-          }
-          if (backupPending) {
-            backupPending = false;
-            console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
-            setImmediate(() => {
-              backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
-            });
-          }
-          return;
-        }
-
-        console.log('[AUTO-BACKUP] Backup completed');
-
-        // FTP Upload Logic
-        if (settings.ftp_backup_enabled && settings.ftp_host && settings.ftp_username) {
-          const client = new ftp.Client();
-          client.ftp.verbose = true;
-          try {
-            console.log('Initiating FTP upload for:', newFilename);
-            await client.access({
-              host: settings.ftp_host,
-              port: settings.ftp_port || 21,
-              user: settings.ftp_username,
-              password: settings.ftp_password,
-              secure: false
-            });
-            const remoteDir = settings.ftp_path || '/';
-            await client.ensureDir(remoteDir);
-            await client.uploadFrom(newFilePath, path.join(remoteDir, newFilename).replace(/\\/g, '/'));
-            console.log('[AUTO-BACKUP] FTP upload completed');
-          } catch (ftpError) {
-            console.error('FTP upload failed:', ftpError);
-          } finally {
-            client.close();
-          }
-        }
-
-        // Handle Retention: Delete old backup only if it's different from the new one
-        const oldFilename = settings.last_backup_file;
-        if (oldFilename && oldFilename !== newFilename) {
-          const oldFilePath = path.join(backupDir, oldFilename);
-          if (fs.existsSync(oldFilePath)) {
-            try {
-              fs.unlinkSync(oldFilePath);
-              console.log('Deleted old auto backup:', oldFilename);
-            } catch (err) {
-              console.warn('Failed to delete old backup (permission or lock issues):', err.message);
-            }
-          }
-        }
-
-        // Update settings with new backup info
-        await db.query(
-          `UPDATE backup_settings 
-           SET last_backup_time = CURRENT_TIMESTAMP, last_backup_file = $1 
-           WHERE id = 1`,
-          [newFilename]
-        );
-        
-        console.log('[AUTO-BACKUP] Backup metadata updated');
-        console.log(`Auto backup created successfully: ${newFilename}`);
-
-        if (backupPending) {
-          backupPending = false;
-          console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
-          setImmediate(() => {
-            backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
-          });
-        }
-      });
-
-    } catch (error) {
-      isBackupRunning = false;
-      console.error('Auto backup failed:', error);
-      if (backupPending) {
-        backupPending = false;
-        console.log('[AUTO-BACKUP] Pending database change detected; starting next backup');
-        setImmediate(() => {
-          backupService.triggerAutoBackup(true).catch(err => console.error('Pending backup trigger failed:', err));
-        });
+      try {
+        await dumpDatabaseToFile(['--clean', '--if-exists'], newFilePath);
+      } catch (err) {
+        // The previous backup file is untouched, so it is still the latest good backup
+        console.error(`Auto backup failed; previous backup kept (${settings.last_backup_file || 'none'}):`, err.message);
+        return;
       }
+      console.log('[AUTO-BACKUP] Backup completed');
+
+      // FTP upload: the file is complete on disk at this point
+      if (settings.ftp_backup_enabled && settings.ftp_host && settings.ftp_username) {
+        const client = new ftp.Client();
+        client.ftp.verbose = true;
+        try {
+          console.log('Initiating FTP upload for:', newFilename);
+          await client.access({
+            host: settings.ftp_host,
+            port: settings.ftp_port || 21,
+            user: settings.ftp_username,
+            password: settings.ftp_password,
+            secure: false
+          });
+          const remoteDir = settings.ftp_path || '/';
+          await client.ensureDir(remoteDir);
+          await client.uploadFrom(newFilePath, path.join(remoteDir, newFilename).replace(/\\/g, '/'));
+          console.log('[AUTO-BACKUP] FTP upload completed');
+        } catch (ftpError) {
+          console.error('FTP upload failed:', ftpError);
+        } finally {
+          client.close();
+        }
+      }
+
+      // Record the new backup first, so the saved file name always points to a file that exists
+      await db.query(
+        `UPDATE backup_settings
+         SET last_backup_time = CURRENT_TIMESTAMP, last_backup_file = $1
+         WHERE id = 1`,
+        [newFilename]
+      );
+      console.log('[AUTO-BACKUP] Backup metadata updated');
+
+      // Retention: only now that the new backup is safe is the old one removed
+      const oldFilename = settings.last_backup_file;
+      if (oldFilename && oldFilename !== newFilename) {
+        const oldFilePath = path.join(backupDir, oldFilename);
+        if (fs.existsSync(oldFilePath)) {
+          try {
+            fs.unlinkSync(oldFilePath);
+            console.log('Deleted old auto backup:', oldFilename);
+          } catch (err) {
+            console.warn('Failed to delete old backup (permission or lock issues):', err.message);
+          }
+        }
+      }
+
+      console.log(`Auto backup created successfully: ${newFilename}`);
+    } catch (error) {
+      console.error('Auto backup failed:', error);
+    } finally {
+      isBackupRunning = false;
+      runPendingBackup();
     }
   },
 

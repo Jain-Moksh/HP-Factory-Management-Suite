@@ -75,7 +75,7 @@ const RestoreSystem = () => {
         setResult({ success: false, message: data.message || 'Restoration failed.' });
         setRestoring(false);
       }
-    } catch (error) {
+    } catch {
       setResult({ success: false, message: 'Network error during restoration.' });
       setRestoring(false);
     }

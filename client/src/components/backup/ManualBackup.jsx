@@ -1,50 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Card from '../UI/Card';
-import Button from '../UI/Button';
 
 const ManualBackup = () => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState(null); // 'success', 'error'
+  const [errorMessage, setErrorMessage] = useState('');
+  const progressTimer = useRef(null);
 
-  useEffect(() => {
-    let interval;
-    if (loading) {
-      setProgress(0);
-      interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 95) return prev; // Stay at 95% until finished
-          return prev + Math.random() * 15;
-        });
-      }, 300);
-    } else {
-      setProgress(0);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
+  // Stop the progress animation if the screen is closed mid-backup
+  useEffect(() => () => clearInterval(progressTimer.current), []);
+
+  const startProgress = () => {
+    setProgress(0);
+    clearInterval(progressTimer.current);
+    progressTimer.current = setInterval(() => {
+      // Creeps towards 95% and waits there until the server has really finished
+      setProgress(prev => (prev >= 95 ? prev : prev + Math.random() * 15));
+    }, 300);
+  };
+
+  const stopProgress = () => {
+    clearInterval(progressTimer.current);
+    progressTimer.current = null;
+  };
 
   const handleBackup = async () => {
     setLoading(true);
     setStatus(null);
+    setErrorMessage('');
+    startProgress();
     try {
-      // Get base URL
       const apiUrl = import.meta.env.VITE_API_URL || '';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
-      
-      // Trigger download
-      window.location.href = `${baseUrl}/api/backup/manual`;
-      
-      // Simulation finishes after a delay
-      setTimeout(() => {
-        setProgress(100);
-        setTimeout(() => {
-          setStatus('success');
-          setLoading(false);
-        }, 500);
-      }, 3000);
+
+      // The server answers only once the whole backup exists, or with an error message if it failed
+      const response = await fetch(`${baseUrl}/api/backup/manual`);
+      if (!response.ok) {
+        let message = 'Backup failed. Please try again.';
+        try {
+          const data = await response.json();
+          if (data.message) message = data.message;
+        } catch {
+          // Not JSON: keep the generic message
+        }
+        throw new Error(message);
+      }
+
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+      const filename = match ? decodeURIComponent(match[1]) : 'Backup.sql';
+      const blob = await response.blob();
+
+      // Hand the finished file to the browser as a download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      setStatus('success');
     } catch (error) {
       console.error('Backup failed:', error);
+      setErrorMessage(error.message);
       setStatus('error');
+    } finally {
+      stopProgress();
+      setProgress(0);
       setLoading(false);
     }
   };
@@ -116,7 +141,7 @@ const ManualBackup = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-sm font-medium">Backup failed. Please contact administrator.</span>
+            <span className="text-sm font-medium">{errorMessage || 'Backup failed. Please contact administrator.'}</span>
           </div>
         )}
       </div>

@@ -9,7 +9,8 @@ const { requestContextMiddleware } = require('./utils/requestContext');
 const app = express();
 
 // Middleware
-app.use(cors());
+// Content-Disposition is exposed so the backup screen can read the download's file name
+app.use(cors({ exposedHeaders: ['Content-Disposition'] }));
 app.use(express.json());
 
 // Captures the requesting device for audit logging
@@ -104,6 +105,16 @@ app.use((err, req, res, next) => {
     return res.status(500).json({
       success: false,
       message: 'A missing database table was detected. The system is automatically recreating it in the background. Please try your action again in a few seconds.'
+    });
+  }
+
+  // 22P02 invalid_text_representation / 22003 numeric_value_out_of_range / 22007 invalid date:
+  // the request sent a bad value (e.g. text where a number belongs), so it is the caller's mistake, not a server failure
+  if (['22P02', '22003', '22007', '22008'].includes(err.code)) {
+    return res.status(400).json({
+      success: false,
+      status: 400,
+      message: 'One of the values sent is not valid (for example, text where a number or date was expected). Please check the form and try again.'
     });
   }
 

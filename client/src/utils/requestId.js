@@ -8,3 +8,18 @@ export const createRequestId = () => {
   crypto.getRandomValues(bytes);
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 };
+
+let lastTempRowId = 0;
+
+/**
+ * Id for a row that has not been saved yet (invoice / job work / bulk payment rows).
+ * It is based on the current time, so it is always 13+ digits: the save code relies on that
+ * (`id.toString().length < 13`) to tell a new row apart from a saved row's database id.
+ * Unlike plain Date.now(), two rows added in the same millisecond never get the same id,
+ * which would make editing or deleting one of them also hit the other.
+ */
+export const createTempRowId = () => {
+  const now = Date.now();
+  lastTempRowId = now > lastTempRowId ? now : lastTempRowId + 1;
+  return lastTempRowId;
+};

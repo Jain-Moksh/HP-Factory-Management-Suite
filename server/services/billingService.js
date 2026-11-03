@@ -43,6 +43,63 @@ const ensureRowIdsMatch = (items, oldItems) => {
   });
 };
 
+const badRequest = (message) => {
+  const err = new Error(message);
+  err.status = 400;
+  return err;
+};
+
+const toNumber = (value) => (value === null || value === undefined || value === '' ? 0 : Number(value));
+const round2 = (value) => Math.round(value * 100) / 100;
+
+/**
+ * Re-does the invoice screen's arithmetic on the server, so a bill can never be saved with
+ * totals that don't match its rows (a direct API call, or a future bug in the screen).
+ * Same formulas as CreateInvoice.jsx:
+ *   row amount  = quantity x rate - row discount
+ *   grand total = round(sum of row amounts + transport + packing + adjustment - discount)
+ * A row may be off by 2 paise, since the screen rounds the discount and the amount separately.
+ *
+ * @returns {{total_amount: number, grand_total: number}} Totals the server saves
+ * @throws {Error} 400 naming the row or total that does not add up
+ */
+const calculateBillTotals = (billData) => {
+  let itemsTotal = 0;
+  billData.items.forEach((item, index) => {
+    const quantity = Number(item.quantity);
+    const rate = toNumber(item.rate);
+    const discount = toNumber(item.discount_amount);
+    const amount = item.total_amount === null || item.total_amount === undefined || item.total_amount === '' ? NaN : Number(item.total_amount);
+    if (![rate, discount, amount].every(Number.isFinite)) {
+      throw badRequest(`Row ${index + 1}: rate, discount and amount must be numbers.`);
+    }
+    const expected = quantity * rate - discount;
+    if (Math.abs(expected - amount) > 0.02) {
+      throw badRequest(
+        `Row ${index + 1}: amount ₹${amount.toFixed(2)} does not match quantity × rate − discount (₹${expected.toFixed(2)}). ` +
+        'Please re-enter the quantity or rate on that row and save again.'
+      );
+    }
+    itemsTotal += amount;
+  });
+
+  const charges = ['transport_charge', 'packing_charge', 'adjustment_amount', 'discount_amount'].map(key => toNumber(billData[key]));
+  if (!charges.every(Number.isFinite)) {
+    throw badRequest('Transport, packing, adjustment and discount must be numbers.');
+  }
+  const [transport, packing, adjustment, discount] = charges;
+  const grandTotal = Math.round(itemsTotal + transport + packing + adjustment - discount);
+
+  const sentGrandTotal = Number(billData.grand_total);
+  if (!Number.isFinite(sentGrandTotal) || Math.abs(sentGrandTotal - grandTotal) > 1) {
+    throw badRequest(
+      `Grand total ₹${billData.grand_total} does not match the items and charges (₹${grandTotal}). Please check the bill and save again.`
+    );
+  }
+
+  return { total_amount: round2(itemsTotal), grand_total: grandTotal };
+};
+
 /**
  * Loads a bill with its line items for audit snapshots. Runs on the transaction client,
  * so it sees the transaction's own uncommitted writes.
@@ -58,14 +115,16 @@ const loadSnapshot = async (executor, id) => {
 const billingService = {
   create: async (billData) => {
     validateLineItems(billData.items);
+    // Totals are worked out here; the screen's own numbers are only checked against them
+    const { total_amount, grand_total } = calculateBillTotals(billData);
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
 
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark,
-        long_remark, grand_total, items, request_id
+        discount_percent, discount_amount, adjustment_percent, adjustment_amount, short_remark,
+        long_remark, items, request_id
       } = billData;
 
       // 1. Generate custom challan number (also locks the billing table until COMMIT)
@@ -302,14 +361,16 @@ const billingService = {
 
   update: async (id, billData) => {
     validateLineItems(billData.items);
+    // Totals are worked out here; the screen's own numbers are only checked against them
+    const { total_amount, grand_total } = calculateBillTotals(billData);
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
 
       const {
         client_id, transporter_id, date, transport_charge, packing_charge,
-        discount_percent, discount_amount, adjustment_percent, adjustment_amount, total_amount, short_remark,
-        long_remark, grand_total, items
+        discount_percent, discount_amount, adjustment_percent, adjustment_amount, short_remark,
+        long_remark, items
       } = billData; // Ignored challan_no from frontend
 
       // Lock first: a second save of the same bill waits, then works from the first save's result

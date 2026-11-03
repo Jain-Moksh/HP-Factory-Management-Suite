@@ -10,7 +10,7 @@ import WarningModal from '../components/UI/WarningModal';
 import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import { API_BASE_URL } from '../config';
 import PrintInvoice from '../components/PrintInvoice';
-import { createRequestId } from '../utils/requestId';
+import { createRequestId, createTempRowId } from '../utils/requestId';
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
@@ -32,11 +32,8 @@ const CreateInvoice = () => {
   const [clients, setClients] = useState([]);
   const [items, setItems] = useState([]);
   const [transporters, setTransporters] = useState([]);
-  const [isLoadingMasters, setIsLoadingMasters] = useState(false);
 
   // --- Search/Dropdown State ---
-  const [itemSearch, setItemSearch] = useState('');
-  const [transporterSearch, setTransporterSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showItemDropdown, setShowItemDropdown] = useState(false);
   const [showTransporterDropdown, setShowTransporterDropdown] = useState(false);
@@ -192,7 +189,6 @@ const CreateInvoice = () => {
 
   useEffect(() => {
     const fetchMasters = async () => {
-      setIsLoadingMasters(true);
       try {
         const [clientsRes, itemsRes, transportersRes] = await Promise.all([
           fetch(`${API_BASE_URL}/clients`),
@@ -209,8 +205,6 @@ const CreateInvoice = () => {
         if (transportersData.success) setTransporters(transportersData.data);
       } catch (err) {
         console.error("Error fetching masters:", err);
-      } finally {
-        setIsLoadingMasters(false);
       }
     };
     fetchMasters();
@@ -331,7 +325,7 @@ const CreateInvoice = () => {
   const proceedAppend = () => {
     const newItem = {
       ...currentItem,
-      id: Date.now(),
+      id: createTempRowId(),
     };
     setAddedItems([...addedItems, newItem]);
     handleRedoCurrent();
@@ -367,12 +361,6 @@ const CreateInvoice = () => {
       }
       return updated;
     });
-  };
-
-  const handleSummaryStep = (field, delta) => {
-    const current = parseFloat(formData[field]) || 0;
-    const nextValue = Math.max(0, current + delta).toString();
-    updateSummaryValue(field, nextValue);
   };
 
   const calculateRowValues = (qty, rate, dPercent, dAmount, priority = 'percent') => {
@@ -441,12 +429,6 @@ const CreateInvoice = () => {
       }
       return updated;
     });
-  };
-
-  const handleEntryStep = (field, delta) => {
-    const current = parseFloat(currentItem[field]) || 0;
-    const nextValue = Math.max(0, current + delta).toString();
-    updateEntryValue(field, nextValue);
   };
 
   const handleRedoCurrent = () => {
@@ -671,14 +653,6 @@ const CreateInvoice = () => {
       }
       return item;
     }));
-  };
-
-  const handleTableRowStep = (id, field, delta) => {
-    const item = addedItems.find(i => i.id === id);
-    if (!item) return;
-    const current = parseFloat(item[field]) || 0;
-    const nextValue = Math.max(0, current + delta).toString();
-    updateTableRowValue(id, field, nextValue);
   };
 
   const handleFinalSave = async (shouldNavigate = true) => {
@@ -1403,7 +1377,7 @@ const CreateInvoice = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-soft/50">
-                    {addedItems.map((item, idx) => (
+                    {addedItems.map((item) => (
                       <tr key={item.id} className={`hover:bg-bg-main/30 group transition-colors duration-75 ${editingId === item.id ? 'bg-brand-blue/[0.03]' : ''}`}>
                         <td className="px-5 py-2 border-r border-border-soft/50">
                           {editingId === item.id ? (

@@ -72,10 +72,6 @@ const PartyStockReport = () => {
     });
   };
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   const fetchClients = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/clients`);
@@ -85,6 +81,10 @@ const PartyStockReport = () => {
       console.error("Error fetching clients:", err);
     }
   };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const fetchData = async () => {
     if (!selectedClient) return;

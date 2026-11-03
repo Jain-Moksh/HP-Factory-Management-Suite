@@ -21,7 +21,6 @@ const PartyList = () => {
   // --- List State ---
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredClients = useMemo(() => {
@@ -35,6 +34,11 @@ const PartyList = () => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const editRowRef = useRef(null);
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({});
+  };
 
   // Close editing on click outside
   useEffect(() => {
@@ -64,10 +68,10 @@ const PartyList = () => {
       if (result.success) {
         setClients(result.data);
       } else {
-        setError(result.message);
+        console.error(result.message);
       }
-    } catch (err) {
-      setError('Failed to connect to server');
+    } catch {
+      console.error('Failed to connect to server');
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +118,7 @@ const PartyList = () => {
       } else {
         alert(result.message || 'Failed to save party');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while saving');
     } finally {
       setIsLoading(false);
@@ -150,11 +154,6 @@ const PartyList = () => {
     setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({});
-  };
-
   const handleEditSave = async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
@@ -177,7 +176,7 @@ const PartyList = () => {
       } else {
         alert(result.message || 'Failed to update party');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while updating');
     }
   };
@@ -223,7 +222,7 @@ const PartyList = () => {
       } else {
         setDeleteError(result.message || 'Fail to delete');
       }
-    } catch (err) {
+    } catch {
       setDeleteError('Network error while deleting');
     }
   };

@@ -27,7 +27,6 @@ const GroupList = () => {
   // --- List State ---
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredGroups = useMemo(() => {
@@ -54,6 +53,13 @@ const GroupList = () => {
   const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
   const editDropdownRef = useRef(null);
   const editRowRef = useRef(null);
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({ name: '', selectedMembers: [], description: '' });
+    setEditSearchTerm('');
+    setIsEditDropdownOpen(false);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -88,8 +94,8 @@ const GroupList = () => {
       if (jobbersData.success) setAvailableJobbers(jobbersData.data);
       if (clientsData.success) setAvailableClients(clientsData.data);
       if (groupsData.success) setGroups(groupsData.data);
-    } catch (err) {
-      setError('Failed to fetch data');
+    } catch {
+      console.error('Failed to fetch data');
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +166,7 @@ const GroupList = () => {
       } else {
         alert(result.message || 'Failed to save group');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while saving');
     } finally {
       setIsLoading(false);
@@ -189,13 +195,6 @@ const GroupList = () => {
     });
   };
 
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({ name: '', selectedMembers: [], description: '' });
-    setEditSearchTerm('');
-    setIsEditDropdownOpen(false);
-  };
-
   const handleEditSave = async (id) => {
     if (!editFormData.name.trim()) return;
     try {
@@ -218,7 +217,7 @@ const GroupList = () => {
       } else {
         alert(result.message || 'Failed to update group');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while updating');
     }
   };
@@ -270,7 +269,7 @@ const GroupList = () => {
       } else {
         setDeleteError(result.message || 'Failed to delete');
       }
-    } catch (err) {
+    } catch {
       setDeleteError('Network error while deleting');
     }
   };

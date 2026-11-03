@@ -74,7 +74,7 @@ function AuthGuard({ children }) {
       } else {
         setError('Incorrect password. Access Denied!');
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setIsChecking(false);

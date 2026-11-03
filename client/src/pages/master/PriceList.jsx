@@ -144,7 +144,7 @@ const PriceList = () => {
       } else {
         setAllItems(MOCK_ITEMS);
       }
-    } catch (err) {
+    } catch {
       console.warn('Unable to connect to backend, falling back to mock item data');
       setAllItems(MOCK_ITEMS);
     }
@@ -219,7 +219,7 @@ const PriceList = () => {
       } else {
         setCategoryError(result.message || 'Failed to create category');
       }
-    } catch (err) {
+    } catch {
       setCategoryError('Network error while saving category');
     }
   };
@@ -244,7 +244,7 @@ const PriceList = () => {
         } else {
           alert(result.message || 'Failed to delete category');
         }
-      } catch (err) {
+      } catch {
         alert('Network error while deleting category');
       }
     }
@@ -362,7 +362,7 @@ const PriceList = () => {
       } else {
         alert(result.message || 'Failed to add items');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while adding items');
     }
   };
@@ -380,7 +380,7 @@ const PriceList = () => {
       } else {
         alert(result.message || 'Failed to remove item');
       }
-    } catch (err) {
+    } catch {
       alert('Network error while removing item');
     }
   };

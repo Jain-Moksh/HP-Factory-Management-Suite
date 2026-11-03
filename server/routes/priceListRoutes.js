@@ -1,5 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const { validateIdParam } = require('../utils/validateId');
+
+// Record ids must be whole numbers; anything else gets a clear 400
+router.param('id', validateIdParam);
+router.param('categoryId', validateIdParam);
+router.param('itemId', validateIdParam);
+
 const priceListController = require('../controllers/priceListController');
 
 // Main Price List Actions
