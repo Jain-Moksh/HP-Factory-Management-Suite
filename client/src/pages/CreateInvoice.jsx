@@ -11,6 +11,7 @@ import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import { API_BASE_URL } from '../config';
 import PrintInvoice from '../components/PrintInvoice';
 import { createRequestId, createTempRowId } from '../utils/requestId';
+import { todayLocal } from '../utils/date';
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
@@ -27,6 +28,9 @@ const CreateInvoice = () => {
   // Lets the server recognise a repeated create of this same form and return the existing bill
   const requestIdRef = useRef(createRequestId());
   const lastSavedKeyRef = useRef(null);
+  // Set while a saved bill is being loaded, so its saved discount / adjustment amounts are shown
+  // exactly as saved instead of being worked out again from the (rounded) saved percentages
+  const keepSavedSummaryRef = useRef(false);
 
   // --- Master Data State ---
   const [clients, setClients] = useState([]);
@@ -97,7 +101,7 @@ const CreateInvoice = () => {
 
   const [formData, setFormData] = useState({
     challanNo: 'AUTO',
-    date: new Date().toISOString().split('T')[0],
+    date: todayLocal(),
     transporter_id: '',
     client_id: '',
     clientName: '',
@@ -138,6 +142,12 @@ const CreateInvoice = () => {
 
   // Auto-calculate summary amounts when items change
   useEffect(() => {
+    // The rows were just loaded from a saved bill, not changed by the user: keep the saved amounts.
+    // (Recalculating here turned e.g. a ₹500 discount on ₹12,345, saved as 4.05%, into ₹499.97.)
+    if (keepSavedSummaryRef.current) {
+      keepSavedSummaryRef.current = false;
+      return;
+    }
     setFormData(prev => {
       if (addedItems.length === 0) return prev; // Do not recalculate if no items
 
@@ -254,6 +264,7 @@ const CreateInvoice = () => {
               conversion: item.conversion,
               total: item.total_amount
             }));
+            keepSavedSummaryRef.current = true;
             setAddedItems(mappedItems);
           }
         } catch (err) {
@@ -266,12 +277,16 @@ const CreateInvoice = () => {
 
   // Fetch Next Challan Number when date changes
   useEffect(() => {
+    // Answers that arrive after the date (or the loaded bill) changed again are ignored,
+    // so a slow reply can never overwrite the challan no. that belongs on screen now
+    let cancelled = false;
+
     const fetchNextChallan = async () => {
       try {
         const url = `${API_BASE_URL}/billing/next-challan?date=${formData.date}${billingId ? `&billing_id=${billingId}` : ''}`;
         const res = await fetch(url);
         const data = await res.json();
-        if (data.success) {
+        if (data.success && !cancelled) {
           setFormData(prev => ({ ...prev, challanNo: data.challan_no }));
         }
       } catch (err) {
@@ -279,18 +294,19 @@ const CreateInvoice = () => {
       }
     };
 
+    // In edit mode the date box starts as today until the bill arrives; asking for today's
+    // next challan no. then would show a number that doesn't belong to this bill
+    if (isEditMode && !originalDate) return () => { cancelled = true; };
+
     if (formData.date) {
       // If in edit mode and date hasn't changed month/year, use original challan no
-      if (isEditMode && originalDate && originalChallanNo) {
-        const oldD = new Date(originalDate);
-        const newD = new Date(formData.date);
-        if (oldD.getMonth() === newD.getMonth() && oldD.getFullYear() === newD.getFullYear()) {
-          setFormData(prev => ({ ...prev, challanNo: originalChallanNo }));
-          return;
-        }
+      if (isEditMode && originalChallanNo && String(originalDate).slice(0, 7) === String(formData.date).slice(0, 7)) {
+        setFormData(prev => ({ ...prev, challanNo: originalChallanNo }));
+        return () => { cancelled = true; };
       }
       fetchNextChallan();
     }
+    return () => { cancelled = true; };
   }, [formData.date, isEditMode, billingId, originalDate, originalChallanNo]);
 
   // --- Handlers ---
@@ -612,13 +628,28 @@ const CreateInvoice = () => {
     setDeleteError('');
   };
 
-  const handleDeleteItem = () => {
-    if (deletePassword === import.meta.env.VITE_DEL_PASS) {
-      setAddedItems(prev => prev.filter(item => item.id !== itemToDelete));
-      setIsDeleteModalOpen(false);
-      setItemToDelete(null);
-    } else {
-      setDeleteError('Incorrect password');
+  // The password is checked by the server only; the screen never holds a copy of it
+  const handleDeleteItem = async () => {
+    if (!deletePassword) {
+      setDeleteError('Password is required');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/verify-delete-pass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setAddedItems(prev => prev.filter(item => item.id !== itemToDelete));
+        setIsDeleteModalOpen(false);
+        setItemToDelete(null);
+      } else {
+        setDeleteError(result.message || 'Incorrect password');
+      }
+    } catch {
+      setDeleteError('Network error while checking the password');
     }
   };
 

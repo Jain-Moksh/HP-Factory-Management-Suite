@@ -270,6 +270,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_items_name_unique ON items (UPPER(TRIM(nam
 CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_name_unique ON clients (UPPER(TRIM(name)));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobbers_name_unique ON jobbers (UPPER(TRIM(name)));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_transporters_name_unique ON transporters (UPPER(TRIM(name)));
+-- groupService checks first and gives a clear message. If an older database already has two groups
+-- with the same name, this index is skipped (logged at startup) until one of them is renamed.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_name_unique ON groups (UPPER(TRIM(name)));
 
 -- =========================
 -- AUDIT & ARCHIVE TABLES

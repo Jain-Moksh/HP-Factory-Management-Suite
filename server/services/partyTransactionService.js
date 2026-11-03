@@ -4,6 +4,13 @@ const { getMonthAndFY, parseYearMonth } = require('../utils/challanGenerator');
 const { toUpperCase } = require('../utils/dataSanitizer');
 const auditService = require('./auditService');
 
+// Error carrying the HTTP status the controller should answer with
+const httpError = (status, message) => {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+};
+
 // RETURN is shown as REPLACE everywhere in the UI
 const TX_LABELS = { PAYMENT: 'Payment', RETURN: 'Replace', DISCOUNT: 'Discount' };
 
@@ -61,15 +68,15 @@ const partyTransactionService = {
       if (partyType === 'CLIENT') {
         const clientCheck = await client.query('SELECT id FROM clients WHERE id = $1', [partyId]);
         if (clientCheck.rows.length === 0) {
-          throw new Error(`Client ID ${partyId} not found in database.`);
+          throw httpError(404, `Client ID ${partyId} not found. It may have been deleted on another PC.`);
         }
       } else if (partyType === 'JOBBER') {
         const jobberCheck = await client.query('SELECT id FROM jobbers WHERE id = $1', [partyId]);
         if (jobberCheck.rows.length === 0) {
-          throw new Error(`Jobber ID ${partyId} not found in database.`);
+          throw httpError(404, `Jobber ID ${partyId} not found. It may have been deleted on another PC.`);
         }
       } else {
-        throw new Error(`Invalid party type: ${partyType}`);
+        throw httpError(400, `Invalid party type: ${partyType}`);
       }
 
       // 2. Lock party_transactions table to serialize sequence generation
@@ -151,15 +158,15 @@ const partyTransactionService = {
         if (partyType === 'CLIENT') {
           const clientCheck = await client.query('SELECT id FROM clients WHERE id = $1', [partyId]);
           if (clientCheck.rows.length === 0) {
-            throw new Error(`Client ID ${partyId} not found in database.`);
+            throw httpError(404, `Client ID ${partyId} not found. It may have been deleted on another PC.`);
           }
         } else if (partyType === 'JOBBER') {
           const jobberCheck = await client.query('SELECT id FROM jobbers WHERE id = $1', [partyId]);
           if (jobberCheck.rows.length === 0) {
-            throw new Error(`Jobber ID ${partyId} not found in database.`);
+            throw httpError(404, `Jobber ID ${partyId} not found. It may have been deleted on another PC.`);
           }
         } else {
-          throw new Error(`Invalid party type: ${partyType}`);
+          throw httpError(400, `Invalid party type: ${partyType}`);
         }
 
         // 2. Generate sequential challan number
@@ -330,7 +337,7 @@ const partyTransactionService = {
       // 1. Fetch Client Master info
       const clientRes = await db.query('SELECT name, balance FROM clients WHERE id = $1', [partyId]);
       if (clientRes.rows.length === 0) {
-        throw new Error(`Client ID ${partyId} not found.`);
+        throw httpError(404, `Client ID ${partyId} not found.`);
       }
       const client = clientRes.rows[0];
       const openingAmount = parseFloat(client.balance) || 0;
@@ -364,7 +371,7 @@ const partyTransactionService = {
       // 1. Fetch Jobber info
       const jobberRes = await db.query('SELECT name FROM jobbers WHERE id = $1', [partyId]);
       if (jobberRes.rows.length === 0) {
-        throw new Error(`Jobber ID ${partyId} not found.`);
+        throw httpError(404, `Jobber ID ${partyId} not found.`);
       }
       const jobber = jobberRes.rows[0];
 
@@ -390,7 +397,7 @@ const partyTransactionService = {
         currentOutstanding
       };
     } else {
-      throw new Error(`Invalid party type: ${partyType}`);
+      throw httpError(400, `Invalid party type: ${partyType}`);
     }
   },
 
@@ -415,7 +422,7 @@ const partyTransactionService = {
     if (partyType === 'CLIENT') {
       const clientRes = await db.query('SELECT name, balance FROM clients WHERE id = $1', [partyId]);
       if (clientRes.rows.length === 0) {
-        throw new Error(`Client ID ${partyId} not found.`);
+        throw httpError(404, `Client ID ${partyId} not found.`);
       }
       const clientName = clientRes.rows[0].name;
       const masterOpening = parseFloat(clientRes.rows[0].balance) || 0;
@@ -476,7 +483,7 @@ const partyTransactionService = {
     } else if (partyType === 'JOBBER') {
       const jobberRes = await db.query('SELECT name FROM jobbers WHERE id = $1', [partyId]);
       if (jobberRes.rows.length === 0) {
-        throw new Error(`Jobber ID ${partyId} not found.`);
+        throw httpError(404, `Jobber ID ${partyId} not found.`);
       }
       const jobberName = jobberRes.rows[0].name;
 
@@ -525,7 +532,7 @@ const partyTransactionService = {
         history: rows
       };
     } else {
-      throw new Error(`Invalid party type: ${partyType}`);
+      throw httpError(400, `Invalid party type: ${partyType}`);
     }
   }
 };

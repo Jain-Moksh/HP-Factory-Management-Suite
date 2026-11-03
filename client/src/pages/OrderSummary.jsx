@@ -70,11 +70,9 @@ const OrderSummary = () => {
     return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [searchChallan, searchClient, startDate, endDate, selectedMonth, selectedYear]); // Include deps to ensure latest filters are used on refresh
 
+  // Returns true when deleted, otherwise the reason to show (the password is checked by the server only)
   const handleDelete = async (id, password) => {
-    if (password !== import.meta.env.VITE_DEL_PASS) {
-      return false;
-    }
-    
+    if (!password) return 'Password is required';
     try {
       const response = await fetch(`${API_BASE_URL}/billing/${id}`, {
         method: 'DELETE',
@@ -86,10 +84,10 @@ const OrderSummary = () => {
         fetchBills();
         return true;
       }
-      return false;
+      return result.message || 'Failed to delete the bill';
     } catch (err) {
       console.error("Error deleting bill:", err);
-      return false;
+      return 'Network error while deleting';
     }
   };
 

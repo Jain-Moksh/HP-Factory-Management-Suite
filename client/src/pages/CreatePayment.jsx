@@ -7,6 +7,7 @@ import Card from '../components/UI/Card';
 import SearchableSelect from '../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../config';
 import { createRequestId } from '../utils/requestId';
+import { todayLocal } from '../utils/date';
 
 const CreatePayment = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const CreatePayment = () => {
   const [transactionType, setTransactionType] = useState('PAYMENT'); // 'PAYMENT', 'REPLACE', 'DISCOUNT'
   
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: todayLocal(),
     partyId: initialPartyId, // client_[id] or jobber_[id]
     amount: '',  // Represents amountPaid, amountReturned, or discountAmount
     paymentMode: 'Cash', // Bank or Cash (for Payment mode)

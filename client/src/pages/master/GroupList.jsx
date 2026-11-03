@@ -254,7 +254,6 @@ const GroupList = () => {
 
   const handleDelete = async () => {
     if (!deletePassword) { setDeleteError('Password is required'); return; }
-    if (deletePassword !== import.meta.env.VITE_DEL_PASS) { setDeleteError('Incorrect master password'); return; }
     try {
       const response = await fetch(`${API_BASE_URL}/groups/${groupToDelete}`, {
         method: 'DELETE',

@@ -124,7 +124,11 @@ const reportService = {
   getPartyLedgerDetail: async (clientId, fromDate, toDate) => {
     // 1. Get client name and static opening balance
     const clientRes = await db.query('SELECT name, balance FROM clients WHERE id = $1', [clientId]);
-    if (clientRes.rows.length === 0) throw new Error('Client not found');
+    if (clientRes.rows.length === 0) {
+      const err = new Error('Client not found');
+      err.status = 404;
+      throw err;
+    }
     const clientName = clientRes.rows[0].name;
     const staticBalance = parseFloat(clientRes.rows[0].balance) || 0;
 

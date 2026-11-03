@@ -7,6 +7,7 @@ import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import DeleteModal from '../components/UI/DeleteModal';
 import { createRequestId, createTempRowId } from '../utils/requestId';
+import { todayLocal } from '../utils/date';
 
 const API_BASE_URL = "/api";
 
@@ -72,7 +73,7 @@ const CreateJobWork = () => {
 
   const [formData, setFormData] = useState({
     challanNo: 'AUTO',
-    date: new Date().toISOString().split('T')[0],
+    date: todayLocal(),
     jobber_id: '',
     jobberName: '',
     remarks: ''
@@ -111,24 +112,32 @@ const CreateJobWork = () => {
     };
     fetchMasters();
   }, []);
-  const fetchNextChallan = async () => {
-    try {
-      const url = `${API_BASE_URL}/purchase/next-challan?date=${formData.date}${isEditMode ? `&purchase_id=${id}` : ''}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.success) {
-        setFormData(prev => ({ ...prev, challanNo: data.challan_no }));
-      }
-    } catch (err) {
-      console.error("Error fetching next challan:", err);
-    }
-  };
+  // In edit mode: true once the saved entry has been loaded into the form
+  const [isEntryLoaded, setIsEntryLoaded] = useState(false);
 
   useEffect(() => {
-    if (formData.date) {
-      fetchNextChallan();
-    }
-  }, [formData.date, isEditMode, id]);
+    // In edit mode the date box starts as today until the saved entry arrives;
+    // asking for today's next challan no. then would show a number that doesn't belong to this entry
+    if (isEditMode && !isEntryLoaded) return undefined;
+    if (!formData.date) return undefined;
+
+    // A reply that arrives after the date changed again is ignored, so it can't overwrite the newer number
+    let cancelled = false;
+    const fetchNextChallan = async () => {
+      try {
+        const url = `${API_BASE_URL}/purchase/next-challan?date=${formData.date}${isEditMode ? `&purchase_id=${id}` : ''}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.success && !cancelled) {
+          setFormData(prev => ({ ...prev, challanNo: data.challan_no }));
+        }
+      } catch (err) {
+        console.error("Error fetching next challan:", err);
+      }
+    };
+    fetchNextChallan();
+    return () => { cancelled = true; };
+  }, [formData.date, isEditMode, id, isEntryLoaded]);
 
   // --- Fetch Job Work Data for Edit Mode ---
   useEffect(() => {
@@ -146,6 +155,7 @@ const CreateJobWork = () => {
               jobberName: purchase.jobber_name,
               remarks: purchase.remark || ''
             });
+            setIsEntryLoaded(true);
             setJobberSearch(purchase.jobber_name);
 
             // Map purchase items

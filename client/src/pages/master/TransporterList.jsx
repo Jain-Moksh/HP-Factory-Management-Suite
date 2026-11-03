@@ -175,11 +175,6 @@ const TransporterList = () => {
       return;
     }
 
-    if (deletePassword !== import.meta.env.VITE_DEL_PASS) {
-      setDeleteError('Incorrect master password');
-      return;
-    }
-
     try {
       const response = await fetch(`${API_BASE_URL}/transporters/${transporterToDelete}`, {
         method: 'DELETE',
@@ -193,7 +188,7 @@ const TransporterList = () => {
         setDeletePassword('');
         fetchTransporters();
       } else {
-        setDeleteError(result.message || 'Fail to delete');
+        setDeleteError(result.message || 'Failed to delete');
       }
     } catch {
       setDeleteError('Network error while deleting');

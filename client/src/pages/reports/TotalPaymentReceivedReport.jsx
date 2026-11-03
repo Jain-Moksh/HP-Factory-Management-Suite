@@ -6,6 +6,7 @@ import SearchableSelect from '../../components/UI/SearchableSelect';
 import MonthFilterFooter from '../../components/MonthFilterFooter';
 import { useReportState } from '../../hooks/useReportState';
 import { API_BASE_URL } from '../../config';
+import { parsePartyKey } from '../../utils/partyKey';
 
 const TotalPaymentReceivedReport = () => {
   const navigate = useNavigate();
@@ -15,9 +16,6 @@ const TotalPaymentReceivedReport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter States
-  const [selectedPartyType, setSelectedPartyType] = useState('all');
-  
   // Synchronized state hook
   const [filters, setFilter, setFiltersObject] = useReportState({
     party_id: 'all',
@@ -28,7 +26,11 @@ const TotalPaymentReceivedReport = () => {
     year: new Date().getFullYear()
   });
 
-  const selectedPartyId = filters.party_id;
+  // Clients and jobbers are numbered separately (there can be a client #5 and a jobber #5),
+  // so the selected party is stored as "CLIENT-5" / "JOBBER-5" to say which one it is.
+  // A plain number (from an older bookmarked link) still works, but then means "any party with that id".
+  const selectedPartyKey = filters.party_id;
+  const { partyType: selectedPartyType, partyId: selectedPartyId } = parsePartyKey(selectedPartyKey);
   const selectedGroupId = filters.group_id;
   const startDate = filters.from;
   const endDate = filters.to;
@@ -92,13 +94,13 @@ const TotalPaymentReceivedReport = () => {
 
         let allParties = [];
         if (clientsJson.success) {
-          allParties = [...allParties, ...clientsJson.data.map(c => ({...c, _partyType: 'CLIENT'}))];
+          allParties = [...allParties, ...clientsJson.data.map(c => ({ ...c, id: `CLIENT-${c.id}` }))];
         }
         if (jobbersJson.success) {
-          allParties = [...allParties, ...jobbersJson.data.map(j => ({...j, _partyType: 'JOBBER'}))];
+          allParties = [...allParties, ...jobbersJson.data.map(j => ({ ...j, id: `JOBBER-${j.id}`, name: `${j.name} (JOBBER)` }))];
         }
 
-        const allOption = { id: 'all', name: '--- ALL PARTIES ---', _partyType: 'all' };
+        const allOption = { id: 'all', name: '--- ALL PARTIES ---' };
         setParties([allOption, ...allParties]);
 
         if (groupsJson.success) {
@@ -158,12 +160,6 @@ const TotalPaymentReceivedReport = () => {
 
   const handlePartyChange = (val) => {
     setFilter('party_id', val);
-    const selected = parties.find(p => p.id === val || p.id === parseInt(val));
-    if (selected && selected._partyType !== 'all') {
-      setSelectedPartyType(selected._partyType);
-    } else {
-      setSelectedPartyType('all');
-    }
   };
 
   return (

@@ -18,17 +18,12 @@ const JobWorkTable = ({ data = [], loading = false, onDelete }) => {
   };
 
   const handleConfirmDelete = async () => {
-    // Standardize password check for UI consistency
-    if (deletePassword !== import.meta.env.VITE_DEL_PASS) {
-      setDeleteError('Incorrect master password');
-      return;
-    }
-
-    const success = await onDelete(itemToDelete, deletePassword);
-    if (success !== false) { // Assuming it returns void or success
+    // onDelete returns true, or the server's reason it was not deleted (the password is checked by the server only)
+    const result = await onDelete(itemToDelete, deletePassword);
+    if (result === true) {
       setIsDeleteModalOpen(false);
     } else {
-      setDeleteError('Failed to delete record');
+      setDeleteError(typeof result === 'string' ? result : 'Failed to delete record');
     }
   };
 

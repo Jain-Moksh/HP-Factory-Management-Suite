@@ -402,8 +402,10 @@ const backupService = {
    * @returns {Promise<{safetyBackup: string, counts: object}>}
    */
   restore: async (filePath, originalName) => {
-    if (isBackupRunning) {
-      throw new Error('Another backup or restore is already in progress. Please wait.');
+    if (isBackupRunning || global.isBackupRestoreRunning) {
+      const err = new Error('Another backup or restore is already in progress. Please wait a minute and try again.');
+      err.status = 409;
+      throw err;
     }
 
     console.log(`[RESTORE] 📂 Backup file detected: ${filePath}`);

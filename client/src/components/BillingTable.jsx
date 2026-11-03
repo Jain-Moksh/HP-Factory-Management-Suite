@@ -18,11 +18,12 @@ const BillingTable = ({ data = [], isLoading = false, onDelete, onPrint }) => {
   };
 
   const handleConfirmDelete = async () => {
-    const success = await onDelete(billToDelete, deletePassword);
-    if (success) {
+    // onDelete returns true, or the server's reason it was not deleted
+    const result = await onDelete(billToDelete, deletePassword);
+    if (result === true) {
       setIsDeleteModalOpen(false);
     } else {
-      setDeleteError('Incorrect password or server error');
+      setDeleteError(typeof result === 'string' ? result : 'Failed to delete the bill');
     }
   };
 

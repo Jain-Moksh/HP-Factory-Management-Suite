@@ -49,7 +49,9 @@ const JobWork = () => {
     return () => window.removeEventListener('app-refresh', fetchJobWorks);
   }, []);
 
+  // Returns true when deleted, otherwise the reason to show in the delete box
   const handleDeleteRow = async (id, password) => {
+    if (!password) return 'Password is required';
     try {
       const response = await fetch(`${API_BASE_URL}/purchase/${id}`, {
         method: 'DELETE',
@@ -60,13 +62,11 @@ const JobWork = () => {
       if (result.success) {
         fetchJobWorks();
         return true;
-      } else {
-        alert(result.message || 'Deletion failed');
-        return false;
       }
+      return result.message || 'Deletion failed';
     } catch (err) {
       console.error("Delete error:", err);
-      return false;
+      return 'Network error while deleting';
     }
   };
 

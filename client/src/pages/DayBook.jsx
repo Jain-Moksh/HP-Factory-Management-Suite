@@ -6,9 +6,10 @@ import PrintInvoice from '../components/PrintInvoice';
 import PrintCopiesModal from '../components/UI/PrintCopiesModal';
 import ClickableChallan from '../components/UI/ClickableChallan';
 import { API_BASE_URL } from '../config';
+import { todayLocal } from '../utils/date';
 
 const DayBook = () => {
-  const [selectedDate, setSelectedDate] = useState(new RegExp(/^\d{4}-\d{2}-\d{2}$/).test(new Date().toISOString().split('T')[0]) ? new Date().toISOString().split('T')[0] : '');
+  const [selectedDate, setSelectedDate] = useState(todayLocal());
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   

@@ -38,7 +38,7 @@ const billingController = {
       const { password } = req.body || {};
       if (!isValidDeletePassword(password)) {
         await auditService.recordDeniedDelete(auditService.MODULES.BILLING, req.params.id);
-        return res.status(401).json({ success: false, message: 'Fail to delete' });
+        return res.status(401).json({ success: false, message: 'Invalid password' });
       }
       const data = await billingService.delete(req.params.id);
       if (!data) {

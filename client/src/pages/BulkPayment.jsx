@@ -6,13 +6,14 @@ import Card from '../components/UI/Card';
 import SearchableSelect from '../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../config';
 import { createRequestId, createTempRowId } from '../utils/requestId';
+import { todayLocal } from '../utils/date';
 
 const BulkPayment = () => {
   const navigate = useNavigate();
   
   // Common Settings
   const [transactionType, setTransactionType] = useState('PAYMENT'); // 'PAYMENT', 'REPLACE', 'DISCOUNT'
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayLocal());
   
   // Rows Data
   // Lazy initial value: the first row (and its id) is created once, not on every render

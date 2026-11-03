@@ -73,9 +73,11 @@ const priceListService = {
   },
 
   createCategory: async (categoryName) => {
-    const sanitized = toUpperCase(categoryName.trim());
+    const sanitized = toUpperCase(String(categoryName ?? '').trim());
     if (!sanitized) {
-      throw new Error('Category name cannot be empty');
+      const err = new Error('Category name cannot be empty');
+      err.status = 400;
+      throw err;
     }
 
     // Check for duplicates
@@ -149,6 +151,13 @@ const priceListService = {
       if (catCheck.rows.length === 0) {
         const err = new Error('Category not found');
         err.status = 404;
+        throw err;
+      }
+
+      // The same item twice would hit the one-category-per-item rule as a raw database error
+      if (new Set(itemIds.map(Number)).size !== itemIds.length) {
+        const err = new Error('The same item is selected more than once.');
+        err.status = 400;
         throw err;
       }
 

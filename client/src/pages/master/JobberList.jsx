@@ -159,11 +159,6 @@ const JobberList = () => {
       return;
     }
 
-    if (deletePassword !== import.meta.env.VITE_DEL_PASS) {
-      setDeleteError('Incorrect master password');
-      return;
-    }
-
     try {
       const response = await fetch(`${API_BASE_URL}/jobbers/${jobberToDelete}`, {
         method: 'DELETE',
@@ -177,7 +172,7 @@ const JobberList = () => {
         setDeletePassword(''); // Clear password
         fetchData();
       } else {
-        setDeleteError(result.message || 'Fail to delete');
+        setDeleteError(result.message || 'Failed to delete');
       }
     } catch {
       setDeleteError('Network error while deleting');
