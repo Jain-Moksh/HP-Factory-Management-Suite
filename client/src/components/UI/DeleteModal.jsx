@@ -1,17 +1,34 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import Modal from './Modal';
 import Button from './Button';
 
-const DeleteModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  password, 
-  setPassword, 
-  error, 
-  title = "SECURITY VERIFICATION", 
-  message = "This action is permanent. Please enter the master deletion password to proceed." 
+const DeleteModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  password,
+  setPassword,
+  error,
+  title = "SECURITY VERIFICATION",
+  message = "This action is permanent. Please enter the master deletion password to proceed."
 }) => {
+  // Enter + click (or a double click) must send the delete only once.
+  // A ref is used because two events in the same moment both see the old state value.
+  const busyRef = useRef(false);
+  const [isBusy, setIsBusy] = useState(false);
+
+  const handleConfirm = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setIsBusy(true);
+    try {
+      await onConfirm();
+    } finally {
+      busyRef.current = false;
+      setIsBusy(false);
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -27,13 +44,14 @@ const DeleteModal = ({
           >
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            onClick={onConfirm} 
-            className="h-9 px-6 bg-red-500 hover:bg-red-600 border-red-500 text-[11px] font-bold uppercase tracking-wider"
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleConfirm}
+            disabled={isBusy}
+            className="h-9 px-6 bg-red-500 hover:bg-red-600 border-red-500 text-[11px] font-bold uppercase tracking-wider disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Confirm Delete
+            {isBusy ? 'Deleting...' : 'Confirm Delete'}
           </Button>
         </>
       }
@@ -48,7 +66,7 @@ const DeleteModal = ({
             placeholder="Enter Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && onConfirm()}
+            onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
             className="w-full h-11 px-4 border border-slate-200 rounded-lg outline-none focus:border-brand-blue transition-colors text-[14px] font-medium"
             autoFocus
           />

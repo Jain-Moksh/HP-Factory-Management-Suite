@@ -88,10 +88,14 @@ const masterService = {
 
     let queryKey, params;
     switch (table) {
-      case 'items':
+      case 'items': {
         queryKey = 'createItem';
-        params = [clean.name, clean.rate, clean.stock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, clean.packing];
+        // A new item's stock is its opening stock, so its movement history always adds up.
+        // The quick "new item" forms on the bill / job work screens only send `stock`, so that is used as the opening stock.
+        const opening = [clean.open_stock, clean.stock].map(Number).find(v => Number.isFinite(v)) ?? 0;
+        params = [clean.name, clean.rate, opening, opening, clean.conversion, clean.unit, clean.min_stock ?? 0, clean.packing ?? ''];
         break;
+      }
       case 'clients':
         queryKey = 'createClient';
         params = [clean.name, clean.street, clean.city, clean.shortform, clean.balance, clean.remark];
@@ -134,22 +138,14 @@ const masterService = {
       case 'items':
         queryKey = 'updateItem';
 
-        // Fetch old item to calculate stock difference based on open_stock change
-        const oldItem = before;
-        if (!oldItem) {
+        if (!before) {
           const err = new Error('Item not found');
           err.status = 404;
           throw err;
         }
-        
-        const oldOpenStock = Number(oldItem.open_stock) || 0;
-        const currentStock = Number(oldItem.stock) || 0;
-        const newOpenStock = Number(clean.open_stock) || 0;
-        
-        const difference = newOpenStock - oldOpenStock;
-        const updatedStock = currentStock + difference;
 
-        params = [clean.name, clean.rate, updatedStock, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, clean.packing, id];
+        // The stock change (new opening stock - old opening stock) is applied inside the UPDATE itself
+        params = [clean.name, clean.rate, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, clean.packing, id];
         break;
       case 'clients':
         queryKey = 'updateClient';
@@ -260,10 +256,10 @@ const masterService = {
     const result = await db.query(query, params);
     let transactions = result.rows;
 
-    // Filter by date if provided
+    // Filter by date if provided (dates arrive as plain "YYYY-MM-DD" strings, see config/db.js)
     if (startDate || endDate) {
       transactions = transactions.filter(t => {
-        const date = t.date.toISOString().split('T')[0];
+        const date = String(t.date).slice(0, 10);
         const matchesStart = !startDate || date >= startDate;
         const matchesEnd = !endDate || date <= endDate;
         return matchesStart && matchesEnd;
@@ -271,6 +267,19 @@ const masterService = {
     }
 
     return transactions;
+  },
+
+  /**
+   * Compares each item's saved stock with what its history adds up to
+   * (opening stock + all job work - all bills). Any difference means stock was changed
+   * without a matching bill / job work row, so the item's day-wise history will not match.
+   *
+   * @param {number|null} itemId - One item, or null for every item that does not match
+   * @returns {Promise<Array<{id, name, unit, stock, open_stock, inward, outward, history_stock, difference}>>}
+   */
+  getStockCheck: async (itemId = null) => {
+    const result = await db.query(queries.getStockCheck, [itemId]);
+    return result.rows;
   }
 };
 

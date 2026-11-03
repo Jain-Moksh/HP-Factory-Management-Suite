@@ -43,6 +43,8 @@ Manages the inventory of items.
           "password": "your_del_pass_here"
         }
         ```
+*   **GET `/items/stock-check`** / **GET `/items/:id/stock-check`**
+    *   *Description*: Compares saved stock with `open_stock + all job work - all bills`. The list form returns only items that do not match; the single-item form always returns the item. Fields: `stock`, `open_stock`, `inward`, `outward`, `history_stock`, `difference`. The Item Stock Details page shows a warning when `difference` is not 0. `server/scripts/stock_check.js` prints the same report (and `--fix` moves each difference into opening stock without changing current stock).
 *   **GET `/items/:id/transactions`**
     *   *Description*: Fetch movement history (inward/outward) for a specific item. The response includes a standardized `name` field corresponding to the client name (for billing) or jobber name (for purchase).
     *   *Query Params*: `from` (YYYY-MM-DD), `to` (YYYY-MM-DD)
@@ -562,9 +564,11 @@ All Report APIs support `from` and `to` date filters (YYYY-MM-DD) via query para
     *   *Description*: Generates sequential transaction slip numbers.
     *   *Query Params*: `date`, `transactionType`.
 *   **POST `/party-transactions`**
-    *   *Description*: Creates a new transaction (payment, return, discount).
+    *   *Description*: Creates a new transaction (payment, return, discount). Optional `request_id`: a repeated save with the same id returns the payment already created instead of adding another.
 *   **POST `/party-transactions/bulk`**
-    *   *Description*: Processes bulk payments safely across multiple parties or transactions.
+    *   *Description*: Processes bulk payments safely across multiple parties or transactions. All rows are saved or none. Optional `request_id` works as above for the whole bulk form.
+
+> **Repeated / simultaneous requests**: update and delete of bills, job work, payments and groups lock the record first, so a double click, Enter + click, network retry or a second PC can never apply stock or ledger changes twice. A repeated delete returns 404 and changes nothing. A bill / job work update that sends a row id which is no longer on that record returns 409 (reopen the record and edit again) instead of silently dropping the row.
 *   **PUT `/party-transactions/:id`**
     *   *Description*: Updates a specific transaction.
 *   **DELETE `/party-transactions/:id`**

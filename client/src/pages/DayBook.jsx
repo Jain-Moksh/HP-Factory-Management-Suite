@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
@@ -17,6 +17,7 @@ const DayBook = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const deletingRef = useRef(false);
 
   const [isPrinting, setIsPrinting] = useState(false);
   const [printData, setPrintData] = useState(null);
@@ -69,7 +70,9 @@ const DayBook = () => {
   };
 
   const confirmDelete = async () => {
-    if (!deletePassword) return;
+    // Enter + click (or a double click) must send the delete only once
+    if (!deletePassword || deletingRef.current) return;
+    deletingRef.current = true;
     setIsDeleting(true);
     try {
       const endpoint = itemToDelete.type === 'billing' ? `/billing/${itemToDelete.id}` : `/purchase/${itemToDelete.id}`;
@@ -89,6 +92,7 @@ const DayBook = () => {
       console.error("Delete error:", err);
       alert('An error occurred while deleting');
     } finally {
+      deletingRef.current = false;
       setIsDeleting(false);
     }
   };

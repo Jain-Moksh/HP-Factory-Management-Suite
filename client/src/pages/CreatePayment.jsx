@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
 import SearchableSelect from '../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../config';
+import { createRequestId } from '../utils/requestId';
 
 const CreatePayment = () => {
   const navigate = useNavigate();
@@ -34,6 +35,8 @@ const CreatePayment = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const savingRef = useRef(false);
+  const requestIdRef = useRef(createRequestId());
   const [nextChallan, setNextChallan] = useState('');
 
   // Dynamic outstanding balance state
@@ -262,6 +265,8 @@ const CreatePayment = () => {
   };
 
   const handleSave = async () => {
+    // A double click must save only once (the state flag alone is too slow for two clicks in the same moment)
+    if (savingRef.current) return;
     setError('');
     setSuccess(false);
 
@@ -276,7 +281,9 @@ const CreatePayment = () => {
       return;
     }
 
+    savingRef.current = true;
     setIsSubmitting(true);
+    let keepLocked = false;
 
     try {
       const parts = formData.partyId.split('_');
@@ -304,12 +311,14 @@ const CreatePayment = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        // The same request_id on every save of this form lets the server ignore a repeated save
+        body: JSON.stringify(isEditMode ? payload : { ...payload, request_id: requestIdRef.current })
       });
 
       const json = await response.json();
-      
+
       if (json.success) {
+        keepLocked = true; // page is leaving, keep Save disabled
         setSuccess(true);
         // Redirect to payments lists after success
         setTimeout(() => {
@@ -323,6 +332,7 @@ const CreatePayment = () => {
       console.error('Error saving transaction:', err);
       setError('Network error: failed to connect to server.');
     } finally {
+      if (!keepLocked) savingRef.current = false;
       setIsSubmitting(false);
     }
   };

@@ -7,6 +7,42 @@ const auditService = require('./auditService');
 const formatAmount = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
+ * Locks the bill row until COMMIT/ROLLBACK. A second save or delete of the same bill
+ * (double-click, Enter + click, network retry, another PC) waits here and then sees the
+ * first one's result, so stock can never be reversed or adjusted twice.
+ *
+ * @returns {Promise<boolean>} false when the bill no longer exists
+ */
+const lockBill = async (client, id) => {
+  const res = await client.query('SELECT id FROM billing WHERE id = $1 FOR UPDATE', [id]);
+  return res.rows.length > 0;
+};
+
+const conflictError = (message) => {
+  const err = new Error(message);
+  err.status = 409;
+  return err;
+};
+
+/**
+ * Every row id sent with an update must be one of this bill's current rows, at most once.
+ * A stale id (the bill was changed on another PC after this screen was opened) would
+ * otherwise be skipped silently and that row would be lost from the bill.
+ */
+const ensureRowIdsMatch = (items, oldItems) => {
+  const oldIds = new Set(oldItems.map(i => Number(i.id)));
+  const seen = new Set();
+  items.forEach(item => {
+    if (item.id === null || item.id === undefined) return;
+    const rowId = Number(item.id);
+    if (!oldIds.has(rowId) || seen.has(rowId)) {
+      throw conflictError('This bill was changed (on this or another PC) after you opened it. Please reopen the bill and make your changes again.');
+    }
+    seen.add(rowId);
+  });
+};
+
+/**
  * Loads a bill with its line items for audit snapshots. Runs on the transaction client,
  * so it sees the transaction's own uncommitted writes.
  */
@@ -178,6 +214,12 @@ const billingService = {
     try {
       await client.query('BEGIN');
 
+      // Lock first: a repeated delete waits here, then finds the bill gone and changes nothing
+      if (!(await lockBill(client, id))) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
       // Full copy of the bill is archived instead of being lost
       const snapshot = await loadSnapshot(client, id);
       if (!snapshot) {
@@ -209,8 +251,12 @@ const billingService = {
       // 3. Delete billing items
       await client.query(queries.deleteBillItems, [id]);
 
-      // 4. Delete billing record
+      // 4. Delete billing record (stock above is only kept if the bill really was deleted)
       const result = await client.query(queries.deleteBill, [id]);
+      if (result.rowCount !== 1) {
+        await client.query('ROLLBACK');
+        return null;
+      }
 
       await auditService.archiveAndRecord(client, {
         module: auditService.MODULES.BILLING,
@@ -259,7 +305,9 @@ const billingService = {
         long_remark, grand_total, items
       } = billData; // Ignored challan_no from frontend
 
-      const before = await loadSnapshot(client, id);
+      // Lock first: a second save of the same bill waits, then works from the first save's result
+      const exists = await lockBill(client, id);
+      const before = exists ? await loadSnapshot(client, id) : null;
       if (!before) {
         const err = new Error('This bill no longer exists. It may have been deleted on another PC.');
         err.status = 404;
@@ -280,10 +328,11 @@ const billingService = {
 
       const oldItemsRes = await client.query(queries.getBillItems, [id]);
       const oldItems = oldItemsRes.rows;
+      ensureRowIdsMatch(items, oldItems);
 
       // 2. Identify items to delete, update, and insert
-      const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined);
-      const itemsToDelete = oldItems.filter(old => !newIds.includes(old.id));
+      const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined).map(Number);
+      const itemsToDelete = oldItems.filter(old => !newIds.includes(Number(old.id)));
 
       // Delete old items that are no longer present and reverse their stock
       for (const oldItem of itemsToDelete) {
@@ -305,7 +354,7 @@ const billingService = {
 
       for (const item of items) {
         if (item.id) {
-          const oldItem = oldItems.find(i => i.id === item.id);
+          const oldItem = oldItems.find(i => Number(i.id) === Number(item.id));
           if (oldItem) {
             if (Number(oldItem.item_id) !== Number(item.item_id)) {
               // Product changed on this row: return full qty to old product, deduct full qty from new product

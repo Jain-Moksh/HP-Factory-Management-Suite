@@ -17,6 +17,36 @@ const loadSnapshot = async (executor, id) => {
 
 const totalQuantity = (items) => items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
 
+/**
+ * Locks the job work row until COMMIT/ROLLBACK, so a repeated save or delete of the same entry
+ * waits for the first one and can never add or remove stock twice.
+ *
+ * @returns {Promise<boolean>} false when the entry no longer exists
+ */
+const lockPurchase = async (client, id) => {
+  const res = await client.query('SELECT id FROM purchase WHERE id = $1 FOR UPDATE', [id]);
+  return res.rows.length > 0;
+};
+
+/**
+ * Every row id sent with an update must be one of this entry's current rows, at most once;
+ * otherwise the row would be skipped silently and lost.
+ */
+const ensureRowIdsMatch = (items, oldItems) => {
+  const oldIds = new Set(oldItems.map(i => Number(i.id)));
+  const seen = new Set();
+  items.forEach(item => {
+    if (item.id === null || item.id === undefined) return;
+    const rowId = Number(item.id);
+    if (!oldIds.has(rowId) || seen.has(rowId)) {
+      const err = new Error('This job work entry was changed (on this or another PC) after you opened it. Please reopen it and make your changes again.');
+      err.status = 409;
+      throw err;
+    }
+    seen.add(rowId);
+  });
+};
+
 const purchaseService = {
   create: async (purchaseData) => {
     validateLineItems(purchaseData.items);
@@ -101,13 +131,19 @@ const purchaseService = {
 
   getNextChallan: async (date, purchase_id = null) => {
     const { getFormattedChallan } = require('../utils/challanGenerator');
-    return await getFormattedChallan(date, 'purchase', db);
+    return await getFormattedChallan(date, 'purchase', db, purchase_id || null);
   },
 
   delete: async (id) => {
     const client = await db.getClient();
     try {
       await client.query('BEGIN');
+
+      // Lock first: a repeated delete waits here, then finds the entry gone and changes nothing
+      if (!(await lockPurchase(client, id))) {
+        await client.query('ROLLBACK');
+        return false;
+      }
 
       // Full copy of the job work is archived instead of being lost
       const snapshot = await loadSnapshot(client, id);
@@ -128,8 +164,12 @@ const purchaseService = {
       // 3. Delete purchase items
       await client.query(queries.deletePurchaseItems, [id]);
 
-      // 4. Delete purchase record
-      await client.query(queries.deletePurchase, [id]);
+      // 4. Delete purchase record (stock above is only kept if the entry really was deleted)
+      const deleted = await client.query(queries.deletePurchase, [id]);
+      if (deleted.rowCount !== 1) {
+        await client.query('ROLLBACK');
+        return false;
+      }
 
       await auditService.archiveAndRecord(client, {
         module: auditService.MODULES.JOB_WORK,
@@ -160,7 +200,9 @@ const purchaseService = {
 
       const { jobber_id, date, remark, items } = purchaseData; // Ignore challan_no from frontend
 
-      const before = await loadSnapshot(client, id);
+      // Lock first: a second save of the same entry waits, then works from the first save's result
+      const exists = await lockPurchase(client, id);
+      const before = exists ? await loadSnapshot(client, id) : null;
       if (!before) {
         const err = new Error('This job work entry no longer exists. It may have been deleted on another PC.');
         err.status = 404;
@@ -181,10 +223,11 @@ const purchaseService = {
 
       const oldItemsRes = await client.query(queries.getPurchaseItems, [id]);
       const oldItems = oldItemsRes.rows;
+      ensureRowIdsMatch(items, oldItems);
 
       // 2. Identify items to delete, update, and insert
-      const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined);
-      const itemsToDelete = oldItems.filter(old => !newIds.includes(old.id));
+      const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined).map(Number);
+      const itemsToDelete = oldItems.filter(old => !newIds.includes(Number(old.id)));
       
       // Delete old items that are no longer present and reverse their stock
       for (const oldItem of itemsToDelete) {
@@ -202,7 +245,7 @@ const purchaseService = {
 
       for (const item of items) {
         if (item.id) {
-          const oldItem = oldItems.find(i => i.id === item.id);
+          const oldItem = oldItems.find(i => Number(i.id) === Number(item.id));
           if (oldItem) {
             if (Number(oldItem.item_id) !== Number(item.item_id)) {
               // Product changed on this row: remove full qty from old product, add full qty to new product

@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const queries = require('../queries/partyTransactionQueries');
-const { getMonthAndFY } = require('../utils/challanGenerator');
+const { getMonthAndFY, parseYearMonth } = require('../utils/challanGenerator');
 const { toUpperCase } = require('../utils/dataSanitizer');
 const auditService = require('./auditService');
 
@@ -23,8 +23,8 @@ const getFormattedTransactionChallan = async (dateStr, transactionType, dbOrClie
   const { monthNum, monthName, fyRange } = getMonthAndFY(dateStr);
 
   // Calculate FY start and end for the query
-  const dateObj = new Date(dateStr);
-  const startYear = dateObj.getMonth() + 1 >= 4 ? dateObj.getFullYear() : dateObj.getFullYear() - 1;
+  const { year, month } = parseYearMonth(dateStr);
+  const startYear = month >= 4 ? year : year - 1;
   const fyStart = `${startYear}-04-01`;
   const fyEnd = `${startYear + 1}-03-31`;
 
@@ -55,7 +55,7 @@ const partyTransactionService = {
     try {
       await client.query('BEGIN');
 
-      const { partyType, partyId, transactionType, date, amount, paymentMode, remark } = txData;
+      const { partyType, partyId, transactionType, date, amount, paymentMode, remark, request_id } = txData;
 
       // 1. Verify party exists
       if (partyType === 'CLIENT') {
@@ -75,6 +75,16 @@ const partyTransactionService = {
       // 2. Lock party_transactions table to serialize sequence generation
       await client.query('LOCK TABLE party_transactions IN SHARE ROW EXCLUSIVE MODE');
 
+      // A repeated save of the same form (double-click, retry) returns the payment it already created.
+      // Checked after the table lock, so two simultaneous requests cannot both pass.
+      if (request_id) {
+        const existing = await client.query(queries.getByRequestIds, [[request_id]]);
+        if (existing.rows.length > 0) {
+          await client.query('ROLLBACK');
+          return { ...existing.rows[0], duplicate: true };
+        }
+      }
+
       // 3. Generate sequential challan number
       const challan_no = await getFormattedTransactionChallan(date, transactionType, client);
 
@@ -89,7 +99,8 @@ const partyTransactionService = {
         challan_no,
         amount,
         finalPaymentMode,
-        toUpperCase(remark)
+        toUpperCase(remark),
+        request_id || null
       ]);
 
       const snapshot = await loadSnapshot(client, insertRes.rows[0].id);
@@ -117,13 +128,23 @@ const partyTransactionService = {
     try {
       await client.query('BEGIN');
 
-      const { transactionType, date, transactions } = bulkData;
+      const { transactionType, date, transactions, request_id } = bulkData;
       const results = [];
 
       // Lock table to prevent race conditions during bulk insert
       await client.query('LOCK TABLE party_transactions IN SHARE ROW EXCLUSIVE MODE');
 
-      for (const tx of transactions) {
+      // A repeated save of the same bulk form returns the payments it already created
+      const rowRequestId = (index) => (request_id ? `${request_id}#${index}` : null);
+      if (request_id) {
+        const existing = await client.query(queries.getByRequestIds, [transactions.map((_, i) => rowRequestId(i))]);
+        if (existing.rows.length > 0) {
+          await client.query('ROLLBACK');
+          return existing.rows.map(row => ({ ...row, duplicate: true }));
+        }
+      }
+
+      for (const [index, tx] of transactions.entries()) {
         const { partyType, partyId, amount, paymentMode, remark } = tx;
 
         // 1. Verify party exists
@@ -155,7 +176,8 @@ const partyTransactionService = {
           challan_no,
           amount,
           finalPaymentMode,
-          toUpperCase(remark || '')
+          toUpperCase(remark || ''),
+          rowRequestId(index)
         ]);
 
         // One log entry per party so each payment can be found by its own challan / party
@@ -200,8 +222,8 @@ const partyTransactionService = {
 
       const { transactionType, date, amount, paymentMode, remark } = txData;
 
-      // 1. Fetch existing transaction record
-      const oldTxRes = await client.query('SELECT * FROM party_transactions WHERE id = $1', [id]);
+      // 1. Fetch and lock the existing record, so two saves of the same payment run one after the other
+      const oldTxRes = await client.query('SELECT * FROM party_transactions WHERE id = $1 FOR UPDATE', [id]);
       if (oldTxRes.rows.length === 0) {
         const err = new Error('This payment no longer exists. It may have been deleted on another PC.');
         err.status = 404;
@@ -258,6 +280,13 @@ const partyTransactionService = {
     try {
       await client.query('BEGIN');
 
+      // Lock first: a repeated delete waits here, then finds the payment gone and changes nothing
+      const lockRes = await client.query('SELECT id FROM party_transactions WHERE id = $1 FOR UPDATE', [id]);
+      if (lockRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
       // Full copy of the transaction is archived instead of being lost
       const snapshot = await loadSnapshot(client, id);
       if (!snapshot) {
@@ -265,7 +294,11 @@ const partyTransactionService = {
         return false;
       }
 
-      await client.query(queries.deleteTransaction, [id]);
+      const deleted = await client.query(queries.deleteTransaction, [id]);
+      if (deleted.rowCount !== 1) {
+        await client.query('ROLLBACK');
+        return false;
+      }
 
       await auditService.archiveAndRecord(client, {
         module: auditService.MODULES.PAYMENT,

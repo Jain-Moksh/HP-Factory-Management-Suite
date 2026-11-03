@@ -75,7 +75,8 @@ const partyTransactionController = {
         date,
         amount: parsedAmount,
         paymentMode: transactionType === 'PAYMENT' ? paymentMode.toUpperCase() : null,
-        remark: remark || ''
+        remark: remark || '',
+        request_id: typeof req.body.request_id === 'string' ? req.body.request_id.slice(0, 100) : null
       });
 
       res.status(201).json({ success: true, data: mapTxTypeResponse(tx) });
@@ -134,7 +135,8 @@ const partyTransactionController = {
       const results = await partyTransactionService.createBulk({
         transactionType: mappedTxType,
         date,
-        transactions
+        transactions,
+        request_id: typeof req.body.request_id === 'string' ? req.body.request_id.slice(0, 100) : null
       });
 
       res.status(201).json({ success: true, data: mapTxTypeResponse(results) });

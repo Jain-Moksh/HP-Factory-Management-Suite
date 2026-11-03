@@ -257,6 +257,9 @@ ALTER TABLE billing ADD COLUMN IF NOT EXISTS request_id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_request_id ON billing(request_id);
 ALTER TABLE purchase ADD COLUMN IF NOT EXISTS request_id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_request_id ON purchase(request_id);
+-- Payments: single entries store the form's request_id, bulk entries store <request_id>#<row number>
+ALTER TABLE party_transactions ADD COLUMN IF NOT EXISTS request_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_party_tx_request_id ON party_transactions(request_id);
 
 -- =========================
 -- UNIQUE MASTER NAMES

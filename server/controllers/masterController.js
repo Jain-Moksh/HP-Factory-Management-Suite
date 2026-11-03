@@ -83,10 +83,25 @@ const getItemTransactions = async (req, res, next) => {
   }
 };
 
+// GET /items/stock-check (all mismatched items) or /items/:id/stock-check (one item)
+const getStockCheck = async (req, res, next) => {
+  try {
+    const itemId = req.params.id ? parseInt(req.params.id, 10) : null;
+    if (req.params.id && isNaN(itemId)) {
+      return res.status(400).json({ success: false, message: 'Invalid item id' });
+    }
+    const data = await masterService.getStockCheck(itemId);
+    res.json({ success: true, count: data.length, data: itemId ? (data[0] || null) : data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   items: masterController('items'),
   clients: masterController('clients'),
   jobbers: masterController('jobbers'),
   transporters: masterController('transporters'),
-  getItemTransactions
+  getItemTransactions,
+  getStockCheck
 };

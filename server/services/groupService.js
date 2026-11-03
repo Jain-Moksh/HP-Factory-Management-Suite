@@ -27,8 +27,24 @@ const groupService = {
     try {
       await client.query('BEGIN');
 
+      // A double-clicked Save (or the same name typed on two PCs) must not create two groups.
+      // The lock makes simultaneous creates check the name one after the other.
+      await client.query('LOCK TABLE groups IN SHARE ROW EXCLUSIVE MODE');
+      const cleanName = (toUpperCase(name) || '').trim();
+      if (!cleanName) {
+        const err = new Error('Group name is required.');
+        err.status = 400;
+        throw err;
+      }
+      const existing = await client.query('SELECT id FROM groups WHERE UPPER(TRIM(name)) = $1 LIMIT 1', [cleanName]);
+      if (existing.rows.length > 0) {
+        const err = new Error(`A group named ${cleanName} already exists.`);
+        err.status = 400;
+        throw err;
+      }
+
       // 1. Create the Group
-      const groupRes = await client.query(groupQueries.createGroup, [toUpperCase(name), toUpperCase(description)]);
+      const groupRes = await client.query(groupQueries.createGroup, [cleanName, toUpperCase(description)]);
       const group = groupRes.rows[0];
 
       // 2. Add Members
@@ -78,6 +94,8 @@ const groupService = {
     try {
       await client.query('BEGIN');
 
+      // Lock the group so two saves of it run one after the other
+      await client.query('SELECT id FROM groups WHERE id = $1 FOR UPDATE', [id]);
       const before = await loadSnapshot(client, id);
 
       // 1. Update Group Info
@@ -135,13 +153,18 @@ const groupService = {
     try {
       await client.query('BEGIN');
 
-      const snapshot = await loadSnapshot(client, id);
+      const lockRes = await client.query('SELECT id FROM groups WHERE id = $1 FOR UPDATE', [id]);
+      const snapshot = lockRes.rows.length ? await loadSnapshot(client, id) : null;
       if (!snapshot) {
         await client.query('ROLLBACK');
         return null;
       }
 
       const result = await client.query(groupQueries.deleteGroup, [id]);
+      if (result.rowCount !== 1) {
+        await client.query('ROLLBACK');
+        return null;
+      }
 
       await auditService.archiveAndRecord(client, {
         module: auditService.MODULES.GROUP,

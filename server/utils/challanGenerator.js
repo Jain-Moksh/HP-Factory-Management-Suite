@@ -11,11 +11,20 @@ const monthsShort = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SE
  * @param {string} dateStr - ISO Date string (YYYY-MM-DD)
  * @returns {object} - { monthNum, monthName, fyRange }
  */
+/**
+ * Reads year and month straight from a "YYYY-MM-DD" string, so the server's timezone can never
+ * move a 1st-of-the-month date into the previous month. Falls back to Date parsing for other formats.
+ */
+const parseYearMonth = (dateStr) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+  if (match) return { year: Number(match[1]), month: Number(match[2]) };
+  const d = new Date(dateStr);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+};
+
 const getMonthAndFY = (dateStr) => {
-  const dateObj = new Date(dateStr);
-  const monthNum = dateObj.getMonth() + 1;
-  const monthName = monthsShort[dateObj.getMonth()];
-  const calendarYear = dateObj.getFullYear();
+  const { year: calendarYear, month: monthNum } = parseYearMonth(dateStr);
+  const monthName = monthsShort[monthNum - 1];
 
   let fyRange;
   // Financial Year starts in April
@@ -60,8 +69,8 @@ const getFormattedChallan = async (dateStr, type, dbOrClient, excludeId = null) 
   }
 
   // Calculate FY start and end for the query
-  const dateObj = new Date(dateStr);
-  const startYear = dateObj.getMonth() + 1 >= 4 ? dateObj.getFullYear() : dateObj.getFullYear() - 1;
+  const { year, month } = parseYearMonth(dateStr);
+  const startYear = month >= 4 ? year : year - 1;
   const fyStart = `${startYear}-04-01`;
   const fyEnd = `${startYear + 1}-03-31`;
 
@@ -102,5 +111,6 @@ const generateChallanNo = async (dateStr, type, client, excludeId = null) => {
 module.exports = {
   generateChallanNo,
   getFormattedChallan,
-  getMonthAndFY
+  getMonthAndFY,
+  parseYearMonth
 };

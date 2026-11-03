@@ -12,6 +12,7 @@ const ItemStockDetails = () => {
   
   const [item, setItem] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [stockCheck, setStockCheck] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // --- Filter State ---
@@ -33,6 +34,11 @@ const ItemStockDetails = () => {
       const transRes = await fetch(`${API_BASE_URL}/items/${id}/transactions`);
       const transResult = await transRes.json();
       if (transResult.success) setTransactions(transResult.data);
+
+      // 3. Check saved stock against the item's history
+      const checkRes = await fetch(`${API_BASE_URL}/items/${id}/stock-check`);
+      const checkResult = await checkRes.json();
+      setStockCheck(checkResult.success ? checkResult.data : null);
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
@@ -172,6 +178,16 @@ const ItemStockDetails = () => {
               </div>
             )}
           </div>
+
+          {/* Stock check: saved stock vs. opening stock + job work - bills */}
+          {stockCheck && Number(stockCheck.difference) !== 0 && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 text-[12px] text-amber-900 leading-relaxed">
+              <span className="font-black uppercase tracking-wider text-[11px]">Stock does not match history. </span>
+              Saved stock is <b>{Number(stockCheck.stock)}</b>, but opening stock ({Number(stockCheck.open_stock)}) + all job work ({Number(stockCheck.inward)}) − all bills ({Number(stockCheck.outward)}) = <b>{Number(stockCheck.history_stock)}</b>.
+              Difference: <b>{Number(stockCheck.difference) > 0 ? '+' : ''}{Number(stockCheck.difference)} {item?.unit}</b>.
+              The closing balances below are counted back from the saved stock, so every earlier day also shows this difference.
+            </div>
+          )}
 
           {/* Transactions Table */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm overflow-hidden">

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/UI/Card';
 import SearchableSelect from '../components/UI/SearchableSelect';
 import { API_BASE_URL } from '../config';
+import { createRequestId } from '../utils/requestId';
 
 const BulkPayment = () => {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ const BulkPayment = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const savingRef = useRef(false);
+  const requestIdRef = useRef(createRequestId());
 
   // Fetch clients and jobbers for options
   useEffect(() => {
@@ -127,6 +130,8 @@ const BulkPayment = () => {
   };
 
   const handleSaveBulk = async () => {
+    // A double click must save only once (the state flag alone is too slow for two clicks in the same moment)
+    if (savingRef.current) return;
     setError('');
     setSuccess(false);
 
@@ -168,13 +173,17 @@ const BulkPayment = () => {
       });
     }
 
+    savingRef.current = true;
     setIsSubmitting(true);
+    let keepLocked = false;
 
     try {
       const payload = {
         transactionType,
         date,
-        transactions: payloadTransactions
+        transactions: payloadTransactions,
+        // Same id on every save of this form lets the server ignore a repeated save
+        request_id: requestIdRef.current
       };
 
       const response = await fetch(`${API_BASE_URL}/party-transactions/bulk`, {
@@ -186,6 +195,7 @@ const BulkPayment = () => {
       const json = await response.json();
       
       if (json.success) {
+        keepLocked = true; // page is leaving, keep Save disabled
         setSuccess(true);
         setTimeout(() => {
           setSuccess(false);
@@ -198,6 +208,7 @@ const BulkPayment = () => {
       console.error('Error saving bulk payment:', err);
       setError('Network error: failed to connect to server.');
     } finally {
+      if (!keepLocked) savingRef.current = false;
       setIsSubmitting(false);
     }
   };
