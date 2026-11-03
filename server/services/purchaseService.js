@@ -3,6 +3,7 @@ const queries = require('../queries/purchaseQueries');
 const { generateChallanNo, getMonthAndFY } = require('../utils/challanGenerator');
 const { toUpperCase, validateLineItems } = require('../utils/dataSanitizer');
 const auditService = require('./auditService');
+const stockMovementService = require('./stockMovementService');
 
 /**
  * Loads a job work entry with its line items for audit snapshots.
@@ -75,6 +76,9 @@ const purchaseService = {
       const purchase = purchaseRes.rows[0];
 
       // 2. Insert items and update stock
+      await stockMovementService.setContext(client, {
+        source: stockMovementService.SOURCES.JOB_WORK, action: 'CREATE', referenceId: purchase.id, reference: challan_no
+      });
       const purchaseItems = [];
       let orderIndexCounter = 0;
       for (const item of items) {
@@ -157,6 +161,9 @@ const purchaseService = {
       const items = itemsRes.rows;
 
       // 2. Reverse stock updates (decrement since it was a purchase)
+      await stockMovementService.setContext(client, {
+        source: stockMovementService.SOURCES.JOB_WORK, action: 'DELETE', referenceId: Number(id), reference: snapshot.challan_no
+      });
       for (const item of items) {
         await client.query(queries.reverseStockUpdate, [item.quantity, item.item_id]);
       }
@@ -224,6 +231,10 @@ const purchaseService = {
       const oldItemsRes = await client.query(queries.getPurchaseItems, [id]);
       const oldItems = oldItemsRes.rows;
       ensureRowIdsMatch(items, oldItems);
+
+      await stockMovementService.setContext(client, {
+        source: stockMovementService.SOURCES.JOB_WORK, action: 'UPDATE', referenceId: Number(id), reference: final_challan_no
+      });
 
       // 2. Identify items to delete, update, and insert
       const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined).map(Number);

@@ -402,9 +402,10 @@ const backupService = {
    * A safety copy of the current database is saved before anything is changed.
    *
    * @param {string} filePath - Uploaded backup file
+   * @param {string} [originalName] - File name as uploaded, shown in the stock movement log
    * @returns {Promise<{safetyBackup: string, counts: object}>}
    */
-  restore: async (filePath) => {
+  restore: async (filePath, originalName) => {
     if (isBackupRunning) {
       throw new Error('Another backup or restore is already in progress. Please wait.');
     }
@@ -467,6 +468,11 @@ const backupService = {
       }
       prunePreRestoreBackups(safetyDir);
 
+      // Stock as it is now, so the stock movement log can show what the restore changed
+      const stockBeforeRestore = await db.query('SELECT id, name, unit, stock FROM items')
+        .then(res => res.rows)
+        .catch(() => null);
+
       // Step 4: Wipe + import + verify in a single transaction
       console.log('[RESTORE] 📥 Data import started (single transaction).');
       try {
@@ -490,6 +496,20 @@ const backupService = {
       const { autoHealDatabase } = require('../utils/dbHealer');
       await autoHealDatabase(db.pool);
       console.log('[RESTORE] ⚙️ Post-restore initialization completed.');
+
+      // The restored database carries the backup's movement history; record how the restore itself moved stock
+      if (stockBeforeRestore) {
+        try {
+          const stockMovementService = require('./stockMovementService');
+          const written = await stockMovementService.recordRestore(
+            stockBeforeRestore,
+            `Restored from ${originalName || path.basename(filePath)}`
+          );
+          console.log(`[RESTORE] 📦 Stock movement log: ${written} item(s) changed by the restore.`);
+        } catch (err) {
+          console.error('[RESTORE] Could not record stock movements for the restore:', err.message);
+        }
+      }
 
       // Step 6: Record counts so the result can be shown to the user
       const tables = ['items', 'clients', 'jobbers', 'transporters', 'billing', 'billing_items', 'purchase', 'purchase_items', 'party_transactions', 'groups', 'group_members', 'price_lists', 'price_list_categories', 'price_list_items'];

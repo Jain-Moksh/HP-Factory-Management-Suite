@@ -3,6 +3,7 @@ const queries = require('../queries/billingQueries');
 const { generateChallanNo, getMonthAndFY } = require('../utils/challanGenerator');
 const { toUpperCase, validateLineItems } = require('../utils/dataSanitizer');
 const auditService = require('./auditService');
+const stockMovementService = require('./stockMovementService');
 
 const formatAmount = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -118,6 +119,9 @@ const billingService = {
       const billingItems = billingItemsRes.rows;
 
       // Execute Bulk Stock Update
+      await stockMovementService.setContext(client, {
+        source: stockMovementService.SOURCES.BILL, action: 'CREATE', referenceId: bill.id, reference: challan_no
+      });
       // Quantities are summed per item: UPDATE ... FROM applies only one source row per target row,
       // so the same item on two rows would otherwise be deducted only once
       const stockParams = items.flatMap(item => [item.quantity, item.item_id]);
@@ -232,6 +236,9 @@ const billingService = {
       const items = itemsRes.rows;
 
       // 2. Reverse stock updates in Bulk
+      await stockMovementService.setContext(client, {
+        source: stockMovementService.SOURCES.BILL, action: 'DELETE', referenceId: Number(id), reference: snapshot.challan_no
+      });
       if (items.length > 0) {
         const stockValues = items.map((_, i) => `($${i * 2 + 1}::numeric, $${i * 2 + 2}::int)`);
         const stockParams = items.flatMap(item => [item.quantity, item.item_id]);
@@ -329,6 +336,10 @@ const billingService = {
       const oldItemsRes = await client.query(queries.getBillItems, [id]);
       const oldItems = oldItemsRes.rows;
       ensureRowIdsMatch(items, oldItems);
+
+      await stockMovementService.setContext(client, {
+        source: stockMovementService.SOURCES.BILL, action: 'UPDATE', referenceId: Number(id), reference: final_challan_no
+      });
 
       // 2. Identify items to delete, update, and insert
       const newIds = items.map(i => i.id).filter(id => id !== null && id !== undefined).map(Number);

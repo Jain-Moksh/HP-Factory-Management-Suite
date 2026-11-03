@@ -1,6 +1,25 @@
 const auditService = require('../services/auditService');
+const stockMovementService = require('../services/stockMovementService');
 
 const auditController = {
+  listStockMovements: async (req, res, next) => {
+    try {
+      const data = await stockMovementService.list(req.query);
+      res.json({ success: true, ...data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getStockMovementDevices: async (req, res, next) => {
+    try {
+      const data = await stockMovementService.getDevices();
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   list: async (req, res, next) => {
     try {
       const data = await auditService.list(req.query);
@@ -12,8 +31,11 @@ const auditController = {
 
   getModuleCounts: async (req, res, next) => {
     try {
-      const data = await auditService.getModuleCounts(req.query);
-      res.json({ success: true, data });
+      const [data, stockMovements] = await Promise.all([
+        auditService.getModuleCounts(req.query),
+        stockMovementService.count(req.query)
+      ]);
+      res.json({ success: true, data: { ...data, stockMovements } });
     } catch (err) {
       next(err);
     }

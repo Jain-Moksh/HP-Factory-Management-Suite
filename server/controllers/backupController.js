@@ -106,7 +106,7 @@ const backupController = {
         return res.status(400).json({ success: false, message: 'Invalid file type. Only .sql and .backup files are allowed.' });
       }
 
-      const { safetyBackup, counts } = await backupService.restore(filePath);
+      const { safetyBackup, counts } = await backupService.restore(filePath, req.file.originalname);
 
       // Clean up uploaded file after restore
       fs.unlinkSync(filePath);

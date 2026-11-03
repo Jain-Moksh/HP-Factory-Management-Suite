@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import PageHeader from '../../components/PageHeader';
 import { API_BASE_URL } from '../../config';
 import { getDeviceName, setDeviceName } from '../../utils/deviceIdentity';
+import StockMovementTab from '../../components/audit/StockMovementTab';
 
 const PAGE_SIZE = 50;
 
@@ -19,6 +20,7 @@ const TABS = [
   { key: 'GROUP', label: 'Groups' },
   { key: 'PRICE_LIST', label: 'Price List' },
   { key: 'SYSTEM', label: 'System' },
+  { key: 'STOCK', label: 'Stock Movement' },
   { key: 'ARCHIVED', label: 'Archived Entries' }
 ];
 
@@ -460,6 +462,8 @@ const AuditLog = () => {
   const [selectedArchiveId, setSelectedArchiveId] = useState(null);
 
   const isArchiveTab = activeTab === 'ARCHIVED';
+  // The stock movement tab has its own filters, table and data source
+  const isStockTab = activeTab === 'STOCK';
   // Only the latest request may update the table, so a slow earlier response can't overwrite it
   const requestSeq = useRef(0);
 
@@ -490,6 +494,7 @@ const AuditLog = () => {
 
   const fetchRows = useCallback(async () => {
     const seq = ++requestSeq.current;
+    if (isStockTab) return;
     setLoading(true);
     setError('');
     try {
@@ -520,7 +525,7 @@ const AuditLog = () => {
     } finally {
       if (seq === requestSeq.current) setLoading(false);
     }
-  }, [activeTab, isArchiveTab, search, action, device, fromDate, toDate, page]);
+  }, [activeTab, isArchiveTab, isStockTab, search, action, device, fromDate, toDate, page]);
 
   useEffect(() => { fetchMeta(); }, [fetchMeta]);
   useEffect(() => { fetchRows(); }, [fetchRows]);
@@ -533,6 +538,7 @@ const AuditLog = () => {
 
   const tabCount = (key) => {
     if (key === 'ARCHIVED') return counts.archived || 0;
+    if (key === 'STOCK') return counts.stockMovements || 0;
     if (key === 'ALL') return Object.values(counts.modules || {}).reduce((a, b) => a + b, 0);
     return (counts.modules || {})[key] || 0;
   };
@@ -572,7 +578,9 @@ const AuditLog = () => {
                   onClick={() => setActiveTab(tab.key)}
                   className={`shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-wider transition ${
                     isActive
-                      ? (tab.key === 'ARCHIVED' ? 'bg-red-600 border-red-600 text-white shadow' : 'bg-brand-blue border-brand-blue text-white shadow')
+                      ? (tab.key === 'ARCHIVED' ? 'bg-red-600 border-red-600 text-white shadow'
+                        : tab.key === 'STOCK' ? 'bg-teal-600 border-teal-600 text-white shadow'
+                        : 'bg-brand-blue border-brand-blue text-white shadow')
                       : 'bg-white border-border-soft text-text-secondary hover:border-brand-blue/40 hover:text-brand-blue'
                   }`}
                 >
@@ -583,6 +591,9 @@ const AuditLog = () => {
             })}
           </div>
 
+          {isStockTab && <StockMovementTab />}
+
+          {!isStockTab && (<>
           {/* Filters */}
           <div className="bg-white border border-border-soft rounded-xl shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
             <input
@@ -738,6 +749,7 @@ const AuditLog = () => {
           {isArchiveTab && total > 0 && (
             <div className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">{total} archived entr{total === 1 ? 'y' : 'ies'}</div>
           )}
+          </>)}
         </div>
       </div>
 

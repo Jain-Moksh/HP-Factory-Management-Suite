@@ -2,6 +2,7 @@ const db = require('../config/db');
 const queries = require('../queries/masterQueries');
 const { toUpperCase } = require('../utils/dataSanitizer');
 const auditService = require('./auditService');
+const stockMovementService = require('./stockMovementService');
 
 const AUDIT_MODULES = {
   items: { module: auditService.MODULES.ITEM, label: 'Item' },
@@ -55,13 +56,25 @@ const ensureUniqueName = async (table, name, excludeId = null) => {
 };
 
 // 23505 = unique_violation: another PC saved the same name between the check and the insert
-const runNameQuery = async (table, name, text, params) => {
+const runNameQuery = async (table, name, text, params, executor = db) => {
   try {
-    return await db.query(text, params);
+    return await executor.query(text, params);
   } catch (err) {
     if (err.code === '23505') throw duplicateNameError(table, name);
     throw err;
   }
+};
+
+/**
+ * Writes to items run inside a short transaction tagged for the stock movement log,
+ * so any stock change they make is recorded as ITEM_MASTER instead of DIRECT_DB.
+ */
+const runMasterWrite = (table, action, name, text, params) => {
+  if (table !== 'items') return runNameQuery(table, name, text, params);
+  return stockMovementService.withContext(
+    { source: stockMovementService.SOURCES.ITEM_MASTER, action, reference: name },
+    (client) => runNameQuery(table, name, text, params, client)
+  );
 };
 
 const masterService = {
@@ -110,7 +123,7 @@ const masterService = {
         break;
     }
     await ensureUniqueName(table, clean.name);
-    const result = await runNameQuery(table, clean.name, queries[queryKey], params);
+    const result = await runMasterWrite(table, 'CREATE', clean.name, queries[queryKey], params);
     const created = result.rows[0];
 
     const { module, label } = AUDIT_MODULES[table];
@@ -162,7 +175,7 @@ const masterService = {
         break;
     }
     await ensureUniqueName(table, clean.name, id);
-    const result = await runNameQuery(table, clean.name, queries[queryKey], params);
+    const result = await runMasterWrite(table, 'UPDATE', clean.name, queries[queryKey], params);
     const after = result.rows[0];
 
     if (after) {
@@ -229,6 +242,11 @@ const masterService = {
         }
       }
 
+      if (table === 'items') {
+        await stockMovementService.setContext(client, {
+          source: stockMovementService.SOURCES.ITEM_MASTER, action: 'DELETE', referenceId: snapshot.id, reference: snapshot.name
+        });
+      }
       await client.query(queries[deleteKey], [id]);
 
       await auditService.archiveAndRecord(client, {

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { installStockMovementTrigger } = require('./stockMovementSetup');
 
 let isHealing = false;
 
@@ -32,6 +33,13 @@ const autoHealDatabase = async (pool) => {
         }
         console.error('Error during auto-heal statement:', err.message);
       }
+    }
+
+    // The stock movement trigger can't be written in db.md (its body contains semicolons)
+    try {
+      await installStockMovementTrigger(client);
+    } catch (err) {
+      console.error('Error installing stock movement trigger:', err.message);
     }
     console.log('✅ Database auto-healing complete.');
   } catch (err) {

@@ -312,6 +312,36 @@ CREATE TABLE archived_records (
 
 CREATE INDEX idx_archived_records_entity ON archived_records(entity_type, archived_at);
 
+-- One row for every change to items.stock, written by the trigger trg_items_stock_movement
+-- (installed by utils/stockMovementSetup.js, since a function body can't live in this file).
+-- No foreign key to items: the history must survive an item being deleted.
+CREATE TABLE stock_movements (
+    id BIGSERIAL PRIMARY KEY,
+    item_id INT NOT NULL,
+    item_name TEXT,
+    unit TEXT,
+    old_stock NUMERIC,             -- NULL when the item was created
+    new_stock NUMERIC,             -- NULL when the item was deleted
+    change NUMERIC NOT NULL,       -- new_stock - old_stock (+ in, - out)
+    source TEXT NOT NULL,          -- BILL, JOB_WORK, ITEM_MASTER, RESTORE, DIRECT_DB (changed outside the app)
+    action TEXT,                   -- CREATE, UPDATE, DELETE, RESTORE
+    reference_id INT,              -- billing.id / purchase.id / items.id
+    reference TEXT,                -- Challan no or item name
+    note TEXT,
+    device_name TEXT,
+    hostname TEXT,
+    ip_address TEXT,
+    db_user TEXT,
+    db_client_addr TEXT,
+    application_name TEXT,
+    txid BIGINT,                   -- Rows from the same save share this
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_stock_movements_created ON stock_movements(created_at);
+CREATE INDEX idx_stock_movements_item ON stock_movements(item_id, created_at);
+CREATE INDEX idx_stock_movements_source ON stock_movements(source, created_at);
+
 -- =============================================
 -- DATABASE DATE PRECISION (TIMEZONES)
 -- =============================================
@@ -362,6 +392,10 @@ CREATE INDEX idx_archived_records_entity ON archived_records(entity_type, archiv
 --    writes one row to `audit_logs` inside the same transaction as the change, with the device name, hostname, IP, OS and browser.
 -- 2. Deletes are archived: the record is removed from its live table (stock reversed as before) and its full snapshot is kept in `archived_records`.
 -- 3. Logins and read-only requests are not logged.
+-- 4. STOCK MOVEMENTS: a trigger on `items` writes a `stock_movements` row for every change to `stock`, whatever made it
+--    (bill, job work, item master, a script, or a manual SQL edit). The app tags its changes by calling
+--    set_config('app.stock_ctx', <json>, true) inside the transaction. Untagged changes are recorded as DIRECT_DB.
+--    A restore replaces the history with the backup's, then adds RESTORE rows for every item whose stock changed.
 
 -- =============================================
 -- DATA SANITIZATION
