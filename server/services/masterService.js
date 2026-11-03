@@ -144,8 +144,9 @@ const masterService = {
           throw err;
         }
 
-        // The stock change (new opening stock - old opening stock) is applied inside the UPDATE itself
-        params = [clean.name, clean.rate, clean.open_stock, clean.conversion, clean.unit, clean.min_stock, clean.packing, id];
+        // Opening stock and live stock can't be edited: NULL keeps the saved opening stock,
+        // so the UPDATE leaves stock untouched too
+        params = [clean.name, clean.rate, null, clean.conversion, clean.unit, clean.min_stock, clean.packing, id];
         break;
       case 'clients':
         queryKey = 'updateClient';

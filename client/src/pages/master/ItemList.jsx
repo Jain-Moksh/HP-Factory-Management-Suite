@@ -145,8 +145,6 @@ const ItemList = () => {
       rate: item.rate,
       unit: item.unit,
       conversion: item.conversion,
-      stock: item.stock,
-      open_stock: item.open_stock,
       min_stock: item.min_stock,
       packing: item.packing || ''
     });
@@ -170,8 +168,6 @@ const ItemList = () => {
         body: JSON.stringify({
           name: editFormData.name,
           rate: parseFloat(editFormData.rate) || 0,
-          stock: parseFloat(editFormData.stock) || 0,
-          open_stock: parseFloat(editFormData.open_stock) || 0,
           conversion: parseFloat(editFormData.conversion) || 1,
           unit: editFormData.unit,
           min_stock: parseFloat(editFormData.min_stock) || 0,
@@ -462,29 +458,13 @@ const ItemList = () => {
                       </td>
                       {/* Live Stock Cell */}
                       <td className={`px-5 py-1.5 text-center text-[13px] font-black border-r border-border-soft ${parseFloat(item.stock) <= parseFloat(item.min_stock) ? 'text-red-500' : 'text-brand-blue'}`}>
-                        {editingId === item.id ? (
-                          <input 
-                            type="number"
-                            name="stock"
-                            value={editFormData.stock}
-                            onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-black"
-                          />
-                        ) : (item.stock || 0)}
+                        {/* Not editable: live stock only changes through bills and job work */}
+                        {item.stock || 0}
                       </td>
                        {/* Opening Stock Cell */}
                        <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary/60 italic border-r border-border-soft">
-                        {editingId === item.id ? (
-                          <input 
-                            type="number"
-                            name="open_stock"
-                            value={editFormData.open_stock}
-                            onChange={handleEditChange}
-                            onKeyDown={(e) => handleKeyDown(e, item.id)}
-                            className="w-full bg-white border border-brand-blue/30 rounded px-2 py-1 outline-none focus:border-brand-blue text-center font-bold"
-                          />
-                        ) : (item.open_stock || 0)}
+                        {/* Not editable: opening stock is set only when the item is created */}
+                        {item.open_stock || 0}
                       </td>
                       {/* Packing Cell */}
                       <td className="px-5 py-1.5 text-center text-[13px] font-bold text-text-primary border-r border-border-soft">
