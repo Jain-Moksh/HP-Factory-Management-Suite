@@ -132,7 +132,7 @@ const Payment = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col min-h-screen relative pb-16">
+      <div className="flex flex-col min-h-screen relative pb-24">
         <PageHeader 
           title="Payment & Adjustments" 
           subtitle="MANAGE AND TRACK ALL PARTY PAYMENTS, REPLACES AND DISCOUNTS" 

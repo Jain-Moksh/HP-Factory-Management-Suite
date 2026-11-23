@@ -21,6 +21,7 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
               <tr className="bg-table-header text-white">
                 <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-40">Challan No.</th>
                 <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-28">Type</th>
+                <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-24 text-center">Mode</th>
                 <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-40">Date</th>
                 <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest">Party Name</th>
                 <th className="px-5 py-2 text-[10.5px] font-bold border-x border-white/5 uppercase tracking-widest w-36">Amount</th>
@@ -49,6 +50,19 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
                     }`}>
                       {row.transaction_type}
                     </span>
+                  </td>
+                  <td className="px-5 py-1.5 border-x border-border-soft text-[10px] font-bold uppercase text-center">
+                    {row.transaction_type === 'PAYMENT' ? (
+                      <span className={`px-2 py-0.5 rounded text-[9.5px] tracking-wider font-extrabold ${
+                        (row.payment_mode || '').toUpperCase() === 'BANK'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      }`}>
+                        {(row.payment_mode || 'CASH').toUpperCase()}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 font-medium text-[11px]">-</span>
+                    )}
                   </td>
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] text-text-primary font-bold">{row.date}</td>
                   <td className="px-5 py-1.5 border-x border-border-soft text-[12.5px] font-bold text-brand-blue uppercase tracking-tight">
@@ -93,7 +107,7 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-text-light italic text-[13px]">
+                  <td colSpan="7" className="px-6 py-12 text-center text-text-light italic text-[13px]">
                     No transaction records found.
                   </td>
                 </tr>
@@ -102,7 +116,7 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
             {data.length > 0 && (
               <tfoot className="bg-slate-50 font-bold border-t-2 border-border-soft">
                 <tr>
-                  <td colSpan="4" className="px-5 py-2.5 text-right text-[11px] uppercase tracking-widest text-text-primary">
+                  <td colSpan="5" className="px-5 py-2.5 text-right text-[11px] uppercase tracking-widest text-text-primary">
                     Total Amount
                   </td>
                   <td className="px-5 py-2.5 text-[12.5px] font-black text-brand-blue">

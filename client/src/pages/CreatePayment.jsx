@@ -543,13 +543,15 @@ const CreatePayment = () => {
                 </div>
 
                 <div className="col-span-2 flex items-center justify-end">
-                  <div className="text-right pr-4 border-r border-border-soft/50 mr-4 h-8 flex flex-col justify-center">
-                    <div className="text-[8px] font-bold text-text-primary uppercase tracking-widest opacity-60">Adjustment</div>
-                    <div className="text-xs font-bold text-text-primary leading-none">- ₹{parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                  </div>
-                  <div className="text-right flex flex-col justify-center h-8">
-                    <div className="text-[9px] font-bold text-text-primary uppercase tracking-[0.15em] mb-0.5">Closing Balance</div>
-                    <div className="text-base font-black text-text-primary leading-none">
+                  <div className="text-right flex flex-col items-end">
+                    <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60">Pending Amount</div>
+                    <div className="text-[18px] font-bold text-red-500 leading-none mb-2.5">₹{openingPendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+
+                    <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60">Adjustment</div>
+                    <div className="text-[18px] font-bold text-text-primary leading-none mb-2.5">- ₹{parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+
+                    <div className="text-[13.5px] font-bold text-text-primary uppercase tracking-[0.15em] mb-1">Closing Balance</div>
+                    <div className="text-[24px] font-black text-text-primary leading-none">
                       ₹{closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
