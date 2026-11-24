@@ -695,7 +695,6 @@ const CreatePayment = () => {
                     <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60">Pending Amount</div>
                     <div className="text-[18px] font-bold text-red-500 leading-none mb-3">₹{openingPendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
 
-                    <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60 mb-1.5">Adjustment</div>
                     <div className="flex flex-col items-end gap-1 mb-2.5 w-full min-w-[210px] max-w-xs">
                       {paymentEntries.map((entry, idx) => {
                         const amt = parseFloat(entry.amount) || 0;
@@ -714,15 +713,6 @@ const CreatePayment = () => {
                           </div>
                         );
                       })}
-                      <div className="w-full border-t border-border-soft my-1"></div>
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-text-primary opacity-70">
-                          Total Adjustment
-                        </span>
-                        <span className="text-[16px] font-black text-text-primary leading-none">
-                          - ₹{totalEnteredAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
                     </div>
 
                     <div className="text-[13.5px] font-bold text-text-primary uppercase tracking-[0.15em] mb-1">Closing Balance</div>

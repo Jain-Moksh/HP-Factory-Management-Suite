@@ -72,7 +72,7 @@ initializeDatabase().then(async () => {
   const { exec } = require('child_process');
   
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
       let localIp = 'localhost';
       const interfaces = os.networkInterfaces();
       for (const name of Object.keys(interfaces)) {
@@ -90,5 +90,15 @@ initializeDatabase().then(async () => {
       
       const startCommand = process.platform === 'win32' ? 'start' : (process.platform === 'darwin' ? 'open' : 'xdg-open');
       exec(`${startCommand} ${url}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ Error: Port ${PORT} is already in use by another running instance.`);
+      console.error(`Please close any existing server process or run 'taskkill /F /IM node.exe' before starting again.\n`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+    }
   });
 });
