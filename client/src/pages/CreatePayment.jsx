@@ -343,6 +343,23 @@ const CreatePayment = () => {
   const parsedAmount = parseFloat(formData.amount) || 0;
   const closingBalance = openingPendingBalance - parsedAmount;
 
+  const selectedParty = options.find(opt => String(opt.id) === String(formData.partyId));
+  const selectedPartyName = selectedParty ? selectedParty.name.replace(/\s*\[(CLIENT|JOBBER)\]\s*$/i, '') : '—';
+
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+      const [y, m, d] = dateStr.split('-');
+      if (y && m && d) {
+        const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+        return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
+
   const getHeaderInfo = () => {
     const prefix = isEditMode ? "Edit" : "Create";
     switch (transactionType) {
@@ -544,6 +561,13 @@ const CreatePayment = () => {
 
                 <div className="col-span-2 flex items-center justify-end">
                   <div className="text-right flex flex-col items-end">
+                    <div className="text-[18px] font-bold text-text-primary leading-tight max-w-sm truncate mb-0.5" title={selectedPartyName}>
+                      {selectedPartyName}
+                    </div>
+                    <div className="text-[11px] font-semibold text-text-primary opacity-60 leading-none mb-3">
+                      {formatDisplayDate(formData.date)}
+                    </div>
+
                     <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60">Pending Amount</div>
                     <div className="text-[18px] font-bold text-red-500 leading-none mb-2.5">₹{openingPendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
 
