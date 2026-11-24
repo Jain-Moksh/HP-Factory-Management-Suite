@@ -35,7 +35,7 @@ const mapHistoryData = (data) => {
 const partyTransactionController = {
   create: async (req, res) => {
     try {
-      const { partyType, partyId, transactionType, date, amount, paymentMode, remark } = req.body;
+      const { partyType, partyId, transactionType, date, amount, paymentMode, remark, entries } = req.body;
 
       // 1. Basic Server Side Validations
       if (!partyType || !['CLIENT', 'JOBBER'].includes(partyType)) {
@@ -54,6 +54,44 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Invalid or missing date.' });
       }
 
+      // Map REPLACE to RETURN for database / service consistency
+      const mappedTxType = transactionType === 'REPLACE' ? 'RETURN' : transactionType;
+
+      // Multi-entry support (for multiple cash / bank payments on one challan)
+      if (Array.isArray(entries) && entries.length > 0) {
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i];
+          const entryAmt = parseFloat(entry.amount);
+          if (isNaN(entryAmt) || entryAmt <= 0) {
+            return res.status(400).json({ success: false, error: `Entry #${i + 1}: Amount must be a valid number greater than 0.` });
+          }
+          if (transactionType === 'PAYMENT') {
+            if (!entry.paymentMode || !['BANK', 'CASH'].includes(entry.paymentMode.toUpperCase())) {
+              return res.status(400).json({ success: false, error: `Entry #${i + 1}: paymentMode must be BANK or CASH for PAYMENT transaction types.` });
+            }
+          }
+        }
+
+        const totalAmt = entries.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+        const tx = await partyTransactionService.create({
+          partyType,
+          partyId: parseInt(partyId),
+          transactionType: mappedTxType,
+          date,
+          amount: totalAmt,
+          entries: entries.map((e, idx) => ({
+            id: e.id || idx + 1,
+            amount: parseFloat(e.amount),
+            paymentMode: transactionType === 'PAYMENT' ? (e.paymentMode ? e.paymentMode.toUpperCase() : 'CASH') : null
+          })),
+          remark: remark || '',
+          request_id: typeof req.body.request_id === 'string' ? req.body.request_id.slice(0, 100) : null
+        });
+
+        return res.status(201).json({ success: true, data: mapTxTypeResponse(tx) });
+      }
+
       const parsedAmount = parseFloat(amount);
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
         return res.status(400).json({ success: false, error: 'Amount must be a valid number greater than 0.' });
@@ -64,9 +102,6 @@ const partyTransactionController = {
           return res.status(400).json({ success: false, error: 'paymentMode must be BANK or CASH for PAYMENT transaction types.' });
         }
       }
-
-      // Map REPLACE to RETURN for database / service consistency
-      const mappedTxType = transactionType === 'REPLACE' ? 'RETURN' : transactionType;
 
       // 2. Call service layer
       const tx = await partyTransactionService.create({
@@ -183,7 +218,7 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Invalid transaction ID.' });
       }
 
-      const { transactionType, date, amount, paymentMode, remark } = req.body;
+      const { transactionType, date, amount, paymentMode, remark, entries } = req.body;
 
       if (!transactionType || !['PAYMENT', 'REPLACE', 'DISCOUNT'].includes(transactionType)) {
         return res.status(400).json({ success: false, error: 'Invalid or missing transactionType (must be PAYMENT, REPLACE, or DISCOUNT).' });
@@ -193,14 +228,36 @@ const partyTransactionController = {
         return res.status(400).json({ success: false, error: 'Invalid or missing date.' });
       }
 
-      const parsedAmount = parseFloat(amount);
-      if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        return res.status(400).json({ success: false, error: 'Amount must be a valid number greater than 0.' });
-      }
+      let parsedAmount = parseFloat(amount);
+      let validatedEntries = null;
 
-      if (transactionType === 'PAYMENT') {
-        if (!paymentMode || !['BANK', 'CASH'].includes(paymentMode.toUpperCase())) {
-          return res.status(400).json({ success: false, error: 'paymentMode must be BANK or CASH for PAYMENT transaction types.' });
+      if (Array.isArray(entries) && entries.length > 0) {
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i];
+          const entryAmt = parseFloat(entry.amount);
+          if (isNaN(entryAmt) || entryAmt <= 0) {
+            return res.status(400).json({ success: false, error: `Entry #${i + 1}: Amount must be a valid number greater than 0.` });
+          }
+          if (transactionType === 'PAYMENT') {
+            if (!entry.paymentMode || !['BANK', 'CASH'].includes(entry.paymentMode.toUpperCase())) {
+              return res.status(400).json({ success: false, error: `Entry #${i + 1}: paymentMode must be BANK or CASH for PAYMENT transaction types.` });
+            }
+          }
+        }
+        parsedAmount = entries.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        validatedEntries = entries.map((e, idx) => ({
+          id: e.id || idx + 1,
+          amount: parseFloat(e.amount),
+          paymentMode: transactionType === 'PAYMENT' ? (e.paymentMode ? e.paymentMode.toUpperCase() : 'CASH') : null
+        }));
+      } else {
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          return res.status(400).json({ success: false, error: 'Amount must be a valid number greater than 0.' });
+        }
+        if (transactionType === 'PAYMENT') {
+          if (!paymentMode || !['BANK', 'CASH', 'MIXED'].includes(paymentMode.toUpperCase())) {
+            return res.status(400).json({ success: false, error: 'paymentMode must be BANK or CASH for PAYMENT transaction types.' });
+          }
         }
       }
 
@@ -211,8 +268,9 @@ const partyTransactionController = {
         transactionType: mappedTxType,
         date,
         amount: parsedAmount,
-        paymentMode: transactionType === 'PAYMENT' ? paymentMode.toUpperCase() : null,
-        remark: remark || ''
+        paymentMode: transactionType === 'PAYMENT' ? (paymentMode ? paymentMode.toUpperCase() : null) : null,
+        remark: remark || '',
+        entries: validatedEntries
       });
 
       res.json({ success: true, data: mapTxTypeResponse(tx) });

@@ -27,10 +27,12 @@ const CreatePayment = () => {
   const [formData, setFormData] = useState({
     date: todayLocal(),
     partyId: initialPartyId, // client_[id] or jobber_[id]
-    amount: '',  // Represents amountPaid, amountReturned, or discountAmount
-    paymentMode: 'Cash', // Bank or Cash (for Payment mode)
     remarks: ''
   });
+
+  const [paymentEntries, setPaymentEntries] = useState([
+    { id: 1, amount: '', paymentMode: 'Cash' }
+  ]);
 
   const [options, setOptions] = useState([]);
   const [error, setError] = useState('');
@@ -125,10 +127,43 @@ const CreatePayment = () => {
             setFormData({
               date: tx.date,
               partyId: `${tx.party_type.toLowerCase()}_${tx.party_id}`,
-              amount: tx.amount.toString(),
-              paymentMode: initialPaymentMode,
               remarks: tx.remark || ''
             });
+
+            // Restore multi-entries if saved, or fallback to single entry
+            let loadedEntries = [];
+            if (Array.isArray(tx.entries) && tx.entries.length > 0) {
+              loadedEntries = tx.entries.map((e, idx) => ({
+                id: e.id || idx + 1,
+                amount: e.amount !== undefined && e.amount !== null ? e.amount.toString() : '',
+                paymentMode: e.paymentMode 
+                  ? (e.paymentMode.charAt(0).toUpperCase() + e.paymentMode.slice(1).toLowerCase())
+                  : 'Cash'
+              }));
+            } else if (typeof tx.entries === 'string') {
+              try {
+                const parsed = JSON.parse(tx.entries);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  loadedEntries = parsed.map((e, idx) => ({
+                    id: e.id || idx + 1,
+                    amount: e.amount !== undefined && e.amount !== null ? e.amount.toString() : '',
+                    paymentMode: e.paymentMode 
+                      ? (e.paymentMode.charAt(0).toUpperCase() + e.paymentMode.slice(1).toLowerCase())
+                      : 'Cash'
+                  }));
+                }
+              } catch {
+                loadedEntries = [];
+              }
+            }
+
+            if (loadedEntries.length === 0) {
+              loadedEntries = [
+                { id: 1, amount: tx.amount ? tx.amount.toString() : '', paymentMode: initialPaymentMode }
+              ];
+            }
+
+            setPaymentEntries(loadedEntries);
           } else {
             setError(result.error || 'Failed to fetch transaction details.');
           }
@@ -261,8 +296,38 @@ const CreatePayment = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const togglePaymentMode = (mode) => {
-    setFormData(prev => ({ ...prev, paymentMode: mode }));
+  const handleAddEntry = () => {
+    setPaymentEntries(prev => {
+      const lastMode = prev[prev.length - 1]?.paymentMode || 'Cash';
+      const nextMode = lastMode === 'Cash' ? 'Bank' : 'Cash';
+      return [
+        ...prev,
+        { id: Date.now() + Math.random(), amount: '', paymentMode: nextMode }
+      ];
+    });
+  };
+
+  const handleRemoveEntry = (indexToRemove) => {
+    setPaymentEntries(prev => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, idx) => idx !== indexToRemove);
+    });
+  };
+
+  const handleEntryAmountChange = (index, val) => {
+    setPaymentEntries(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], amount: val };
+      return next;
+    });
+  };
+
+  const handleEntryModeChange = (index, mode) => {
+    setPaymentEntries(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], paymentMode: mode };
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -276,10 +341,17 @@ const CreatePayment = () => {
       return;
     }
 
-    const amt = parseFloat(formData.amount);
-    if (isNaN(amt) || amt <= 0) {
-      setError('Please enter a valid amount greater than 0.');
+    if (paymentEntries.length === 0) {
+      setError('Please enter at least one payment amount.');
       return;
+    }
+
+    for (let i = 0; i < paymentEntries.length; i++) {
+      const entryAmt = parseFloat(paymentEntries[i].amount);
+      if (isNaN(entryAmt) || entryAmt <= 0) {
+        setError(`Please enter a valid amount greater than 0 for entry #${i + 1}${paymentEntries.length > 1 ? ', or remove it' : ''}.`);
+        return;
+      }
     }
 
     savingRef.current = true;
@@ -291,13 +363,20 @@ const CreatePayment = () => {
       const partyType = parts[0].toUpperCase(); // 'CLIENT' or 'JOBBER'
       const partyId = parseInt(parts[1]);
 
+      const totalEnteredAmount = paymentEntries.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+
       const payload = {
         partyType,
         partyId,
         transactionType,
         date: formData.date,
-        amount: amt,
-        paymentMode: transactionType === 'PAYMENT' ? formData.paymentMode : null,
+        amount: totalEnteredAmount,
+        paymentMode: transactionType === 'PAYMENT' ? (paymentEntries[0]?.paymentMode || 'Cash') : null,
+        entries: paymentEntries.map((e, idx) => ({
+          id: e.id || idx + 1,
+          amount: parseFloat(e.amount),
+          paymentMode: transactionType === 'PAYMENT' ? e.paymentMode : null
+        })),
         remark: formData.remarks
       };
 
@@ -340,8 +419,11 @@ const CreatePayment = () => {
 
   const isPartyIdentified = !!formData.partyId;
   const openingPendingBalance = outstandingData.currentOutstanding;
-  const parsedAmount = parseFloat(formData.amount) || 0;
-  const closingBalance = openingPendingBalance - parsedAmount;
+  const totalEnteredAmount = paymentEntries.reduce((sum, item) => {
+    const val = parseFloat(item.amount);
+    return sum + (!isNaN(val) && val > 0 ? val : 0);
+  }, 0);
+  const closingBalance = openingPendingBalance - totalEnteredAmount;
 
   const selectedParty = options.find(opt => String(opt.id) === String(formData.partyId));
   const selectedPartyName = selectedParty ? selectedParty.name.replace(/\s*\[(CLIENT|JOBBER)\]\s*$/i, '') : '—';
@@ -522,44 +604,86 @@ const CreatePayment = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
-                <div className="flex flex-col gap-1.5 col-span-2">
-                  <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5 text-left">
-                    {transactionType === 'PAYMENT' && 'AMOUNT PAID (₹)'}
-                    {transactionType === 'REPLACE' && 'REPLACE AMOUNT (₹)'}
-                    {transactionType === 'DISCOUNT' && 'DISCOUNT AMOUNT (₹)'}
-                  </label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number"
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleInputChange}
-                      className="flex-1 h-9 px-3 bg-white border border-brand-blue/30 rounded-lg text-[15px] font-black text-brand-blue outline-none focus:border-brand-blue transition-all shadow-sm"
-                      placeholder="0.00"
-                    />
-                    
-                    {/* Bank / Cash Toggle - ONLY for PAYMENT mode */}
-                    {transactionType === 'PAYMENT' && (
-                      <div className="flex p-0.5 bg-bg-main rounded-lg border border-border-soft h-9 shrink-0">
-                        <button 
-                          onClick={() => togglePaymentMode('Cash')}
-                          className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Cash' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
-                        >
-                          Cash
-                        </button>
-                        <button 
-                          onClick={() => togglePaymentMode('Bank')}
-                          className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.paymentMode === 'Bank' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
-                        >
-                          Bank
-                        </button>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+                <div className="flex flex-col gap-2.5 col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-text-primary uppercase tracking-widest ml-0.5 text-left">
+                      {transactionType === 'PAYMENT' && 'AMOUNT PAID (₹)'}
+                      {transactionType === 'REPLACE' && 'REPLACE AMOUNT (₹)'}
+                      {transactionType === 'DISCOUNT' && 'DISCOUNT AMOUNT (₹)'}
+                    </label>
+                    {paymentEntries.length > 1 && (
+                      <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-widest">
+                        {paymentEntries.length} entries &bull; Total ₹{totalEnteredAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
                     )}
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {paymentEntries.map((entry, index) => (
+                      <div key={entry.id || index} className="flex items-center gap-2">
+                        <input 
+                          type="number"
+                          name={`amount_${index}`}
+                          value={entry.amount}
+                          onChange={(e) => handleEntryAmountChange(index, e.target.value)}
+                          className="flex-1 h-9 px-3 bg-white border border-brand-blue/30 rounded-lg text-[15px] font-black text-brand-blue outline-none focus:border-brand-blue transition-all shadow-sm"
+                          placeholder="0.00"
+                        />
+                        
+                        {/* Bank / Cash Toggle - ONLY for PAYMENT mode */}
+                        {transactionType === 'PAYMENT' && (
+                          <div className="flex p-0.5 bg-bg-main rounded-lg border border-border-soft h-9 shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => handleEntryModeChange(index, 'Cash')}
+                              className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${entry.paymentMode === 'Cash' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
+                            >
+                              Cash
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => handleEntryModeChange(index, 'Bank')}
+                              className={`px-4 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${entry.paymentMode === 'Bank' ? 'bg-white text-brand-blue shadow-sm' : 'text-text-primary hover:text-text-primary'}`}
+                            >
+                              Bank
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Remove entry button if more than 1 entry */}
+                        {paymentEntries.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEntry(index)}
+                            title="Remove entry"
+                            className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-border-soft transition-colors shrink-0 cursor-pointer shadow-2xs"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* + Sign box below amount paid box */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={handleAddEntry}
+                      className="w-full h-8 flex items-center justify-center gap-2 bg-slate-50 hover:bg-brand-blue/5 border border-dashed border-slate-300 hover:border-brand-blue rounded-lg text-slate-700 hover:text-brand-blue text-[10.5px] font-bold uppercase tracking-widest transition-all duration-150 active:scale-[0.99] cursor-pointer shadow-2xs"
+                    >
+                      <div className="w-4 h-4 rounded-md bg-brand-blue/10 text-brand-blue flex items-center justify-center text-[13px] font-black leading-none">
+                        +
+                      </div>
+                      <span>Add {transactionType === 'PAYMENT' ? 'Cash / Bank Entry' : 'Entry'}</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="col-span-2 flex items-center justify-end">
+                <div className="col-span-2 flex items-start justify-end pt-1">
                   <div className="text-right flex flex-col items-end">
                     <div className="text-[18px] font-bold text-text-primary leading-tight max-w-sm truncate mb-0.5" title={selectedPartyName}>
                       {selectedPartyName}
@@ -569,10 +693,37 @@ const CreatePayment = () => {
                     </div>
 
                     <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60">Pending Amount</div>
-                    <div className="text-[18px] font-bold text-red-500 leading-none mb-2.5">₹{openingPendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="text-[18px] font-bold text-red-500 leading-none mb-3">₹{openingPendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
 
-                    <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60">Adjustment</div>
-                    <div className="text-[18px] font-bold text-text-primary leading-none mb-2.5">- ₹{parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-[12px] font-bold text-text-primary uppercase tracking-widest opacity-60 mb-1.5">Adjustment</div>
+                    <div className="flex flex-col items-end gap-1 mb-2.5 w-full min-w-[210px] max-w-xs">
+                      {paymentEntries.map((entry, idx) => {
+                        const amt = parseFloat(entry.amount) || 0;
+                        const mode = (entry.paymentMode || 'Cash').toUpperCase();
+                        const label = transactionType === 'PAYMENT'
+                          ? (paymentEntries.length > 1 ? `${mode} (#${idx + 1})` : mode)
+                          : `ENTRY #${idx + 1}`;
+                        return (
+                          <div key={entry.id || idx} className="flex items-center justify-between w-full text-[12px]">
+                            <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-slate-500">
+                              {label}
+                            </span>
+                            <span className="font-bold text-text-primary">
+                              - ₹{amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div className="w-full border-t border-border-soft my-1"></div>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-text-primary opacity-70">
+                          Total Adjustment
+                        </span>
+                        <span className="text-[16px] font-black text-text-primary leading-none">
+                          - ₹{totalEnteredAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
 
                     <div className="text-[13.5px] font-bold text-text-primary uppercase tracking-[0.15em] mb-1">Closing Balance</div>
                     <div className="text-[24px] font-black text-text-primary leading-none">

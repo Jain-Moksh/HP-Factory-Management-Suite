@@ -260,6 +260,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_request_id ON purchase(request_id
 -- Payments: single entries store the form's request_id, bulk entries store <request_id>#<row number>
 ALTER TABLE party_transactions ADD COLUMN IF NOT EXISTS request_id TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_party_tx_request_id ON party_transactions(request_id);
+ALTER TABLE party_transactions ADD COLUMN IF NOT EXISTS entries JSONB;
+ALTER TABLE party_transactions DROP CONSTRAINT IF EXISTS party_transactions_payment_mode_check;
+ALTER TABLE party_transactions ADD CONSTRAINT party_transactions_payment_mode_check CHECK (payment_mode IN ('BANK', 'CASH', 'MIXED') OR payment_mode IS NULL);
 
 -- =========================
 -- UNIQUE MASTER NAMES

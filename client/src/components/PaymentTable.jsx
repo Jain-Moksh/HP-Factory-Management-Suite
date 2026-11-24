@@ -55,7 +55,9 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
                     {row.transaction_type === 'PAYMENT' ? (
                       <span className={`px-2 py-0.5 rounded text-[9.5px] tracking-wider font-extrabold ${
                         (row.payment_mode || '').toUpperCase() === 'BANK'
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                        (row.payment_mode || '').toUpperCase() === 'MIXED'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
                           : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       }`}>
                         {(row.payment_mode || 'CASH').toUpperCase()}
@@ -201,6 +203,27 @@ const PaymentTable = ({ data = [], loading = false, onDelete, onEdit }) => {
                     </span>
                   </div>
                 )}
+                {(() => {
+                  let entries = [];
+                  if (Array.isArray(selectedTx.entries)) entries = selectedTx.entries;
+                  else if (typeof selectedTx.entries === 'string') {
+                    try { entries = JSON.parse(selectedTx.entries); } catch { entries = []; }
+                  }
+                  if (entries && entries.length > 1) {
+                    return (
+                      <div className="flex flex-col col-span-2 bg-white border border-slate-200 rounded-lg p-2.5 gap-1.5 mt-1">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Entries Breakdown</span>
+                        {entries.map((e, i) => (
+                          <div key={i} className="flex justify-between items-center text-[11px] font-bold">
+                            <span className="text-slate-600 uppercase">{(e.paymentMode || 'Cash')}</span>
+                            <span className="text-brand-blue">₹{parseFloat(e.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col gap-1">

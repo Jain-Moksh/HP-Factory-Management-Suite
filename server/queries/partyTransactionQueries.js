@@ -2,8 +2,8 @@ const partyTransactionQueries = {
     insertTransaction: `
         INSERT INTO party_transactions (
             party_type, party_id, transaction_type, date,
-            challan_no, amount, payment_mode, remark, request_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            challan_no, amount, payment_mode, remark, request_id, entries
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
     `,
     getByRequestIds: 'SELECT * FROM party_transactions WHERE request_id = ANY($1) ORDER BY id ASC',
@@ -39,8 +39,9 @@ const partyTransactionQueries = {
             payment_mode = $4, 
             remark = $5,
             challan_no = $6,
+            entries = $7,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = $7 
+        WHERE id = $8 
         RETURNING *
     `,
     deleteTransaction: `

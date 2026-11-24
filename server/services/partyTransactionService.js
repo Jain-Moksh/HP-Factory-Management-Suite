@@ -62,7 +62,7 @@ const partyTransactionService = {
     try {
       await client.query('BEGIN');
 
-      const { partyType, partyId, transactionType, date, amount, paymentMode, remark, request_id } = txData;
+      const { partyType, partyId, transactionType, date, amount, paymentMode, remark, request_id, entries } = txData;
 
       // 1. Verify party exists
       if (partyType === 'CLIENT') {
@@ -95,8 +95,21 @@ const partyTransactionService = {
       // 3. Generate sequential challan number
       const challan_no = await getFormattedTransactionChallan(date, transactionType, client);
 
-      // 4. Insert transaction
-      const finalPaymentMode = ['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType) && transactionType !== 'PAYMENT' ? null : toUpperCase(paymentMode);
+      // 4. Determine finalPaymentMode and finalAmount (supporting multi-entry on one challan)
+      let finalPaymentMode = null;
+      let finalAmount = parseFloat(amount);
+      let entriesJson = null;
+
+      if (Array.isArray(entries) && entries.length > 0) {
+        entriesJson = JSON.stringify(entries);
+        finalAmount = entries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        if (transactionType === 'PAYMENT') {
+          const modes = new Set(entries.map(e => (e.paymentMode || 'CASH').toUpperCase()));
+          finalPaymentMode = modes.size > 1 ? 'MIXED' : Array.from(modes)[0];
+        }
+      } else {
+        finalPaymentMode = ['PAYMENT', 'RETURN', 'DISCOUNT'].includes(transactionType) && transactionType !== 'PAYMENT' ? null : toUpperCase(paymentMode || 'CASH');
+      }
 
       const insertRes = await client.query(queries.insertTransaction, [
         partyType,
@@ -104,10 +117,11 @@ const partyTransactionService = {
         transactionType,
         date,
         challan_no,
-        amount,
+        finalAmount,
         finalPaymentMode,
         toUpperCase(remark),
-        request_id || null
+        request_id || null,
+        entriesJson
       ]);
 
       const snapshot = await loadSnapshot(client, insertRes.rows[0].id);
@@ -184,7 +198,8 @@ const partyTransactionService = {
           amount,
           finalPaymentMode,
           toUpperCase(remark || ''),
-          rowRequestId(index)
+          rowRequestId(index),
+          null
         ]);
 
         // One log entry per party so each payment can be found by its own challan / party
@@ -227,7 +242,7 @@ const partyTransactionService = {
     try {
       await client.query('BEGIN');
 
-      const { transactionType, date, amount, paymentMode, remark } = txData;
+      const { transactionType, date, amount, paymentMode, remark, entries } = txData;
 
       // 1. Fetch and lock the existing record, so two saves of the same payment run one after the other
       const oldTxRes = await client.query('SELECT * FROM party_transactions WHERE id = $1 FOR UPDATE', [id]);
@@ -249,15 +264,30 @@ const partyTransactionService = {
         final_challan_no = await getFormattedTransactionChallan(date, transactionType, client, id);
       }
 
-      // 3. Update transaction record
-      const finalPaymentMode = transactionType === 'PAYMENT' ? toUpperCase(paymentMode) : null;
+      // 3. Determine finalPaymentMode and finalAmount (supporting multi-entry on one challan)
+      let finalPaymentMode = null;
+      let finalAmount = parseFloat(amount);
+      let entriesJson = null;
+
+      if (Array.isArray(entries) && entries.length > 0) {
+        entriesJson = JSON.stringify(entries);
+        finalAmount = entries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        if (transactionType === 'PAYMENT') {
+          const modes = new Set(entries.map(e => (e.paymentMode || 'CASH').toUpperCase()));
+          finalPaymentMode = modes.size > 1 ? 'MIXED' : Array.from(modes)[0];
+        }
+      } else {
+        finalPaymentMode = transactionType === 'PAYMENT' ? toUpperCase(paymentMode || 'CASH') : null;
+      }
+
       const updateRes = await client.query(queries.updateTransaction, [
         transactionType,
         date,
-        amount,
+        finalAmount,
         finalPaymentMode,
         toUpperCase(remark),
         final_challan_no,
+        entriesJson,
         id
       ]);
 
